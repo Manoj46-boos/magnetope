@@ -1,0 +1,47 @@
+{
+  "name": "magnetope",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A magnetic slingshot game for the open web.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && node scripts/check-budget.mjs",
+    "build:poki": "tsc --noEmit && vite build --mode poki && node scripts/check-budget.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:load": "node scripts/run-load-gate.mjs",
+    "verify:levels": "vitest run tests/levels",
+    "solve": "tsx tools/solve.ts",
+    "ghosts": "tsx tools/ghosts.ts",
+    "probe": "tsx tools/probe.ts",
+    "ablate": "tsx tools/ablate.ts",
+    "reach": "tsx tools/reach.ts",
+    "uses": "tsx tools/uses.ts",
+    "design": "tsx tools/design.ts",
+    "thumbnails": "tsx tools/thumbnails.ts",
+    "capture": "tsx tools/capture.ts",
+    "heatmap": "tsx tools/heatmap.ts",
+    "sweep": "tsx tools/sweep.ts",
+    "crawl-audit": "tsx tools/crawl-audit.ts",
+    "loadtime": "tsx tools/loadtime.ts",
+    "loudness": "tsx tools/loudness.ts",
+    "perf": "tsx tools/perf.ts",
+    "anim-cost": "node --expose-gc --import tsx tools/anim-cost.ts",
+    "restart-time": "tsx tools/restart-time.ts"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.21.0",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "happy-dom": "^20.14.5",
+    "playwright": "^1.64.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3",
+    "vitest": "^5.0.3"
+  }
+}

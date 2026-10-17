@@ -1,0 +1,1303 @@
+{
+  "scrapyard-00": {
+    "clearSeconds": 10.9,
+    "macros": 5,
+    "slipRate": 0.29,
+    "worstHop": 0.71,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      0.71
+    ]
+  },
+  "scrapyard-01": {
+    "clearSeconds": 15.2,
+    "macros": 8,
+    "slipRate": 0.2,
+    "worstHop": 0.88,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.96,
+      0.96,
+      1,
+      1,
+      0.88
+    ]
+  },
+  "scrapyard-02": {
+    "clearSeconds": 13.7,
+    "macros": 8,
+    "slipRate": 0.16,
+    "worstHop": 0.88,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.88,
+      0.96
+    ]
+  },
+  "scrapyard-03": {
+    "clearSeconds": 8.6,
+    "macros": 5,
+    "slipRate": 0.13,
+    "worstHop": 0.88,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.88,
+      1
+    ]
+  },
+  "scrapyard-04": {
+    "clearSeconds": 11.5,
+    "macros": 6,
+    "slipRate": 0.27,
+    "worstHop": 0.79,
+    "perHop": [
+      1,
+      1,
+      0.79,
+      0.96,
+      0.96,
+      1
+    ]
+  },
+  "scrapyard-05": {
+    "clearSeconds": 16.3,
+    "macros": 9,
+    "slipRate": 0.12,
+    "worstHop": 0.92,
+    "perHop": [
+      1,
+      1,
+      0.92,
+      0.96,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "scrapyard-06": {
+    "clearSeconds": 16.3,
+    "macros": 9,
+    "slipRate": 0.5,
+    "worstHop": 0.79,
+    "perHop": [
+      0.79,
+      0.96,
+      0.92,
+      0.92,
+      1,
+      0.79,
+      1,
+      1,
+      1
+    ]
+  },
+  "scrapyard-07": {
+    "clearSeconds": 10.1,
+    "macros": 5,
+    "slipRate": 0.23,
+    "worstHop": 0.83,
+    "perHop": [
+      1,
+      0.96,
+      0.83,
+      1,
+      0.96
+    ]
+  },
+  "scrapyard-08": {
+    "clearSeconds": 18.5,
+    "macros": 11,
+    "slipRate": 0.63,
+    "worstHop": 0.54,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      0.75,
+      1,
+      1,
+      0.54,
+      1,
+      0.92,
+      1
+    ]
+  },
+  "scrapyard-09": {
+    "clearSeconds": 10.1,
+    "macros": 6,
+    "slipRate": 0.12,
+    "worstHop": 0.96,
+    "perHop": [
+      0.96,
+      1,
+      0.96,
+      1,
+      0.96,
+      1
+    ]
+  },
+  "scrapyard-10": {
+    "clearSeconds": 12.8,
+    "macros": 7,
+    "slipRate": 0.63,
+    "worstHop": 0.54,
+    "perHop": [
+      0.54,
+      0.96,
+      1,
+      0.75,
+      1,
+      0.96,
+      1
+    ]
+  },
+  "scrapyard-11": {
+    "clearSeconds": 9.9,
+    "macros": 5,
+    "slipRate": 0.25,
+    "worstHop": 0.75,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.75,
+      1
+    ]
+  },
+  "scrapyard-12": {
+    "clearSeconds": 20.1,
+    "macros": 11,
+    "slipRate": 0.08,
+    "worstHop": 0.92,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.92,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "scrapyard-13": {
+    "clearSeconds": 20,
+    "macros": 10,
+    "slipRate": 0.63,
+    "worstHop": 0.5,
+    "perHop": [
+      1,
+      0.92,
+      1,
+      1,
+      1,
+      0.5,
+      0.96,
+      0.96,
+      1,
+      0.88
+    ]
+  },
+  "suburbia-01": {
+    "clearSeconds": 19.5,
+    "macros": 12,
+    "slipRate": 0.23,
+    "worstHop": 0.83,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.96,
+      1,
+      1,
+      0.83,
+      1,
+      0.96
+    ]
+  },
+  "suburbia-02": {
+    "clearSeconds": 14.5,
+    "macros": 8,
+    "slipRate": 0.04,
+    "worstHop": 0.96,
+    "perHop": [
+      0.96,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "suburbia-03": {
+    "clearSeconds": 25.1,
+    "macros": 14,
+    "slipRate": 0.42,
+    "worstHop": 0.67,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.67,
+      1,
+      1,
+      1,
+      1,
+      0.88,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "suburbia-04": {
+    "clearSeconds": 13.6,
+    "macros": 5,
+    "slipRate": 0.42,
+    "worstHop": 0.58,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      0.58
+    ]
+  },
+  "suburbia-05": {
+    "clearSeconds": 16.4,
+    "macros": 9,
+    "slipRate": 0.08,
+    "worstHop": 0.96,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.96,
+      0.96,
+      1,
+      1
+    ]
+  },
+  "suburbia-06": {
+    "clearSeconds": 28.2,
+    "macros": 16,
+    "slipRate": 0.37,
+    "worstHop": 0.79,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.79,
+      1,
+      0.79,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "suburbia-07": {
+    "clearSeconds": 25.2,
+    "macros": 13,
+    "slipRate": 0.6,
+    "worstHop": 0.58,
+    "perHop": [
+      1,
+      1,
+      0.75,
+      1,
+      0.58,
+      1,
+      1,
+      0.92,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "suburbia-08": {
+    "clearSeconds": 17.7,
+    "macros": 9,
+    "slipRate": 0.36,
+    "worstHop": 0.79,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      0.96,
+      0.96,
+      1,
+      0.88,
+      0.79
+    ]
+  },
+  "suburbia-09": {
+    "clearSeconds": 31.2,
+    "macros": 19,
+    "slipRate": 0.36,
+    "worstHop": 0.83,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      0.88,
+      1,
+      1,
+      0.83,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.88
+    ]
+  },
+  "suburbia-10": {
+    "clearSeconds": 22.2,
+    "macros": 11,
+    "slipRate": 0.27,
+    "worstHop": 0.83,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.96,
+      1,
+      1,
+      0.96,
+      0.83,
+      0.96
+    ]
+  },
+  "suburbia-11": {
+    "clearSeconds": 13.4,
+    "macros": 7,
+    "slipRate": 0.53,
+    "worstHop": 0.71,
+    "perHop": [
+      1,
+      0.71,
+      1,
+      1,
+      0.79,
+      0.92,
+      0.92
+    ]
+  },
+  "suburbia-12": {
+    "clearSeconds": 25.2,
+    "macros": 14,
+    "slipRate": 0.27,
+    "worstHop": 0.79,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.79,
+      1,
+      1,
+      0.96,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.96
+    ]
+  },
+  "suburbia-13": {
+    "clearSeconds": 17.2,
+    "macros": 9,
+    "slipRate": 0.3,
+    "worstHop": 0.79,
+    "perHop": [
+      1,
+      1,
+      0.79,
+      0.92,
+      0.96,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "suburbia-14": {
+    "clearSeconds": 25.5,
+    "macros": 12,
+    "slipRate": 0.34,
+    "worstHop": 0.75,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.75,
+      1,
+      1,
+      0.96,
+      0.96,
+      1,
+      1,
+      1,
+      0.96
+    ]
+  },
+  "metropolis-01": {
+    "clearSeconds": 15.2,
+    "macros": 9,
+    "slipRate": 0.26,
+    "worstHop": 0.88,
+    "perHop": [
+      1,
+      1,
+      0.96,
+      0.92,
+      0.96,
+      1,
+      1,
+      1,
+      0.88
+    ]
+  },
+  "metropolis-02": {
+    "clearSeconds": 13.1,
+    "macros": 8,
+    "slipRate": 0.5,
+    "worstHop": 0.75,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      0.96,
+      0.75,
+      0.88,
+      0.79
+    ]
+  },
+  "metropolis-03": {
+    "clearSeconds": 8.3,
+    "macros": 4,
+    "slipRate": 0,
+    "worstHop": 1,
+    "perHop": [
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "metropolis-04": {
+    "clearSeconds": 14.4,
+    "macros": 5,
+    "slipRate": 0.67,
+    "worstHop": 0.58,
+    "perHop": [
+      0.58,
+      0.96,
+      0.88,
+      1,
+      0.67
+    ]
+  },
+  "metropolis-05": {
+    "clearSeconds": 9.3,
+    "macros": 3,
+    "slipRate": 0.21,
+    "worstHop": 0.79,
+    "perHop": [
+      0.79,
+      1,
+      1
+    ]
+  },
+  "metropolis-06": {
+    "clearSeconds": 18.6,
+    "macros": 10,
+    "slipRate": 0.55,
+    "worstHop": 0.75,
+    "perHop": [
+      1,
+      1,
+      0.75,
+      0.75,
+      0.96,
+      0.83,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "metropolis-07": {
+    "clearSeconds": 14.4,
+    "macros": 7,
+    "slipRate": 0.37,
+    "worstHop": 0.79,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.96,
+      0.83,
+      1,
+      0.79
+    ]
+  },
+  "metropolis-08": {
+    "clearSeconds": 17.6,
+    "macros": 10,
+    "slipRate": 0.24,
+    "worstHop": 0.83,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.83,
+      1,
+      1,
+      0.92,
+      1,
+      1,
+      1
+    ]
+  },
+  "metropolis-09": {
+    "clearSeconds": 15.5,
+    "macros": 6,
+    "slipRate": 0.62,
+    "worstHop": 0.42,
+    "perHop": [
+      1,
+      1,
+      0.92,
+      1,
+      1,
+      0.42
+    ]
+  },
+  "metropolis-10": {
+    "clearSeconds": 13.7,
+    "macros": 5,
+    "slipRate": 0.47,
+    "worstHop": 0.71,
+    "perHop": [
+      0.75,
+      1,
+      1,
+      0.71,
+      1
+    ]
+  },
+  "metropolis-11": {
+    "clearSeconds": 24.5,
+    "macros": 10,
+    "slipRate": 0.48,
+    "worstHop": 0.75,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      0.96,
+      1,
+      0.75,
+      0.88,
+      1,
+      0.83
+    ]
+  },
+  "metropolis-12": {
+    "clearSeconds": 15.7,
+    "macros": 11,
+    "slipRate": 0.33,
+    "worstHop": 0.83,
+    "perHop": [
+      1,
+      1,
+      0.88,
+      0.92,
+      1,
+      0.83,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "metropolis-13": {
+    "clearSeconds": 28.7,
+    "macros": 14,
+    "slipRate": 0.42,
+    "worstHop": 0.79,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.92,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.96,
+      0.83,
+      1,
+      1,
+      0.79
+    ]
+  },
+  "metropolis-14": {
+    "clearSeconds": 20.9,
+    "macros": 8,
+    "slipRate": 0.58,
+    "worstHop": 0.67,
+    "perHop": [
+      0.96,
+      0.79,
+      0.67,
+      1,
+      1,
+      0.96,
+      1,
+      0.88
+    ]
+  },
+  "playground-01": {
+    "clearSeconds": 16,
+    "macros": 9,
+    "slipRate": 0.24,
+    "worstHop": 0.83,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.92,
+      1,
+      1,
+      0.83,
+      1,
+      1
+    ]
+  },
+  "playground-02": {
+    "clearSeconds": 30.3,
+    "macros": 16,
+    "slipRate": 0.75,
+    "worstHop": 0.54,
+    "perHop": [
+      1,
+      1,
+      0.75,
+      1,
+      0.88,
+      1,
+      0.54,
+      1,
+      1,
+      0.92,
+      1,
+      0.92,
+      1,
+      1,
+      1,
+      0.83
+    ]
+  },
+  "playground-03": {
+    "clearSeconds": 19.4,
+    "macros": 7,
+    "slipRate": 0.84,
+    "worstHop": 0.29,
+    "perHop": [
+      1,
+      1,
+      0.96,
+      1,
+      0.29,
+      0.96,
+      0.58
+    ]
+  },
+  "playground-04": {
+    "clearSeconds": 27.2,
+    "macros": 14,
+    "slipRate": 0,
+    "worstHop": 1,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "playground-05": {
+    "clearSeconds": 21.6,
+    "macros": 11,
+    "slipRate": 0.57,
+    "worstHop": 0.71,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.96,
+      1,
+      0.71,
+      1,
+      0.83,
+      0.88,
+      0.92,
+      0.96
+    ]
+  },
+  "playground-06": {
+    "clearSeconds": 30,
+    "macros": 14,
+    "slipRate": 0.58,
+    "worstHop": 0.58,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.79,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.92,
+      0.58
+    ]
+  },
+  "playground-07": {
+    "clearSeconds": 34.7,
+    "macros": 15,
+    "slipRate": 0.47,
+    "worstHop": 0.79,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.83,
+      0.79,
+      1,
+      0.96,
+      0.92,
+      1,
+      0.92
+    ]
+  },
+  "playground-08": {
+    "clearSeconds": 48.7,
+    "macros": 25,
+    "slipRate": 0.87,
+    "worstHop": 0.67,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.96,
+      1,
+      0.67,
+      0.79,
+      0.67,
+      0.96,
+      1,
+      0.96,
+      1,
+      0.88,
+      1,
+      1,
+      0.79,
+      1,
+      1,
+      0.75,
+      0.96,
+      0.88,
+      1
+    ]
+  },
+  "playground-09": {
+    "clearSeconds": 31.7,
+    "macros": 17,
+    "slipRate": 0.93,
+    "worstHop": 0.58,
+    "perHop": [
+      1,
+      1,
+      0.75,
+      1,
+      0.58,
+      1,
+      1,
+      0.75,
+      1,
+      1,
+      1,
+      0.71,
+      0.75,
+      1,
+      1,
+      0.58,
+      0.71
+    ]
+  },
+  "playground-10": {
+    "clearSeconds": 28.8,
+    "macros": 10,
+    "slipRate": 0.82,
+    "worstHop": 0.46,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.79,
+      0.88,
+      0.71,
+      0.46,
+      1,
+      0.79,
+      1
+    ]
+  },
+  "playground-11": {
+    "clearSeconds": 21.1,
+    "macros": 10,
+    "slipRate": 0.49,
+    "worstHop": 0.79,
+    "perHop": [
+      1,
+      1,
+      0.92,
+      0.79,
+      0.96,
+      0.96,
+      1,
+      0.83,
+      1,
+      0.92
+    ]
+  },
+  "playground-12": {
+    "clearSeconds": 31.4,
+    "macros": 16,
+    "slipRate": 0.88,
+    "worstHop": 0.63,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.92,
+      1,
+      1,
+      1,
+      0.75,
+      1,
+      0.71,
+      1,
+      0.75,
+      0.63,
+      0.71,
+      0.79,
+      0.96
+    ]
+  },
+  "playground-13": {
+    "clearSeconds": 32.9,
+    "macros": 18,
+    "slipRate": 0.6,
+    "worstHop": 0.63,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.63,
+      1,
+      1,
+      0.96,
+      0.92,
+      1,
+      1,
+      0.88,
+      1,
+      0.83,
+      1,
+      1
+    ]
+  },
+  "playground-14": {
+    "clearSeconds": 32.6,
+    "macros": 17,
+    "slipRate": 0.76,
+    "worstHop": 0.54,
+    "perHop": [
+      1,
+      1,
+      1,
+      0.71,
+      1,
+      1,
+      1,
+      0.92,
+      1,
+      1,
+      0.54,
+      1,
+      0.88,
+      0.92,
+      0.83,
+      1,
+      1
+    ]
+  },
+  "stratosphere-01": {
+    "clearSeconds": 14.4,
+    "macros": 10,
+    "slipRate": 0.04,
+    "worstHop": 0.96,
+    "perHop": [
+      1,
+      1,
+      0.96,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "stratosphere-02": {
+    "clearSeconds": 34.3,
+    "macros": 12,
+    "slipRate": 0.58,
+    "worstHop": 0.5,
+    "perHop": [
+      0.92,
+      1,
+      1,
+      0.5,
+      0.96,
+      0.96,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "stratosphere-03": {
+    "clearSeconds": 21.6,
+    "macros": 9,
+    "slipRate": 0.75,
+    "worstHop": 0.5,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.5,
+      1,
+      1,
+      0.5
+    ]
+  },
+  "stratosphere-04": {
+    "clearSeconds": 23.2,
+    "macros": 7,
+    "slipRate": 0.81,
+    "worstHop": 0.58,
+    "perHop": [
+      0.88,
+      0.96,
+      0.71,
+      1,
+      0.88,
+      0.58,
+      0.63
+    ]
+  },
+  "stratosphere-05": {
+    "clearSeconds": 24.9,
+    "macros": 10,
+    "slipRate": 0.58,
+    "worstHop": 0.5,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.5,
+      0.88,
+      0.96
+    ]
+  },
+  "stratosphere-06": {
+    "clearSeconds": 23.5,
+    "macros": 7,
+    "slipRate": 0.64,
+    "worstHop": 0.54,
+    "perHop": [
+      0.75,
+      1,
+      0.92,
+      0.96,
+      0.54,
+      1,
+      1
+    ]
+  },
+  "stratosphere-07": {
+    "clearSeconds": 38.4,
+    "macros": 16,
+    "slipRate": 0.2,
+    "worstHop": 0.88,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.88,
+      1,
+      1,
+      0.92,
+      1
+    ]
+  },
+  "stratosphere-08": {
+    "clearSeconds": 33.4,
+    "macros": 15,
+    "slipRate": 0.23,
+    "worstHop": 0.92,
+    "perHop": [
+      0.92,
+      1,
+      1,
+      0.96,
+      1,
+      1,
+      0.92,
+      1,
+      0.96,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "stratosphere-09": {
+    "clearSeconds": 26.9,
+    "macros": 12,
+    "slipRate": 0.58,
+    "worstHop": 0.75,
+    "perHop": [
+      0.75,
+      1,
+      1,
+      1,
+      0.92,
+      1,
+      1,
+      1,
+      0.92,
+      0.79,
+      1,
+      0.83
+    ]
+  },
+  "stratosphere-10": {
+    "clearSeconds": 33.8,
+    "macros": 15,
+    "slipRate": 0.86,
+    "worstHop": 0.38,
+    "perHop": [
+      0.88,
+      1,
+      0.88,
+      1,
+      1,
+      1,
+      0.75,
+      0.96,
+      1,
+      0.38,
+      1,
+      0.88,
+      0.79,
+      1,
+      1
+    ]
+  },
+  "stratosphere-11": {
+    "clearSeconds": 23.8,
+    "macros": 11,
+    "slipRate": 0.32,
+    "worstHop": 0.71,
+    "perHop": [
+      1,
+      1,
+      1,
+      1,
+      0.71,
+      1,
+      1,
+      1,
+      0.96,
+      1,
+      1
+    ]
+  },
+  "stratosphere-12": {
+    "clearSeconds": 33.9,
+    "macros": 16,
+    "slipRate": 0.27,
+    "worstHop": 0.83,
+    "perHop": [
+      0.92,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.96,
+      1,
+      0.83,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "stratosphere-13": {
+    "clearSeconds": 28.6,
+    "macros": 13,
+    "slipRate": 0.46,
+    "worstHop": 0.75,
+    "perHop": [
+      1,
+      1,
+      0.79,
+      1,
+      1,
+      0.75,
+      1,
+      1,
+      0.92,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "stratosphere-14": {
+    "clearSeconds": 42.8,
+    "macros": 16,
+    "slipRate": 0.61,
+    "worstHop": 0.75,
+    "perHop": [
+      1,
+      1,
+      0.96,
+      0.83,
+      1,
+      1,
+      0.88,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0.75,
+      1,
+      0.75
+    ]
+  }
+}

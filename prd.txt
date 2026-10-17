@@ -1,0 +1,2132 @@
+PRODUCT REQUIREMENTS DOCUMENT · V1.0
+MAGNETOPEMAGNETOPE
+A magnetic rage-climb for the open web
+One button flips your polarity - stick, launch, snap - up
+a colossal junk mountain where every fall is slapstick,
+every retry is instant, and every fail is a clip.
+Engineered to clear Poki's bar: original, wholesome,
+web-first, and playable in under six seconds.
+Magnetope Studio
+Solo developer production · Three.js + Rapier + Web Audio
+OCTOBER 2026 · TARGET PLATFORM: POKI.COM
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+i
+Table of Contents
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 1
+1 Executive Summary
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 2
+2 Research Foundations: The Poki Playbook
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 2
+2.1 The Platform in Numbers
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 2
+2.2 What Poki Hard-Requires (Non-Negotiable)
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 3
+2.3 Why Games Get Rejected
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 4
+2.4 The AI Production Bar
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 4
+2.5 The Engagement Doctrine
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 5
+2.6 Design Mandates Derived From the Research
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 5
+3 Game Concept: MAGNETOPE
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 5
+3.1 Vision
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 6
+3.2 Design Pillars
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 6
+3.3 Player, Tone, and Comedy
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 6
+3.4 Positioning: The Unclaimed Quadrant
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 7
+3.5 Narrative: Wordless, Environmental, Wholesome
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 7
+3.6 Naming Strategy
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 7
+3.7 Clone-Defense Matrix
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 8
+4 The Signature Mechanic: Polarity Flip
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 8
+4.1 The Three Verbs
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 8
+4.2 The Force Model
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 9
+4.3 Material Rules
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 9
+4.4 Input Map
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 10
+4.5 Anti-Frustration Grammar
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 10
+4.6 The Skill Ceiling
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 10
+4.7 State Machine (Reference)
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 11
+5 Game Design Domain
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 11
+5.1 The Core Loop
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 12
+5.2 Level Anatomy
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 12
+5.3 Biome Progression
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 13
+5.4 Difficulty Architecture
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 14
+5.5 Progression Systems
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 14
+5.6 Fail States and the Comedy System
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 15
+5.7 Session Zero
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+ii
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 15
+5.8 Content Scope
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 16
+6 Art Direction Domain
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 16
+6.1 Style Bible
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 16
+6.2 Color and Lighting System
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 17
+6.3 Character Design: MAGNO
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 17
+6.4 Environment and Prop Language
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 17
+6.5 Production Pipeline (AI-Assisted, Hand-Finished)
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 18
+6.6 Thumbnail Design
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 18
+7 Animation Domain
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 18
+7.1 Philosophy: Physics Is the Animator
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 18
+7.2 Squash and Stretch Contract
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 19
+7.3 The Ragdoll Blend System
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 19
+7.4 IK Arms and Secondary Motion
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 19
+7.5 UI Motion System
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 19
+7.6 Frame Budget
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 20
+8 VFX Domain
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 20
+8.1 The Magnetic Identity
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 20
+8.2 Effect Inventory
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 21
+8.3 The Slow-Motion Fall System
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 21
+8.4 Screen Shake Grammar
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 21
+8.5 Post-Processing and Mobile Fallback
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 21
+8.6 Particle Budget by Device Tier
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 22
+9 Audio Domain
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 22
+9.1 Philosophy and the Anti-Slop Moat
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 22
+9.2 SFX Inventory
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 23
+9.3 The Polarity Hum System
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 23
+9.4 Adaptive Music Architecture
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 23
+9.5 Ambience and Wind
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 24
+9.6 Implementation Architecture and Mix
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 24
+10 Technology & Engineering Domain
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 24
+10.1 Stack Decision
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 25
+10.2 Architecture
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 26
+10.3 Build Budget and Progressive Loading
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 27
+10.4 Performance Targets
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+iii
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 27
+10.5 PokiSDK Integration
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 28
+10.6 Scaling, Storage, and CSP Compliance
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 29
+11 Machine Learning Domain
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 29
+11.1 Policy: Intelligence Off the Wire
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 29
+11.2 Playtest Bots
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 29
+11.3 Telemetry and Difficulty Analytics
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 29
+11.4 Generative Assist and Poki's Ownership Bar
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 30
+11.5 Data Ethics
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 30
+12 UX & UI Domain
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 30
+12.1 Onboarding Contract
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 30
+12.2 HUD and Screens
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 31
+12.3 Localization
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 31
+12.4 Accessibility
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 31
+13 Monetization Domain
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 31
+13.1 Model Recap and Placement Map
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 32
+13.2 The Scrap Economy
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 32
+13.3 Revenue Scenarios
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 34
+14 QA Domain
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 34
+14.1 Poki Checklist Mapping
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 34
+14.2 Device Matrix
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 35
+14.3 Protocols
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 35
+15 Launch & Growth Domain
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 35
+15.1 The Release Pipeline
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 36
+15.2 Soft-Release Watchlist
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 36
+15.3 The Word-of-Mouth Engine
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 36
+15.4 Year-One Update Roadmap
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 37
+16 Production Plan
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 37
+16.1 Milestones
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 38
+16.2 The Solo + AI Workflow
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 38
+16.3 Zero-Budget Resource Map
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 39
+16.4 Risk Register
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 39
+17 Success Metrics & KPIs
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 39
+17.1 Stage Gates
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 40
+17.2 Decision Rules
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+iv
+ .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 40
+18 Appendix
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 40
+18.1 Appendix A: Poki Compliance Matrix (Sign-Off)
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 41
+18.2 Appendix B: Glossary
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 41
+18.3 Appendix C: Research Sources
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+1
+1 Executive Summary
+Poki is the largest curated web gaming platform in the world: over 100 million monthly players, more than one
+billion gameplays per month, and the number one web gaming destination in over 100 countries. Unlike open
+app stores, Poki is aggressively curated, which is precisely why it is worth targeting. The platform's own
+developer documentation states that a high-performing game reaches more than five million monthly players,
+and its 2026 State of Web Gaming study reports a browser games market of roughly 8.01 billion US dollars,
+growing toward 9.07 billion by 2030. The audience is majority mobile, global, and famously impatient: players
+abandon a game that takes more than ten seconds to load, and the first session carries almost all of the lifetime
+value.
+At the same time, a flood of low-effort, AI-generated games is degrading trust across every game platform.
+Steam Next Fest has been publicly criticized for being overrun with AI content, Valve has rejected games over
+AI-asset copyright uncertainty, and Poki's own guidelines now include an explicit section on AI-heavy
+production: "AI should empower, not shortcut." Games built from template assets, stock loops, and cloned
+mechanics are rejected on originality grounds even when they function correctly. This creates a genuine
+opening for a solo developer with real craft skills: the bar for acceptance has risen, and most submitters cannot
+clear it.
+MAGNETOPE is the answer this document proposes. It is a 3D low-poly physics rage-climber in which the
+player is a magnet: one button flips the player's polarity between attract and repel, turning a colossal mountain
+of scrap into a vertical slingshot puzzle. Falling is slapstick, not gruesome; retrying takes one tap; every failure
+produces a shareable comedy moment. The concept occupies a validated but unclaimed quadrant on the web:
+the emotional loop of Getting Over It, the level structure and instant restarts of Drive Mad, and the vertical
+junk-tower fantasy of Only Up - none of which exists on Poki today in a premium, family-friendly, web-native
+form.
+ 100M+
+ monthly players on Poki
+ across 100+ countries
+ ≤ 4 MB
+ initial download target vs
+ Poki's 5 MB ceiling
+ ~3 min
+ core loop length tuned to
+ session-0 behavior
+ $500–$3,000
+ realistic monthly revenue
+ band for a first web hit
+The creator's skill stack is the moat. Sound engineering means every surface in the game has a material-coded
+voice and the music adapts to altitude - no stock loops anywhere in the build. VFX and motion graphics mean
+magnetic field lines, slow-motion falls, and debris avalanches that read as premium rather than generated.
+Machine learning runs strictly as development tooling - playtest bots that verify every level is completable and
+quantify difficulty - while the shipped game stays tiny. The stack is Three.js, TypeScript, and Rapier (WASM
+physics), which load in two to six seconds where Unity WebGL commonly takes eight to thirty.
+The plan asks for one developer, six months, and a budget of effectively zero. Monetization is entirely Poki's
+ad system: midroll ads at natural stopping points, optional rewarded videos, and Gamebar display revenue from
+portrait play. This document specifies every domain of the build in production-grade detail - design, art,
+animation, VFX, audio, engineering, ML, UX, monetization, QA, launch, and analytics - so that development
+can begin the day it is approved and so that the finished game clears Poki's final review on the first submission.
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+2
+2 Research Foundations: The Poki Playbook
+2.1 The Platform in Numbers
+Poki reports 100 million monthly players and over one billion gameplays per month, sustained by a community
+of roughly 500 developers. The platform's developer portal markets itself on three promises: instant play (no
+downloads, no login), a global audience across web and mobile browsers, and full-stack support - Poki handles
+hosting, marketing, QA, brand safety, and ad sales, while the developer keeps making games. Testimonials on
+the portal from Unept (Level Devil), Fancade (Drive Mad), Madbox, Blumgi, SYBO (Subway Surfers) and
+Deer Cat Games consistently emphasize the same thing: a small, well-made web game on Poki can outperform
+the same game on any other platform the developer has tried.
+The market context supports the timing. The Business Research Company values browser games at 7.81 billion
+dollars in 2025, 8.01 billion in 2026, and projects 9.07 billion by 2030. Poki's own 2026 State of Web Gaming
+study - built from 2,000 surveyed players and 400 developers - found that 92% of consumers describe HTML5
+games positively, that 27% of web gamers spend over 50 dollars on gaming per period, and that 53% of
+developers plan to bring mobile games to the browser. Separate industry forecasts put the HTML5 games
+segment at roughly 6.0 billion dollars in 2026 growing to 10.5 billion by 2035. Web is not a legacy channel; it is
+a compounding one.
+ Figure 2.1 - Browser games market value (The Business Research Company, 2025-2026, 2030 forecast)
+2.2 What Poki Hard-Requires (Non-Negotiable)
+Poki's Requirements page defines a hard technical floor that QA checks before any game can go live, and every
+item below is quoted or paraphrased from the official documentation. These are pass/fail gates, not
+preferences, and MAGNETOPE's engineering chapter is written to satisfy each one by construction rather than
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+3
+by late-stage patching.
+Poki hard requirement
+Engineering consequence for MAGNETOPE
+Desktop + mobile + tablet support; full-screen
+coverage; mobile control scheme forced on tablets
+Responsive 16:9 canvas, touch-first control layer, UI safe areas,
+auto-detection of tablet form factor
+Scale proportionally to 640×360, 836×470, or
+1031×580
+Fixed logical resolution with letterbox + dynamic resolution scaling tiers
+Incognito support (localStorage restricted)
+All storage wrapped in try/catch with in-memory fallback; game fully
+playable with zero persistence
+No external requests - fonts, assets, libraries all
+bundled
+Zero-runtime-fetch build; Google Fonts rejected; self-hosted subset font
+in bundle; CSP-safe by design
+No splash screens, outgoing links, or non-Poki ads
+Studio logo appears only on the loading bar; every screen is
+gameplay-first
+Ad-blocker compatibility - game must stay
+playable with blockers active
+No ad-logic dependencies in the game loop; Poki SDK ad calls are
+advisory, never blocking
+SDK events: gameplayStart() on first input,
+gameplayStop() on every interruption, no
+double-fires, no events during ads
+Single AudioBus-style event broker wraps all state transitions;
+automated event trace tests in CI
+Small file size; initial download ≤ 5 MB, total ≤ 8
+MB; players leave after ~10 s
+Progressive loading architecture: 3.85 MB initial payload, biome chunks
+streamed after session start
+ Table 2.1 - Poki hard requirements and their engineering consequences
+2.3 Why Games Get Rejected
+Poki documents its rejection logic with unusual candor, and the pattern matters more than any single rule. Two
+categories are rejected immediately: misused IP (anything that borrows recognizable characters, names, or
+trade dress) and adult themes - graphic violence including open wounds and visible body fluids, sexual
+content, sustained scary themes, gambling, alcohol, tobacco, bullying, stereotypes, and sexism. Poki is a
+playground that includes children, and its advertising partners must be comfortable placing brands next to every
+game. This is why the classic web physics-comedy lineage of Happy Wheels - which is built on gore - cannot
+simply be ported to Poki, and why MAGNETOPE's fail states are designed as pure slapstick: tumbling,
+bouncing, and comedic collapse, never injury.
+Beyond the hard categories, the most common quality declines are buggy or broken gameplay, excessive
+load size or poor performance, confusing UX, and poor or inconsistent graphics. A subtle but decisive
+rule follows: games that feel too derivative may be declined even when they work perfectly, and when a genre
+or trend becomes crowded, Poki actively declines additional similar submissions because overlapping games
+fragment the audience and drag each other down. Saturated or high-risk categories as of October 2026 include
+generic 2D platformers, .io arena clones, dress-up variants, merge and idle management, block puzzles,
+stickman fighting, and endless runners.
+Poki assesses originality across six explicit dimensions, and this table - adapted from the official Content &
+Player Safety guide - becomes the design contract that Chapter 3 defends point by point:
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+4
+Dimension
+Clone (rejected)
+Inspired (accepted)
+Art style
+Near-identical visuals, colors, themes
+Reimagined style or a completely different
+theme
+Core mechanics
+Copied loop, goals, and inputs
+A unique mechanic, twist, or genre blend
+Progression & economy
+Same structure, pacing, monetization
+Original level flow and progression logic
+UI, icons, audio
+Replicated layout, colors, or audio cues
+A distinct interface with custom assets
+Characters
+Same designs, animations, silhouettes
+Original characters, no IP infringement
+Name & thumbnail
+Intentionally similar to ride search terms
+Presentation focused on your own content
+ Table 2.2 - Poki's clone-versus-inspired assessment (official dimensions)
+2.4 The AI Production Bar
+Poki's Working-with-AI guidance is the single most important document for this project, because the
+developer's stated plan is to build with an AI subscription and personal craft skills. The golden rule reads: AI
+should empower, not shortcut. Prototyping with templates, inspiration, and AI tools is normal; but before a
+game enters player testing it must reflect the creator's unique perspective and show meaningful improvement
+beyond the base tooling. The more non-original material a game leans on, the higher the risk it will not be
+accepted - even if it functions well. Ownership matters too: the developer must be able to show how and which
+tools were used, with prompts and iterations on request, because purely AI-created work can create IP
+ownership problems.
+The guidance also specifies a per-craft do-and-don't table that maps exactly onto this project's workflow: use
+AI for concepts and then heavily edit into one cohesive direction; never drop raw output in as-is; never ship
+untested generated levels - every level must be hand-balanced; use AI for code boilerplate while a human owns
+testing and optimization; keep every visual watermark-free and prompt-text-free. MAGNETOPE
+institutionalizes these rules as a documented asset pipeline in Chapters 6, 11, and 16, including a kept
+prompt-and-iteration log that can be shown to Poki on request. Where the average AI-submitted game fails this
+bar, this project treats the bar as a design constraint from day one.
+Experimenting with templates, inspiration, and AI tools while prototyping is normal. But before
+your game enters a player fit or web fit test, it should reflect your unique perspective and
+meaningful improvements beyond the base tooling.
+2.5 The Engagement Doctrine
+Poki's engagement guidance is unusually specific and effectively prescribes the product's shape. Web players
+have shorter sessions and return less often than mobile players, so the first session carries most of the weight.
+Quick, satisfying, repeatable loops of around three minutes perform best, and roughly one hour of total content
+is the right scope - sprawling mobile-style progression systems do not translate, and memory limits how much
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+5
+content fits in a small build anyway. Games where the player can constantly perform an action outperform
+games with waiting and downtime. The player should be congratulated at every milestone; difficulty must start
+easy and ramp gradually; and both touch and keyboard navigation must work through every menu.
+Onboarding guidance is equally blunt: skip the menu, skip splash screens and level selects, and put first-time
+players straight into gameplay in a safe beginner environment where failure is cheap. Tutorials must be visual
+rather than textual, because walls of text both intimidate and exclude the non-English-speaking half of the
+audience. Progressive loading - downloading only the menu, tutorial, and first stage, then fetching the rest in
+the background - is called out as one of the most important techniques for success on the web. Every one of
+these directives is reflected in MAGNETOPE's session-zero design in Chapter 5 and the chunked build in
+Chapter 10.
+2.6 Design Mandates Derived From the Research
+ 1.  Build for the first three minutes first: instant load, no menu, visual tutorial, first clear inside 60 seconds.
+ 2.  Keep every promise tiny and repeatable: 30-90 second levels, one-tap retries, constant action with zero
+ downtime.
+3.  Stay wholesome by construction: slapstick physics comedy, zero gore, zero chat, zero data collection.
+ 4.  Own a mechanic nobody on the web owns, and defend it across all six of Poki's clone-assessment
+ dimensions.
+5.  Respect the byte budget as a design constraint: ≤ 4 MB initial, ≤ 8 MB total, procedural audio over canned
+ music.
+6.  Use AI as documented labor (concepts, boilerplate, drafts) and hand-craft everything players actually see,
+ hear, or feel.
+7.  Engineer SDK correctness and incognito safety from the first commit, not as a pre-submission patch.
+ 8.  Ship with room to grow: content hooks and a one-year update roadmap shared at submission.
+ 
+3 Game Concept: MAGNETOPE
+3.1 Vision
+One-liner: MAGNETOPE is a 3D low-poly physics rage-climber where you are a magnet - one button flips
+your polarity between stick and repel, turning a colossal junk mountain into a vertical slingshot puzzle where
+every fall is slapstick, every retry is instant, and every failure is a clip. The fantasy is simple and physical: the
+player should feel like a fridge magnet that refuses to stay on the ground. Momentum is the real character; the
+mountain is the real antagonist.
+The emotional target is the comedy of ambition. Drive Mad and Level Devil have proven on Poki that
+teenagers will happily replay a thirty-second gauntlet forty times if the failure is funny, the retry is instant, and
+the win feels earned. Getting Over It proved that losing real progress produces a specific, watchable, shareable
+kind of rage. MAGNETOPE fuses those energies while removing the cruelty: falls cost altitude and dignity, not
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+6
+an entire evening, and the world physically laughs with you - debris avalanches, bouncing girders, a washing
+machine that boings you off a rooftop.
+3.2 Design Pillars
+Pillar
+Meaning
+What it forbids
+1. One button, infinite
+depth
+The entire verb set is stick, flip, snap; mastery lives
+in timing and momentum
+Combo buttons, mode switches, tutorial
+text
+2. Fail funny, retry fast
+Every failure is slapstick and physical; restart is
+one tap under 400 ms
+Gore, load screens on retry,
+progress-gating punishment
+3. The mountain is the level
+design
+Every climbable object is a readable prop with
+known material behavior
+Abstract floating geometry, unclear
+surfaces
+4. Sound is the soul
+Material-coded audio world, adaptive score, zero
+stock loops
+Generic looped music, placeholder SFX
+5. Built to grow
+Biomes, ghosts, and cosmetic systems structured
+for year-one content drops
+Hard-coded one-shot content, dead-end
+progression
+ Table 3.1 - Five design pillars and what each one forbids
+3.3 Player, Tone, and Comedy
+The primary persona is the 13-18-year-old web gamer: plays in a browser tab on a school Chromebook or a
+mid-tier Android phone, watches Poki-adjacent content on TikTok and YouTube, discovers games through
+thumbnails and friends, and values skill expression and shareable fail moments above narrative depth. This
+player does not read; this player drops in, dies, laughs, retries, and - if the game is good - sends the clip to a
+friend. The secondary persona is the older casual who played Flash physics games in the 2010s and recognizes
+the genre's pleasure instantly.
+Tone is Saturday-morning-cartoon slapstick crossed with a Saturday-morning yard sale. The world is a
+monument to abandoned objects - fridges, shopping carts, satellite dishes, gym lockers - stacked into
+impossible geography. Humor comes from physics truth: a filing cabinet that wobbles before it topples; a
+trampoline-styled mattress that launches you exactly one meter too far; a magnet-headed robot slowly sliding
+down a refrigerator door with a rising squeak. There is no dialogue beyond environmental signage, no narrator,
+and no gore: MAGNO is a robot, so every fail is a tumble, a bounce, and a spring-loaded pop back upright.
+3.4 Positioning: The Unclaimed Quadrant
+The concept deliberately occupies the intersection of three proven lineages that no premium web game
+currently combines. Getting Over It owns rage-climbing but exists on CrazyGames as a premium-feeling 2D
+entry with a single unstructured mountain; it is not on Poki. Drive Mad - one of Poki's highest-rated games at
+4.3 stars with 200+ levels - owns simple-controls-plus-rage in short structured levels, but is a driving game with
+no climbing, no character comedy, and no physics-body humor. Only Up owns vertical junk-tower fantasy and
+went violently viral on TikTok in 2023, but its web copies are low-effort clones confined to third-tier portals,
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+7
+and the premium original never shipped to Poki. The quadrant structured + premium + physical-comedy +
+vertical is empty on the platform, and Poki's own oversaturation policy rewards exactly this kind of
+diversification.
+Named-neighbor scan (October 2026, Poki live catalog and web search): Stickman Hook owns physics
+swinging; Basket Random and Soccer Random own ragdoll sports; Monkey Mart owns idle retail; Blumgi Slime
+owns friendly 2D platforming; Level Devil owns troll-platforming; Escape Road owns driving escapes; Hide
+and Paint owns novel casual hybrids. No Poki game features a polarity-flipping magnet mechanic, and the only
+magnet-adjacent web games found anywhere - Teslagrad, Super Magbot, Magnetic By Nature, and a 2D puzzle
+called Magnetic Escape - are 2D precision puzzle-platformers on other platforms, none of them ragdoll
+climbers, none of them 3D, none of them comedy. The mechanic is proven fun in a different genre and
+unclaimed in this one: the definition of inspired, not imitated.
+3.5 Narrative: Wordless, Environmental, Wholesome
+Centuries ago, something magnetically special happened at one spot on Earth. Loose metal from the whole
+world drifted there over generations and compacted into a mountain - the Magnetope. MAGNO, a small
+scrap-golem with a horseshoe-magnet head and exactly one eye, lost its power core in an avalanche and wakes
+at the mountain's base with one goal: climb to the peak and get its heart back. The story is told entirely through
+environment: faded festival banners in the Scrapyard biome, a suburb's worth of lawn mowers and mailboxes in
+Suburbia, neon signage in Metropolis, a giant rusted playground in the fourth biome, and finally the thin-air
+silence of Stratosphere, where the core glows like a lighthouse. The ending is a sixty-second wordless victory:
+the core clicks into MAGNO's chest, the magnet head's field lines bloom outward across the sky, and the
+camera pulls back to reveal the whole absurd mountain one last time.
+3.6 Naming Strategy
+Working title: MAGNETOPE - a portmanteau of magnet and -ope (as in envelope, slope, and telescope) that
+names the mountain itself. The word is unique: a search across Poki, CrazyGames, itch.io, and general web
+search in October 2026 returns zero game-title collisions, which satisfies Poki's name-and-thumbnail
+dimension (presentation focused on the game's own content, not riding search terms). It is short, pronounceable
+in every launch locale, reads well in uppercase on a thumbnail, and leaves room for sequel naming
+(MAGNETOPE 2: The Descent). Alternatives held in reserve for A/B testing during soft release: FLUX &
+TUMBLE (warm, comedic, two words), POLESTAR (premium but colder), and SCRAP SUMMIT
+(descriptive but generic - held only as a control). Character name MAGNO is similarly collision-free and
+carries in three syllables.
+3.7 Clone-Defense Matrix
+This table is the formal defense against the "this already exists" rejection, mapped to Poki's six official
+assessment dimensions from Table 2.2. It is written to be shown to the Poki team at submission time alongside
+the research that produced it.
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+8
+Dimension
+MAGNETOPE's position
+Art style
+Original low-poly diorama direction: flat-shaded junk-mountain biomes, warm-vs-cool lighting
+story, toy-scale props. No existing climber on any platform uses this treatment.
+Core mechanics
+Polarity-flip momentum climbing (stick-repel slingshot + airborne snap). Not present in any web
+physics-climber; magnet mechanics elsewhere are 2D puzzle-platformers with opposite design
+goals (precision, not momentum comedy).
+Progression & economy
+Structured 30-90 s vertical gauntlet levels with 3-star ratings, speedrun ghosts, and a single Scrap
+currency - versus Getting Over It's single unstructured mountain and Only Up's checkpointless
+sprawl.
+UI, icons, audio
+Custom minimal HUD (altitude + charge), custom iconography, and a fully material-coded
+procedural audio world - no shared asset packs, no stock loops.
+Characters
+MAGNO: original robot silhouette (round-bottom ragdoll, horseshoe-magnet head, single eye)
+designed for merchandising-scale readability. Zero IP adjacency to any published character.
+Name & thumbnail
+Ownable coined word with zero title collisions; thumbnail shows MAGNO mid-flip against the
+tower - no search-term riding.
+ Table 3.2 - MAGNETOPE versus Poki's six clone-assessment dimensions
+4 The Signature Mechanic: Polarity Flip
+4.1 The Three Verbs
+The entire control surface is three verbs. STICK: whenever any part of MAGNO's body contacts a
+ferromagnetic surface while attract mode is active, a magnetic joint forms instantly and MAGNO adheres -
+hanging, dangling, or rolling in place on walls and ceilings. FLIP: the single player-issued input reverses
+polarity. If attached, the joint inverts into a repulsor, launching MAGNO away from the surface along its
+contact normal with a force proportional to charge held; if airborne, flip arms the snap. SNAP: while airborne
+in attract mode, the nearest ferromagnetic surface inside snap radius is highlighted, and releasing flip (or
+pressing it again, configuration-dependent) pulls MAGNO toward it with a spring force that converts cleanly
+into orbital momentum. Chaining flip-snap-flip turns the tower into a vertical slingshot course.
+Momentum is sacred. The physics model deliberately never zeroes velocity on attach; instead, surface friction
+bleeds it over 250 milliseconds, so a fast arrival can convert into a wall-crawl or a pendulum swing around a
+girder's edge. This single choice - conservation over reset - is what makes the mechanic learnable in ten seconds
+and still improving after ten hours, and it is the difference between this design and a teleporting grapple.
+4.2 The Force Model
+Parameter
+Baseline
+Feel intent
+Attach snap force
+1,800 N ramp over 60 ms
+Instant-feeling grab without teleport pop
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+9
+Parameter
+Baseline
+Feel intent
+Attach friction ramp
+0 → μ 0.9 over 250 ms
+Momentum converts to slide/crawl instead
+of dying
+Repel impulse (full charge)
+14 m/s exit velocity along normal + 30%
+input tilt
+Predictable slingshot players can aim
+Repel impulse (tap)
+6 m/s
+Fine repositioning without full
+commitment
+Snap radius
+4.5 m sphere, 15° cone preference
+toward camera-forward
+Forgiving but not magnetic-lock-on
+Snap spring constant
+k = 240, damping ζ = 0.55
+Pull feels like a magnet, lands like a catch
+Charge time (hold to power flip)
+0.9 s to full, 3-level meter with audio
+ramp
+Risk-reward: holding while dangling is
+exposure
+Air control
+±2.4 m/s² tilt authority, never cancels
+gravity
+Steering, not flying
+Coyote attach window
+120 ms after leaving contact
+Borderline flips still feel fair
+Input buffer
+140 ms
+Late flip during recovery still registers
+ Table 4.1 - Physics feel targets for the magnet controller (tuning baselines, not final)
+4.3 Material Rules
+Every surface in the game declares exactly one material family, and the material grid is short enough to
+memorize visually in one biome. Ferromagnetic surfaces (steel girders, fridges, cars, lockers, filing cabinets,
+satellite dishes) participate in stick, flip, and snap at full strength. Weak-metal surfaces (aluminum gutters,
+thin sheet metal, cans) hold stick for a degrading 1.2 seconds - long enough to plan, short enough to panic - and
+are visually thinner and rustier. Non-metallic surfaces (wood, rubber, glass, plastic, fabric) never hold stick:
+MAGNO bounces, slides, or rolls off, and each has its own restitution (mattress 0.75, rubber 0.65, wood 0.3,
+glass 0.1 with a breakable flag). Live-ferrous props (springs, fans, elevator counterweights) are dynamic
+bodies: MAGNO's field drags them, they drag back, and loose-junk chain reactions emerge from the
+simulation rather than being scripted.
+4.4 Input Map
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+10
+Action
+Keyboard
+Touch
+Mouse-only (accessibility)
+Move / aim tilt
+WASD or arrows
+Left-half virtual stick (drag
+anywhere)
+Cursor position relative to
+MAGNO
+Flip (hold to charge)
+Space / J / left-click
+Right-half big button
+Left click
+Pause
+ESC or P
+Top-right icon + hardware back
+Right click
+Menu confirm / navigate
+Space, Enter, arrows
+Tap
+Click
+Retry (after fall)
+Space / R
+Anywhere on screen
+Any click
+ Table 4.2 - Control schemes across devices (all remappable)
+4.5 Anti-Frustration Grammar
+Rage is the product, but unfairness is poison, so the mechanic obeys a strict fairness grammar. Falls never
+damage; they only cost altitude and time. The camera pulls back automatically during long falls so the player
+can read the landing zone, and a soft auto-align rotates MAGNO's snap cone toward the nearest safe hold
+during the final 300 milliseconds of a fall - an assist that defaults on, is tunable, and can be disabled by expert
+players for score-boost purposes. Every fall longer than twelve meters triggers the slow-mo system,
+guaranteeing that even punishment feels like a produced moment. Retry state is captured the instant a run
+starts, so restart rebuilds the level in under 400 milliseconds with zero loading screens.
+4.6 The Skill Ceiling
+ 1.  Novice (minutes 1-5): stick, tap-flip, land, repeat. Clearing a level at all is the win. Fall comedy carries the
+ session.
+2.  Intermediate (hours 1-3): hold-charged flips for distance, snap-chaining across two surfaces, wall-crawls
+ to skip low routes, weak-metal timing.
+3.  Expert (hours 3+): momentum conservation off dynamic props - bouncing off a falling girder mid-air into
+ a snap; charge-cutting (releasing flip during the 60 ms ramp for mid-power exits); route optimization
+against ghosts; no-assist runs for leaderboard-grade times.
+4.7 State Machine (Reference)
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+11
+enum MagnoState { AIRBORNE, ATTACHED, CHARGING, REPelled, RECOVERING }
+onContact(surface, contactNormal, velocity):
+if state == AIRBORNE and attract and surface.isFerromagnetic:
+attach(surface, contactNormal) // joint + friction ramp 250ms
+sfx.attach(surface.material) // material-coded thunk
+vfx.sparkBurst(contactPoint, surface.material)
+onFlipPressed():
+if state == ATTACHED: enter(CHARGING) // audio ramp, meter fills
+if state == AIRBORNE: armSnap() // highlight best target
+onFlipReleased(heldMs):
+power = chargeCurve(heldMs) // tap 6 m/s .. full 14 m/s
+impulse = surfaceNormal * power + tilt * 0.30 * power
+detach(); applyImpulse(impulse)
+sfx.repel(power); vfx.fieldLinePulse() // polarity flash + shake
+onFall(heightMeters, impact):
+if heightMeters > 12 or impactSpeed > 14: engageSlowMo()
+camera.widen(); audio.fallWhistle(pitchBy(heightMeters))
+ragdoll.goLimp(); await rest -> RECOVERING -> getUp()
+5 Game Design Domain
+5.1 The Core Loop
+The loop is a closed six-step cycle engineered to complete in under three minutes and to leave the player
+mid-loop when any interruption - ad, tab switch, bus arrival - occurs, which is the web-session survival strategy
+Poki's engagement doctrine demands. Load dumps the player directly into gameplay; climbing is continuous
+action with zero downtime; failing is content rather than punishment; retrying costs one tap and 400
+milliseconds; scoring pays out three currencies of achievement (stars, speed, Scrap); and unlocking happens at
+the natural stop where a commercial break can cleanly sit. The diagram below is the canonical reference for
+every level and system decision in this chapter.
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+12
+ Figure 5.1 - MAGNETOPE core loop; the retry arm closes in seconds so rage converts into one more try
+5.2 Level Anatomy
+Every level is a vertical gauntlet of 30-90 seconds for a competent first clear, built from four repeating zones.
+The base camp (first 5 seconds) is always safe: a wide platform, one obvious first stick-and-flip, zero threats -
+this is where session-zero players learn the level's dialect. The twist introduces the level's one new idea (a fan
+that pushes mid-flight, a crane hook that swings, weak-metal shelves that start shedding) with a guaranteed-safe
+practice encounter. The gauntlet combines the twist with the biome's established vocabulary at rising intensity,
+and is tuned to produce exactly two to four failures for a median player on first visit. The summit is the final
+10 meters: always visible from the base, always marked by a glowing collection beacon, and always one
+satisfying charged flip away. Length is a hard budget: levels that playtest longer than 90 seconds get split, no
+exceptions, because the three-minute loop 容纳 two retries plus a clear.
+5.3 Biome Progression
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+13
+Biome
+Setting & props
+Mechanic curriculum
+Palette & mood
+1. Scrapyard
+Crushed cars, fridge walls, girder
+stacks, tire piles, chain fences
+Stick, tap-flip, hold-charge, snap;
+weak-metal introduced at L4;
+dynamic props (loose girders) at L8
+Rust orange + teal
+shadows, late-afternoon
+sun, warm dust haze
+2. Suburbia
+Tool sheds, gutters, mailboxes,
+satellite dishes, clotheslines,
+trampolines
+Swinging from dynamic anchors;
+bounce materials; moving surfaces
+(garage doors)
+Mint cream + coral
+accents, morning light,
+clean shadows
+3. Metropolis
+Scaffolding, AC units, billboards,
+window-washer rigs, crane hooks
+Timed snap-chains; wind gusts;
+weak-metal walls under time
+pressure; elevator counterweights
+Cool blue + neon magenta
+signage, dusk, deepening
+fog
+4. Playground
+of Giants
+Rusted mega-slide, ferris-wheel
+spokes, swing-set towers, ball pits
+Full momentum play:
+dynamic-prop launches, orbital
+swings around spokes, riskier
+shortcuts
+Faded candy pink +
+sun-bleached yellow,
+overcast glare
+5. Stratosphere
+Stratospheric junk: airplane
+fuselage, satellites, telescope dishes,
+the Core
+Mastery test combining all verbs at
+low gravity with strong wind; no
+new tutorials, pure execution
+Indigo + starlight, thin air,
+aurora field lines
+ Table 5.1 - The five launch biomes (14 levels each, 70 total)
+5.4 Difficulty Architecture
+Difficulty is specified numerically as a median fall rate per attempt - the percentage of level entries that end
+in a fall rather than a clear - because it is directly measurable by the ML playtest bots of Chapter 11 before a
+human ever touches the build. The target curve ramps from roughly 6% at level 1 to 68% at level 70, with each
+biome's opening levels stepping down 5-8 points to grant a breather after the previous biome's climax. The rage
+band - the range where failure feels funny rather than unfair - sits between 18% and 35% for mid-game levels;
+above 40% the level is flagged for softening, and below 12% it is flagged as filler and gets a twist sharpened.
+Spikes are deliberately built in: roughly one in five levels is a conflict level that runs 10-15 points above the
+local trend, because those are the levels that become clips, TikTok captions, and schoolyard legend. The curve
+below is the shipping contract; the bots enforce it per level and per biome before every content milestone.
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+14
+ Figure 5.2 - Target median fall-rate curve across the 70 launch levels, with biome bands and the rage zone
+5.5 Progression Systems
+Three parallel progression tracks keep three kinds of player moving forward. Stars: every level awards up to
+three - one for clearing, one for clearing without a fall beyond the safety line (the no-fall run), and one for
+beating the par time shown on the level card. Stars gate biome unlocks at soft thresholds (biome 2 at 15 stars,
+biome 3 at 34, biome 4 at 57, biome 5 at 80), so a player who struggles can still advance by clearing optional
+challenges, while completionists have 210 stars to chase. Speedrun ghosts: every level's par time ships with a
+built-in developer ghost; beating par unlocks a personal ghost, and Chapter 15's AUDS-based ghost exchange
+makes friend ghosts and regional top-10 ghosts appear in-world. Scrap: the single meta currency, earned 10-50
+per level on first clear and 2-8 on replays, spent purely on cosmetics (Chapter 13) so progression never gates
+content behind grind - a deliberate Poki-doctrine choice that keeps the natural reward path free.
+5.6 Fail States and the Comedy System
+Failure is a designed content category, not an absence of success. Physically, every fall switches MAGNO to
+limp ragdoll with exaggerated joint looseness; the body tumbles, bounces with material-appropriate boings,
+drags loose junk into a small avalanche, and settles. The recovery system then plays a procedural get-up - a
+spring-loaded pop upright that reads as dignified stubbornness - before control returns. A fall is scored: the
+post-fall card shows fall height, bounces, junk displaced, and a letter grade from C to SSS, with the best falls of
+a session collected into a rolling highlight strip on the level-select screen. This is the word-of-mouth engine in
+miniature: the game literally grades your funniest failure, and the share-card system of Chapter 15 turns that
+grade into a PNG the player can post. No fall anywhere in the game produces injury imagery, blood, or distress
+- MAGNO is metal, the world is junk, and every collapse ends in a bounce.
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+15
+5.7 Session Zero
+The first 180 seconds are specified to the second because Poki's doctrine assigns them nearly all lifetime value.
+Second 0-6: loading bar with the studio logo and one animated silhouette of MAGNO mid-flip - then the game
+starts immediately on the Scrapyard's base platform, no menu, no title screen. Second 6-20: the world teaches
+stick and flip with three glowing handholds and zero text; first clear of the tutorial micro-climb lands at roughly
+second 45 with a full celebration (confetti sparks, chime, star stamp). Second 45-180: levels 1-2 play as
+extended tutorials with guaranteed clears, the first cosmetic unlocks free in the locker, and the first midroll
+opportunity arises only after level 2's natural stop. The composite engagement signal is designed to peak at each
+level clear and never dip below the quit-risk line between peaks, per the shape below.
+ Figure 5.3 - Session-zero engagement shape: peaks at every level clear, no trough below quit risk
+5.8 Content Scope
+Content
+Count
+Notes
+Levels
+70 (5 biomes × 14)
+30-90 s each; every 3rd-4th introduces a new
+prop or twist
+Distinct props with unique physics
+60
+40 static-material, 20 dynamic/reactive
+Cosmetics (MAGNO skins + field-line colors)
+24 at launch
+12 Scrap-purchasable, 8 reward-path, 4 seasonal
+Ghost types
+3
+Par ghost, personal ghost, friend/regional ghost
+Music stems
+5 biome sets × 4
+stems
+Altitude-adaptive layering (Chapter 9)
+Locale coverage
+7 languages
+en, de, es, fr, it, pt, tr (Chapter 12)
+ Table 5.2 - Launch content inventory (~60-75 minutes of first-run play)
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+16
+6 Art Direction Domain
+6.1 Style Bible
+The visual language is stylized low-poly flat-shaded 3D with a toy-scale diorama feeling: models live between
+200 and 900 triangles, every prop reads as a chunky collectible rather than a simulation, and the whole
+mountain composes like a shelf of oversized knick-knacks. Flat shading (one normal per face, vertex colors
+preferred over textures wherever a prop is a solid color) gives the game its two free superpowers: tiny file sizes
+and instant silhouette readability at thumbnail scale. Detail lives where gameplay lives - a fridge door has a
+visible handle seam because the handle is a grabbable edge - and nowhere else. Nothing in the game uses
+photoreal textures, normal maps, or photographic source material, which keeps the art style defensibly original
+and cheap to stream.
+Three rules govern every asset review, and any model that fails one is reworked rather than excused. First, the
+silhouette test: a flat black render of the prop must be identifiable to a playtester in under a second, because
+players read shapes before colors and mobile screens before shapes. Second, the material truth test: the prop's
+magnetic class must be guessable from geometry alone - steel looks dense and riveted, weak-metal looks thin
+and crumpled, non-metal looks matte or soft. Third, the budget test: the model, compressed, must fit its slot in
+the per-biome asset budget of Chapter 10, or it does not ship regardless of quality.
+6.2 Color and Lighting System
+Color is narrative: the mountain tells its story through a temperature journey from warm ground-level junk to
+cool stratospheric silence, and every biome owns a dominant family with a single contrasting accent used only
+on gameplay-relevant edges (grabbable ferromagnetic surfaces carry a faint cyan rim tint by default, adjustable
+in accessibility settings). Lighting is one directional sun with a fixed per-biome angle and a warm-to-cool color
+story, plus a hemisphere fill; there are no dynamic shadows on mobile tier - a baked vertex AO pass at import
+time provides depth for near-zero cost. Distance fog is per-biome and doubles as both mood and a
+draw-distance curtain: rust haze in the Scrapyard, laundry-soft white in Suburbia, blue dusk fog in Metropolis,
+chalky glare in the Playground, and near-vacuum star-clear air in the Stratosphere.
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+17
+Biome
+Dominant family
+Accent
+Sun angle & color
+Fog
+Scrapyard
+Rust orange H≈22°, S 55%, L
+45-60%
+Teal H≈188°
+Low 25°, warm 3200
+K
+Dust haze, 15%
+density
+Suburbia
+Mint cream H≈140°, S 30%, L
+75%
+Coral H≈12°
+High 55°, neutral
+5600 K
+Soft white, 8%
+Metropolis
+Cool slate H≈215°, S 35%, L
+40-70%
+Neon magenta
+H≈315° (signage
+only)
+Dusk 10°, 2400 K rim
+Blue, 18%
+Playground
+Bleached candy H≈345°/48° dual,
+S 40%, L 70%
+Sun yellow H≈48°
+Overhead 70°, flat
+6500 K
+Glare, 10%
+Stratosphere
+Indigo H≈245°, S 45%, L 30-55%
+Aurora cyan H≈180°
+Ambient starlight, no
+sun
+None (star clear)
+ Table 6.1 - Per-biome palette contract (hue in HSL terms)
+6.3 Character Design: MAGNO
+MAGNO is engineered as an animation rig first and a mascot second. The body is a rounded capsule (roughly
+0.6 m tall, 0.45 m diameter) whose round bottom guarantees that every fall ends in a roll or a wobble instead of
+a crunch - slapstick is baked into the skeleton. The head is an oversized horseshoe magnet with chrome-red
+tips, tilted at a permanent 8-degree confident angle; the face is a single large eye in a dark socket that handles
+the entire expression system (squash for determination, wide for falling, half-lid for smug). Arms are
+two-segment noodles with spherical hands that grab automatically during stick. Total triangle budget: 480 for
+body + head, 120 per arm. The silhouette is a squat bowling-pin with a U on top - identifiable at 32 pixels,
+which is exactly the size the thumbnail demands. Skins recolor the chrome ring, the eye socket, and add small
+clip-on props (antenna, sticker slap, tiny flag); no skin ever changes silhouette, preserving gameplay readability
+and zero-cost thumbnail consistency.
+6.4 Environment and Prop Language
+Every biome's prop library is authored as a family of 12-15 master props with modular variants, targeting 60
+unique physics identities across launch (Table 5.2). Design language rules keep the world coherent: all junk
+shares a scale story (objects are 1.2-2× real-world scale so MAGNO always looks like a toy among toys), all
+metal carries rivets or seams, all weak-metal carries dents, and all interactive surfaces exaggerate their
+affordance (a grabbable handle is 1.4× normal size). The 20 dynamic props are the comedy engine: girders that
+see-saw, washing machines that boing, filing cabinets that shed drawers, playground swings that act as
+pendulums, a ferris wheel that turns on MAGNO's field. Each prop's physical parameters (mass, friction,
+restitution, magnetic class) live in one data table that both the artists' Blender kit and the runtime consume, so
+visual identity and physics identity can never drift apart.
+6.5 Production Pipeline (AI-Assisted, Hand-Finished)
+The pipeline is built to clear Poki's AI-production bar with documentation rather than luck. Concepting uses
+generative tools for exploration only - silhouette sheets, palette studies, prop ideas - and every generated
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+18
+concept is redrawn or re-modeled by hand in Blender before it can enter the game; raw generator output never
+ships, and no asset carries watermarks or prompt artifacts. All prompts and iterations are logged in a per-asset
+record (prompt, tool, what was changed by hand, and why) so the creation process can be demonstrated to Poki
+on request, exactly as the guidelines require. Modeling is Blender with a strict export recipe: glTF 2.0, Meshopt
+compression, vertex colors for flat-shaded surfaces, KTX2/Basis textures only where a prop genuinely needs an
+albedo map (target: fewer than 25% of props). An import script validates every asset against the three style tests
+plus its byte budget automatically, and rejects failures at cook time rather than review time.
+6.6 Thumbnail Design
+The static thumbnail is the single highest-leverage 628×628 pixels in the project, so its design is specified as
+tightly as any level. Composition: MAGNO mid-flip in the lower-left third, field lines arcing toward a towering
+fridge-girder stack that fills the upper-right two-thirds, sky in the biome-1 palette; motion is implied by a
+15-degree body tilt and a spark trail. Style must match the game exactly (Poki's guidance: a mismatched
+thumbnail hurts conversion twice - at click and at play). No text, no borders, no letterboxing, full-bleed square
+at 628×628 minimum with corners intact since Poki rounds them; contrast deliberately avoids the Poki
+playground background color (#83FFE7-adjacent hues are banned from the thumbnail palette). The animated
+thumbnail (required before global release) is a 3-second loop of the same composition: flip, spark, catch -
+captured in-engine at 60 fps from a camera path authored alongside the level 1 kit so it stays perfectly
+on-brand.
+7 Animation Domain
+7.1 Philosophy: Physics Is the Animator
+In a ragdoll physics game, the simulation supplies locomotion and the animation layer supplies intent and
+personality. MAGNO's motion is a three-layer system: the physics body does the falling, the procedural
+animation layer does the reacting, and a small library of hand-authored poses stamps readable emotion on top.
+The craft goal is that a spectator watching a silent clip can tell the difference between a player's panicked flail
+and a confident ascent purely from secondary motion - arms trailing on fast flips, windmilling during long falls,
+a smug idle drum of the fingers on level clear. Every animation decision serves either readability (what is this
+body doing) or charm (who is this body), and anything serving neither is cut.
+7.2 Squash and Stretch Contract
+Squash and stretch is the style's heartbeat, and its amounts are specified numerically so they stay consistent
+across thousands of procedural contexts. Impact squash on attach: scale to 85% along the contact normal for 90
+ms with a 140 ms elastic recovery. Release stretch on flip: 118-124% along the impulse vector, proportional to
+charge power, recovering over the first 200 ms of flight. Long-fall stretch: a gentle 108% vertical while in fast
+free-fall, sold further by the eye narrowing. Landing-from-height squash bottoms at 72% with a dust ring
+scaled to impact speed. The magnet head participates inversely (stretch when the body squashes) so total
+volume reads as preserved - the classic principle applied at rig level rather than keyframe level, since almost no
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+19
+animation in this game is keyframed.
+7.3 The Ragdoll Blend System
+MAGNO exists on a continuous spectrum between four body states, blended by weights rather than switched.
+Active (full motor control, spring forces hold the capsule upright and arms track targets), Scramble (a hit of
+chaos: control authority dips to 40% for 400 ms after hard contacts - the wobble that reads as being rattled),
+Limp (all motor forces off, pure ragdoll, engaged for falls and big impacts), and Recover (a 650 ms
+spring-powered get-up sequence that is procedurally initiated from whatever pose the body settled in, using
+torque-to-upright plus a two-beat arm push-off, ending in a 120 ms settle bounce). The get-up is the most
+important animation in the game - it plays after every fail - so it is authored as a parameterized system (spring
+constants ramp, head tilt correction, eye re-focus) rather than a canned clip, ensuring it never repeats identically
+and never clips through geometry because it is computed from the actual resting pose.
+7.4 IK Arms and Secondary Motion
+Arms are two-bone IK chains driven by target points that lag the body's motion by 80 ms, which is the entire
+secret of weight: fast direction changes make the arms trail, stops make them overshoot, and the character
+instantly feels massy. Hand targets have three behaviors - grab-seek (during stick approach, hands reach toward
+the surface within a 30° cone), free-float (a damped noise orbit around the shoulder line during flight,
+amplitude scaled by airspeed), and brace (pre-impact anticipation pose 150 ms before predicted landing). The
+head runs its own smaller lag chain (30 ms) with magnetic orientation bias toward the current target surface, so
+the eye naturally leads the player's intent - a subtle, constant readability aid.
+7.5 UI Motion System
+Token
+Duration / curve
+Used for
+micro
+120 ms, standard ease-out
+Button presses, star stamps, ticker ticks
+short
+220 ms, cubic ease-out-back
+Panels in/out, level cards, locker grid
+medium
+380 ms, quintic ease-in-out
+Screen transitions, biome banners
+hero
+600 ms, custom overshoot 1.12
+Level-clear banner, fall grade card, unlocks
+loop
+1.8 s sine, ±4 px
+Idle ambient motion (beacon pulse, flags)
+ Table 7.1 - UI motion tokens (all tweens use these, nothing hand-timed)
+7.6 Frame Budget
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+20
+System
+Budget
+Notes
+Ragdoll solve + IK chains
+0.8 ms
+6 joints, closed-form IK; no full-body solver
+Blend state machine
+0.2 ms
+Weight math only; no clip sampling in play
+Secondary motion (lag chains)
+0.15 ms
+Damped springs, allocation-free
+UI tweens
+0.3 ms
+Single scheduler, transform-only
+Total animation cost
+≤ 1.5 ms
+Leaves 14+ ms of the 16.6 ms frame for physics +
+render
+ Table 7.2 - Animation CPU budget at 60 fps on the mid-tier reference device
+8 VFX Domain
+8.1 The Magnetic Identity
+All signature effects serve one visual thesis: magnetism made visible. The field-line system renders animated
+dipole curves flowing around MAGNO's head - blue-white in attract mode, orange-gold in repel - drawn as a
+shader ribbon strip whose intensity scales with charge. On flip, the lines snap-invert with a 120 ms radial pulse;
+on snap, they stretch toward the target surface and bend as the pull engages. Because polarity color is consistent
+everywhere (HUD charge meter, field lines, snap-target highlight, head glow), the player always knows their
+own state in peripheral vision, and spectators can read a clip with the sound off. The palette is deliberately
+two-note: cyan-family and amber-family on the biome-neutral page of the world, so effects never fight the
+environment art.
+8.2 Effect Inventory
+Effect
+Description
+Peak particles
+Trigger
+Field lines
+Dipole ribbon shader, animated flow,
+polarity-colored
+24 segments
+Always on, intensity by
+charge
+Attach spark burst
+Contact-point spark fan + one ring wave
+40
+Every stick
+Repel shock ring
+Inverted ring + 6 directional wisps
+22
+Every flip
+Snap trail
+Ribbon from body to target, tapering
+36
+During pull
+Debris avalanche
+Loose junk physics wake with dust puffs
+dust 90 / debris =
+physics bodies
+Falls through prop zones
+Slow-mo vignette +
+speed lines
+Radial streak overlay at 8% opacity
+screen-space
+Falls > 12 m
+Level-clear
+constellation
+Stars stamp with confetti sparks + beacon
+flare
+80
+Clear
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+21
+Effect
+Description
+Peak particles
+Trigger
+Wind gusts
+Bent-line streaks, biome-colored
+18
+Metropolis+ biomes
+ Table 8.1 - Signature effect inventory with budgets (particle counts are max concurrent)
+8.3 The Slow-Motion Fall System
+Big falls are the game's signature shareable moment, so they are produced like a shot in a film rather than left
+to chance. Trigger: fall height above 12 meters or impact speed above 14 m/s. On trigger, time scale ramps to
+0.35 over 150 ms, the camera dollies back and up to frame the arc, a radial speed-line overlay fades in at 8%
+opacity, the falling whistle drops in pitch with the timescale (audio and simulation share one clock), and field
+lines trail the body in limp mode. On impact, a single frame of white flash at 5% opacity, dust ring, time scale
+recovers over 450 ms, and the fall-grade card slides in. The system has a per-session budget (maximum 4
+slow-mo falls per 3 minutes, prioritizing the biggest) so the effect never becomes noise, and it is fully disabled
+by the reduced-motion accessibility setting, which substitutes a fixed wide camera with no time distortion.
+8.4 Screen Shake Grammar
+Shake is a language with a strict grammar, not a volume knob. Micro-shake (amplitude 0.10 of camera height,
+80 ms): stick attach on weak metal, prop collisions nearby. Small (0.22, 120 ms): charged flip release, dynamic
+prop topple. Big (0.38, 180 ms): high-speed impact, avalanche events. Shake is positional noise in the 8-12 Hz
+band with rotational component capped at 1.2 degrees, exponential decay, and a hard rule that it never triggers
+during snap-in-progress or any input-critical window, because ruining aim is the cheapest way to make a
+physics game feel unfair. The reduced-motion setting reduces all amplitudes by 70% and removes rotational
+shake entirely.
+8.5 Post-Processing and Mobile Fallback
+The desktop post stack is deliberately short: a soft bloom (threshold 0.85, strength 0.4 - used only on beacons,
+the core, and field lines), a 12% vignette, and a per-biome grading LUT authored in Blender's film color tools
+and baked to a 256×16 texture. The mobile tier drops bloom to half-resolution or disables it (a quality flag
+decides at device-detection time), keeps the LUT (one texture fetch, effectively free), and replaces the vignette
+with a pre-baked corner darkening in the biome's gradient fog. No depth-of-field, no motion blur, no chromatic
+aberration: each was tested and cut - the first two cost frames on low-end devices, and aberration reads as
+rendering error at small scale rather than style.
+8.6 Particle Budget by Device Tier
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+22
+Tier
+Examples
+Total particle
+ceiling
+Fallback
+High (desktop, recent phones)
+RTX/Mali-G710 class
+900
+None
+Mid (reference device)
+Snapdragon 695, A13
+500
+Dust systems halve; trail
+tapers sooner
+Low
+Snapdragon 460, 2019 Androids
+260
+Field lines reduce to 12
+segments; avalanche dust
+off
+ Table 8.2 - Concurrent particle ceilings enforced by the VFX director at runtime
+9 Audio Domain
+9.1 Philosophy and the Anti-Slop Moat
+The audio direction exists to make MAGNETOPE sonically undeniable as a handcrafted product in a market
+flooded with stock-loop games. Every surface has a material-coded voice; every system state has a continuous
+sonic signature; the music is a set of adaptive stems that respond to altitude and momentum; and the total
+shipped audio footprint is under 350 KB because nearly everything is synthesized at runtime from oscillators,
+noise, and filters rather than shipped as recordings. This is not an austerity measure - it is the sound of the
+game's identity: a world built from junk should sound assembled from raw elements, precisely tuned. It also
+happens to be the single strongest answer to "this looks like every AI game": no other submission will sound
+like this one.
+9.2 SFX Inventory
+Event
+Recipe sketch
+Feel target
+Attach: fridge/washer body
+180 Hz sine thunk + 900 Hz noise burst (12 ms) +
+body resonance tail 140 ms
+Deep, domestic, satisfying
+Attach: girder/beam
+420 Hz metallic ring, two detuned partials, 260 ms
+decay
+Industrial chime
+Attach: sheet/weak metal
+Crumple: filtered noise sweep 3 kHz→800 Hz
+Nervous, thin
+Flip release (tap → full)
+Air whoosh: band-passed noise, center 500→1800 Hz
+by power; sub thump at full
+Breath in, launch out
+Snap engage
+Rising zap: sawtooth 220→880 Hz over 90 ms + hum
+swell
+Magnetic pull made audible
+Snap catch
+Same attach recipe as target material + confirmation
+tick
+Relief
+Fall whistle
+Sine glide 1200→300 Hz, pitch mapped to fall height,
+vibrato in slow-mo
+Cartoon inevitability
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+23
+Event
+Recipe sketch
+Feel target
+Impact (per material)
+Material attach recipe pitched down + layered crunch
+noise
+Weight and comedy
+Get-up spring
+Boing: damped sine bounce 90→160→130 Hz
+Dignity restored
+Level clear fanfare
+3-note arpeggio (beacon motif) + confetti sparks
+noise
+Genuine celebration, 1.2 s
+UI micro
+Tick: 1 ms filtered click at 2 kHz
+Crisp, never cute
+ Table 9.1 - Core SFX inventory (all synthesized at runtime; layer recipes in the audio DSL)
+9.3 The Polarity Hum System
+The game's most distinctive continuous sound is the magnet itself. In attract mode, a low hum of 55 Hz + 110
+Hz partials swells with proximity to ferromagnetic mass - the player literally hears how close the next hold is,
+which doubles as a soft assist and a tension device while dangling. In repel mode the hum crossfades to a
+detuned sawtooth shimmer whose brightness tracks charge level. When charge is full, a barely-perceptible 16
+Hz tremolo makes the held flip feel physically tense. The hum is mixed at -30 LUFS-relative under normal play
+so it colors rather than narrates, and the accessibility options offer a visual charge meter replacement for
+hearing-impaired players.
+9.4 Adaptive Music Architecture
+Each biome ships four stems - ground (bass/percussion loop), layer 1 (melodic motif), layer 2 (harmonic
+pad), and event (stingers: clear, big-fall, unlock) - authored in one key per biome so any layer combination is
+consonant. The music director follows a deterministic rule set: ground always plays during a run; layer 1 fades
+in above 40% of level height; layer 2 engages during snap-chain streaks (three surfaces in under six seconds);
+during slow-mo, all stems low-pass and stretch with the timescale; on clear, stingers resolve to the biome's
+tonic. Transitions are 400 ms equal-power crossfades, never instant cuts. The whole score is delivered as
+Opus-encoded stems (48 kHz mono, ~40 KB per stem), decoded at load - approximately 800 KB across all five
+biomes, streamed in the background with the biome chunks rather than in the initial payload.
+9.5 Ambience and Wind
+Ambience is one filtered-noise wind voice whose character evolves with altitude: Scrapyard ground level is
+barely audible warm air with distant clanks (randomized metal creak events triggered by physics contacts far
+below), Suburbia adds synthetic birdsong blips, Metropolis layers a hum of neon buzz, and Stratosphere strips
+everything to a thin whistle and eventual silence - the quiet itself becomes the biome's identity. Gusts are shared
+with the gameplay wind system, so audio wind and physical wind are one parameter, and the player can hear a
+gust coming before it pushes them, which is both fair play and mood.
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+24
+9.6 Implementation Architecture and Mix
+// Web Audio graph (single AudioContext, unlocked on first input)
+ctx = new AudioContext(); // after PokiSDK.gameplayStart()
+master -> compressor -> destination // -14 LUFS integrated target
+|- sfxBus (-12 dB) : one-shot voices, material-coded recipes
+|- musicBus (-18 dB) : 4 biome stem players, crossfade 400 ms
+|- ambBus (-24 dB) : wind noise + biophony events
+'- uiBus (-20 dB) : ticks, stingers
+duck(musicBus, -6 dB, 120 ms) // during commercialBreak / rewardedBreak
+// Material voice example: fridge attach
+voice = synth('sine', 180Hz, decay 140ms)
++ noiseBurst(900Hz band, 12ms)
++ convolve(impulseSmallRoom) // generated 64-tap IR, zero download
+play(voice, sfxBus, gainBy(impactSpeed))
+Mix standards are fixed before content production begins so every asset is authored against them: master at -14
+LUFS integrated with a true peak ceiling of -1.5 dBTP; SFX bus at -12 LUFS-relative as the loudest element;
+music at -18 ducking to -24 during any ad playback (a Poki-quality requirement so midrolls never fight the
+game); UI at -20; ambience at -24. All synthesis voices are pooled and allocation-free after load. The game
+must remain perfectly playable muted - audio is an enhancement layer, never an information gate - and the QA
+chapter includes a full silent-mode pass for exactly that reason.
+10 Technology & Engineering Domain
+10.1 Stack Decision
+The stack decision is made against three hard constraints from the research: a ≤ 5 MB initial download,
+sub-10-second playable load on mid-tier mobile hardware, and a curated platform whose engine guide
+explicitly warns that some engines merely "support" the web rather than being optimized for it. Poki's own
+comparison data puts an empty Unity WebGL build at roughly 11 MB before optimization, and independent
+2026 benchmarks measure Three.js-class experiences loading in 2-6 seconds where Unity WebGL commonly
+takes 8-30 seconds before interaction. Godot's web export remains a moving target and Defold - Poki's official
+partner engine at 1.03 MB for an empty project - is a strong contender, but its physics story (Box2D 2D / Bullet
+3D via extensions) does not match a design whose soul is a momentum-based 3D dynamic-body controller with
+continuous collision on the player.
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+25
+Option
+Empty build (Poki
+data)
+Physics fit for MAGNETOPE
+Verdict
+Three.js + Rapier WASM
+(TypeScript)
+~0.4-0.7 MB core,
+tree-shaken
+Rapier: dynamic bodies, joints,
+CCD - exactly the design
+Chosen: full control,
+smallest ceiling,
+web-native
+Defold
+1.03 MB
+Box2D/Bullet via extensions; 3D
+dynamic controller is a fight
+Strong runner-up; revisit
+if web export of Three
+path fails
+Unity WebGL
+~11 MB unoptimized
+PhysX excellent
+Rejected: load size and
+time vs Poki's ceiling
+Godot 4 web export
+2-5 MB optimized
+Good 3D physics
+Rejected: web not the
+priority path; export
+instability
+Babylon.js
+comparable to Three.js
+Good
+Equivalent candidate;
+Three chosen for
+ecosystem depth
+ Table 10.1 - Engine decision matrix (Poki engine-guide data + 2026 web benchmarks)
+10.2 Architecture
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+26
+ Figure 10.1 - System architecture: platform, engine core, game modules, and dev-side tooling (outside the bundle)
+The game is structured as an ECS-lite: component stores (plain typed arrays and maps), systems that run in a
+fixed order, and zero inheritance hierarchies in the hot path. The game loop is a fixed-timestep design -
+simulation at exactly 60 Hz with an accumulator, rendering decoupled with interpolation of visual transforms -
+because deterministic physics is a correctness requirement, not a nicety: the ML playtest bots of Chapter 11,
+the speedrun ghosts, and the fail-replay capture all depend on the same simulation stepping identically given the
+same inputs. The render side is one WebGL2 renderer instance with a scene graph per biome; a WebGPU path
+sits behind a runtime flag for future investigation but WebGL2 is the shipping baseline since WebGPU is only
+now reaching default-on status across Chrome, Edge, and Firefox and is still rolling out in Safari.
+10.3 Build Budget and Progressive Loading
+The byte budget is treated as a design constraint with the same authority as the difficulty curve. The initial
+payload - everything needed to reach gameplay and clear the first three levels - totals 3.85 MB against the 4.0
+MB internal target and the 5.0 MB Poki hard limit. Biome chunks (meshes, level data, music stems, locale files
+beyond EN) stream in the background after session start, exactly the progressive-loading pattern Poki calls "one
+of the most important techniques for success on the web"; the player is already playing while biome 2 arrives.
+Total shipped size across all chunks is engineered to stay at or under 7 MB against the 8 MB ceiling. The
+budget is enforced mechanically: the asset cook pipeline and the CI build both fail if any chunk exceeds its
+allocation, so size can only regress through a deliberate decision, never through drift.
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+27
+ Figure 10.2 - Initial load budget breakdown vs the 4 MB internal target and Poki's 5 MB hard limit
+10.4 Performance Targets
+Tier
+Reference hardware
+Frame target
+Bounded by
+High
+Desktop w/ discrete GPU; iPhone 15
+class
+60 fps locked
+Physics step ≤ 3.5 ms; render
+≤ 8 ms
+Mid (reference)
+Snapdragon 695; iPhone 12; A13
+60 fps typical, 45 floor
+Draw calls < 120; triangles <
+350 k visible
+Low
+Snapdragon 460; 2019 Android; old
+Chromebooks
+30+ fps floor
+Dynamic resolution
+0.55-1.0×; particles 260 cap
+ Table 10.2 - Performance contract per device tier (enforced by the QA protocol)
+The toolchain for hitting those numbers is conventional and boring by design: instanced meshes for repeated
+junk props, one shared flat-shaded material per biome (plus the field-line ribbon material), frustum culling
+with a per-biome static cell index, dynamic-resolution scaling driven by a 30-frame rolling average of frame
+time, and a hard cap of 260 concurrent physics bodies with debris promoted from visual-only to physical only
+inside the camera frustum. Texture memory stays under 96 MB with KTX2-compressed assets. All numbers
+are measured nightly on the device matrix by the telemetry harness described in Chapter 11 rather than trusted
+from the desktop dev machine.
+10.5 PokiSDK Integration
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+28
+Game moment
+SDK call
+Rule from Poki docs
+First input of a session
+gameplayStart()
+Must fire on first input, never on load
+Pause menu opens / level end / fall
+card
+gameplayStop()
+Fires on every gameplay interruption; never twice in
+succession
+Closing pause menu back into
+gameplay
+commercialBreak()
+Only on the pause-to-gameplay transition; never into a
+level-select screen
+Level clear card: reward offer
+rewardedBreak() (via button)
+Always optional; never blocks core loop; natural
+option sits primary
+Session start (before first input)
+PokiSDK.getLanguage()
+Drives locale selection with EN fallback
+Progress writes
+PokiSDK.save() +
+localStorage try/catch
+Incognito-safe: in-memory fallback, game stays fully
+playable
+ Table 10.3 - SDK event map (correct implementation is a QA gate, misfires are lost revenue)
+// Event broker - the ONLY module allowed to touch PokiSDK
+class SdkBus {
+state: 'menu' | 'playing' | 'paused' | 'ad' = 'menu';
+start() { if (this.state !== 'playing') { PokiSDK.gameplayStart(); this.state='playing'; } }
+stop() { if (this.state === 'playing') { PokiSDK.gameplayStop(); this.state='paused'; } }
+resume() { if (this.state === 'paused') { PokiSDK.commercialBreak().then(() =>
+this.state='playing'); } }
+rewarded(): Promise { return PokiSDK.rewardedBreak(); } // music ducked -24 dB meanwhile
+}
+// CI trace test: 10k scripted inputs -> assert zero double-fires,
+// zero events during ad windows, start fires on input #1 only.
+10.6 Scaling, Storage, and CSP Compliance
+Rendering scales to Poki's required canonical sizes (640×360, 836×470, 1031×580) by letterboxing the fixed
+16:9 logical stage inside the available viewport, choosing the nearest canonical resolution at or below the
+device's CSS pixels, and covering the full canvas so there are no visible bars on any device. Storage writes wrap
+every localStorage access in try/catch: on quota errors or incognito restrictions, the game swaps to an
+in-memory store, continues fully playable, and surfaces a single soft toast that progress will not persist - exactly
+the pattern Poki's requirements demand. The build performs zero external network requests at runtime: fonts
+are a bundled subset, all assets ship in the bundle, and the only optional network surface (ghost exchange) uses
+Poki's own AUDS platform API, which is first-party and pre-approved rather than an external service requiring
+CSP exception review.
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+29
+11 Machine Learning Domain
+11.1 Policy: Intelligence Off the Wire
+The ML policy is stated as an architecture constraint before it is a capability list: no model ships in the game
+bundle. A WebGPU/WASM inference runtime alone would consume 2-8 MB of the 8 MB total budget and
+add first-load latency, which would trade the game's two hardest-won platform advantages (size and speed) for
+features the player cannot see. Every ML component therefore runs on the development machine, against the
+deterministic fixed-timestep simulation, and its outputs ship as data: difficulty curves, level flags,
+telemetry-derived thresholds, and balance patches. The player-facing game stays a hand-tuned 3.85 MB
+artifact; the intelligence lives in the pipeline that produced it.
+11.2 Playtest Bots
+The flagship ML tool is a reinforcement-learning playtester. A PPO agent trains in a headless build of the real
+game - same Rapier physics, same magnet controller, rendered nothing - on a curriculum of individual level
+segments, receiving reward for altitude gained, level completion, and (weighted negatively) fall count and
+wall-clock time. Training uses domain randomization over input jitter and reaction latency so the resulting
+policy approximates a sloppy human rather than a frame-perfect robot. Each trained policy then plays every
+level 1,000 times overnight, and the harness reports per-level: completability (any policy solves it), median
+attempts-to-clear, fall-rate distribution, and the exact 3D positions where falls cluster. Levels that no policy
+completes are broken by construction; levels whose fall rate drifts outside the curve contract of Figure 5.2 are
+flagged into the designer's review queue. This closes the loop that makes the difficulty chapter enforceable
+before a human ever playtests.
+11.3 Telemetry and Difficulty Analytics
+The shipped game emits a compact anonymous event stream - level entered, stick/flip/snap counts with
+positions, fall events with height and landing cell, clear times, retry latency, session length - batched in memory
+and flushed to the Poki dashboard's event system on natural stops (never mid-run, never during ads, and only
+via first-party SDK channels so the CSP story stays clean). Development-side tooling clusters fail positions per
+level (k-means over fall coordinates, k selected by silhouette score), renders them as heatmaps onto the level's
+top-down layout, and mines retry sequences to find the specific obstacle where players quit rather than retry.
+Weekly, the heatmap review answers three questions per level: where do players fail (is it the designed twist), is
+the fail readable (do they understand why), and does the fail rate sit inside the contract band. The same
+pipeline, pointed at soft-release data, becomes the live difficulty-tuning engine described in Chapter 15.
+11.4 Generative Assist and Poki's Ownership Bar
+Generative models accelerate three production surfaces under the strict Poki AI policy established in Chapter
+2.4 and the asset pipeline of Chapter 6.5: concept exploration (silhouette sheets and palette studies, redrawn by
+hand before any model enters the game), boilerplate code (tests, build scripts, GLSL first drafts - always
+reviewed, profiled, and owned by the developer), and drafting (this document's structure, store copy, and locale
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+30
+string first passes, rewritten by the developer before shipping). Every use is logged in the asset ledger with
+prompt, tool, output, and the human refinement that followed, so the creation process can be demonstrated to
+Poki on request and IP ownership remains unambiguous. Nothing generated is ever shipped unreviewed; no
+prompt text or watermark can appear anywhere in the build; and every level - regardless of how it was
+prototyped - is hand-balanced and bot-verified before release.
+11.5 Data Ethics
+ • Zero PII: no accounts, no emails, no sign-ins, no chat, no free-text input anywhere in the game.
+• All telemetry is event-level gameplay data with no device identifiers beyond what Poki's own SDK
+provides.
+• GDPR-friendly by architecture: nothing to export because nothing identifying is collected.
+• Bots and analytics run on data the developer already owns; no third-party analytics services are integrated
+(Google products are explicitly non-approvable on Poki).
+12 UX & UI Domain
+12.1 Onboarding Contract
+Poki's easy-access guidance - skip the menu, start safe, teach visually, introduce gradually - is implemented as a
+second-by-second contract rather than a philosophy statement. The game boots directly into the Scrapyard base
+platform with zero interstitial screens; the loading bar itself (logo, progress, one animated MAGNO silhouette)
+is the only pre-play moment that exists. The first 20 seconds contain three glowing handholds, one animated
+ghost-hand demonstrating stick-and-flip (no text), and a first micro-clear at about second 45 with full
+celebration. The pause menu and level-select are reachable but never forced; the HUD fades in elements only
+as they become relevant (altitude at first vertical gain, charge meter at first hold-to-charge at level 3, star
+tracker after the first clear). New mechanics continue to arrive on the drip schedule of Table 5.1 - one new idea
+per 3-4 levels - for the entire first biome.
+12.2 HUD and Screens
+The play HUD is deliberately near-invisible: altitude (a slim vertical rail on the left with a summit marker),
+charge meter (an arc around MAGNO, polarity-colored), and the level timer that appears only after first clear
+(speedrun chasing is opt-in signaling, not pressure). No coins counter during play, no combo popups, no
+minimap - Scrap payouts and grades live on the level cards where they belong. The complete screen inventory
+is six surfaces: loading, play HUD, pause (resume, restart, sound, language, quit-to-map), level-select map (the
+mountain itself, zoomable, with fall-grade highlights), level-clear card (stars, time vs par, Scrap, next-level and
+reward offers), and the cosmetic locker. Every surface is fully navigable by keyboard, mouse, and touch with
+the same focus order, satisfying Poki's input guidance (WASD/arrows through menus, space/enter as confirm).
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+31
+12.3 Localization
+The game is engineered text-light by design - the tutorial is gestural, signage is environmental, and the HUD is
+iconic - which reduces the localization surface to roughly 120 strings. All text lives in a single strings.json per
+locale, loaded by chunk with PokiSDK.getLanguage() selecting the initial locale and English as fallback;
+layouts are tested against the longest natural translations (German and Portuguese) with elastic text fields rather
+than fixed boxes. Launch locales follow Poki's recommended priority: English, French, Italian, German,
+Spanish, plus Turkish (the increasingly popular locale Poki explicitly calls out), plus Brazilian Portuguese -
+seven locales covering the platform's broad EFIGS+TR+PT base. CJK locales are deferred deliberately: they
+are costlier to translate, and the game's visual-first design means non-localized players can still play everything
+without friction, which the Poki localization guide itself acknowledges as the low-risk posture.
+12.4 Accessibility
+ • Mouse-only mode: full play via cursor-relative tilt and click-flip, per Poki's alternative-controls guidance.
+• Touch options: left/right split layout or single-thumb tap zones, both remappable; drag-steering sensitivity
+slider.
+• Auto-align assist on snap (Chapter 4.5) defaults on; expert players disable it for a 5% Scrap-earn bonus.
+• Colorblind safety: polarity states are distinguished by hue AND shape (field lines converge vs diverge);
+palette verified for deuteranopia and protanopia.
+• Reduced motion: slow-mo replaced with fixed wide camera, shake amplitudes cut 70% and rotation
+removed, per Chapter 8.
+• Subtitles-adjacent cueing: all critical audio cues (full charge, snap window) have visual twins in the HUD.
+• No timed text anywhere; no QTEs; every retry path is one input.
+13 Monetization Domain
+13.1 Model Recap and Placement Map
+All monetization flows through the Poki SDK: the game signals natural stopping moments and player-chosen
+reward opportunities, and Poki's system decides when an ad actually serves. The design consequence is that
+signaling more natural stops honestly is the entire ad strategy - the game never decides to show an ad, it
+only decides where an ad would not be unwelcome. Every placement below obeys the documented rules:
+commercialBreak fires only on the pause-to-gameplay transition, rewardedBreak only on explicit player action,
+and no SDK event ever fires during another ad. Portrait orientation is supported throughout, which makes the
+game eligible for Gamebar Display ads - mobile title-bar revenue that requires no work and no code beyond the
+orientation support itself.
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+32
+Moment
+Call
+Why it is natural
+Guardrails
+Level clear → next level
+commercialBreak (via
+resume path)
+Player just finished a goal; hands
+are off the controls
+Skippable state, never mid-
+animation
+Retry after 3+ consecutive
+falls
+commercialBreak
+(pause path)
+Frustration peak is a documented
+natural stop
+Capped by Poki; never
+during fall physics
+Fall-grade card: Second Wind
+offer
+rewardedBreak
+Player chooses: watch to resume at
+last checkpoint with height
+insurance, or retry from base
+Always optional; retry
+button stays primary
+Cosmetic locker: direct
+unlock
+rewardedBreak
+Watch-to-unlock alternative to
+spending Scrap
+Standard video icon;
+reward celebration on
+completion
+Ghost locker: friend/regional
+ghost data
+rewardedBreak
+Optional competitive depth
+Never gates core play
+ Table 13.1 - Ad placement map (frequency is Poki-side; the game only signals opportunities)
+13.2 The Scrap Economy
+The economy follows Poki's monetization-tips guidance exactly: one understandable currency, no secondary
+currencies, clear rewards, and rewarded moments designed in from the start. Scrap earns at 10-50 per level
+(first clear) and 2-8 per replay by performance, and the 24 launch cosmetics are priced 150-400 so a casual
+player unlocks roughly one skin per biome of progress while a dedicated player can chase the full locker -
+ownership as investment, exactly the customization pattern Poki's own examples favor. Second Wind (the
+rewarded fall insurance) is deliberately not purchasable with Scrap: it is the watch-to-earn bridge that keeps the
+rewarded split healthy, and its offer card appears only on the fall-grade screen where the player has just
+experienced the exact pain it solves. The non-rewarded path (retry from base) always sits in the primary button
+position, per the platform's explicit best practice.
+13.3 Revenue Scenarios
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+33
+ Figure 13.1 - Monthly revenue scenarios with assumptions from Table 13.2
+Scenario
+Entry conditions
+Assumptions
+Conservative: $500-1,500/mo
+Passes final review; soft release steady;
+category pages only
+12k-25k DAU, 1.0-1.2 ads/DAU, mid-tier
+eCPMs; matches the documented
+first-web-game band
+Good: $2,000-6,000/mo
+Top-10 in 2+ categories; two promotion
+cycles; Gamebar live
+45k-90k DAU, 1.2-1.5 ads/DAU, rewarded
+split 35%
+Hit: $6,000-15,000/mo
+Homepage feature; clip-driven wave; ghost
+culture compounding
+150k+ DAU, sustained sessions, seasonal
+update retention
+ Table 13.2 - Scenario assumptions (revenue-share model, Poki-driven traffic)
+The funnel that produces those numbers is engineered end to end: the thumbnail earns the click (CTR), the
+3.85 MB load and instant-boot flow earn the play (C2P - which Poki documents as mostly a technical story of
+load time, size, and responsiveness), the three-minute loop and fall comedy earn the session (engagement), and
+the natural-stop discipline plus the Second Wind bridge earn the ad depth (≥ 1 ad per DAU at soft release, the
+platform's stated healthy target). Every chapter of this document feeds one stage of that funnel, which is the
+point of building to the platform's playbook rather than against it.
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+34
+14 QA Domain
+14.1 Poki Checklist Mapping
+Poki QA checks every game against the Requirements page before soft release, and passes come with itemized
+reports until the game is through. The strategy is to front-load that checklist into CI and the device matrix so
+the official QA pass finds nothing to report. The mapping below is the master test plan - every row is an
+automated test, a scripted device-matrix run, or a manual protocol with a named owner and a fixed cadence; the
+appendix repeats it as a one-page sign-off matrix for the pre-submission gate.
+Poki requirement
+MAGNETOPE implementation
+Verification method
+Desktop + mobile + tablet;
+full-screen coverage
+16:9 logical stage, letterbox to canonical
+sizes, tablet forces touch UI
+Device matrix pass per build (Table 14.2)
+Incognito support
+Storage try/catch with memory fallback +
+toast
+Automated: launch in incognito profile,
+complete 3 levels, verify no errors
+No external requests
+Bundled font/assets; no runtime fetch except
+biome chunks from Poki CDN
+CI: CSP-simulated sandbox run; network log
+must be empty
+No splash/outgoing
+links/foreign ads
+Logo on loading bar only; zero outbound
+anchors
+Automated DOM/event audit per build
+SDK event correctness
+SdkBus broker (10.3)
+CI trace test: 10k scripted inputs, assert
+event invariants
+Clean build
+Debug stripped via build modes; dev tools
+behind URL flag removed in prod
+Diff audit of prod bundle symbols
+Save system + notice
+PokiSDK.save + localStorage fallback
+Scripted save/restore across reload,
+quota-denied path
+Size and load speed
+3.85 MB initial, chunked rest
+CI measures gzipped payload and cold-load
+time; fails over budget
+Static + animated thumbnails
+628×628 full-bleed + 3 s 60 fps loop, both
+in-engine captures
+Spec sheet check + Poki Inspector preview
+Keyboard pause (ESC/space)
+Pause system wired to SdkBus
+Automated input fuzz on all screens
+Skippable cutscenes; visual
+tutorials
+Ending skip from second 0; gesture tutorials
+Manual protocol + first-session recordings
+ Table 14.1 - Requirement → implementation → verification
+14.2 Device Matrix
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+35
+Tier
+Devices
+Browsers
+Desktop high / low
+Dev desktop; 2015 dual-core laptop
+Chrome, Firefox, Edge (latest)
+iOS mid
+iPhone 12
+Safari (current + previous major)
+Android mid (reference)
+Snapdragon 695 class
+Chrome mobile
+Android low
+Snapdragon 460 / 3 GB RAM
+Chrome mobile
+Tablet
+iPad 9th gen; mid Android tablet
+Safari, Chrome
+Hostile profiles
+Incognito; ad-blocker enabled; airplane after
+load
+Chrome incognito, Firefox + uBO
+ Table 14.2 - Minimum device matrix per release candidate (each cell = 30-min scripted session + 30-min manual)
+14.3 Protocols
+ • Performance protocol: nightly automated matrix run capturing frame-time histograms, physics-step p99,
+memory after 30-minute soak (leak detection), and payload size; regressions fail the build.
+• Event-trace protocol: every CI build replays 10,000 scripted inputs through the real input layer and asserts
+the SDK invariants (start-on-first-input, no double-fires, no events during ad windows).
+• Silent-mode protocol: full playthrough with audio muted - the game must remain fully completable with
+zero audio-gated information (Chapter 9).
+• Playtest protocol: before submission, 5 external playtesters (friends, family, then Poki Playtesting's real
+players) with session recordings; review focuses on the first 90 seconds and the first fall.
+• Bug triage: S0 blocks release (crash, broken level, SDK misfire); S1 fixes within 48 h (progression blocker,
+perf below floor on reference tier); S2 next content update; S3 backlog.
+15 Launch & Growth Domain
+15.1 The Release Pipeline
+Stage
+Duration
+Developer actions
+Submission + playtesting
+days-weeks
+Submit build + thumbnail; run Poki Playtesting (player fit); iterate from
+recordings
+Web fit test
+days-weeks
+Fix technical findings; re-upload clean build
+Final review
+1-2 weeks
+Team reviews results + content vs quality guidelines; prepare the clone-defense
+matrix of Table 3.2 and AI process ledger
+Agreement
+variable
+Review web-exclusive vs non-exclusive terms; 5-year default exclusive
+rev-share recommended for this game
+QA
+iterative
+Zero-findings target via Chapter 14 front-loading; resolve reports within 48 h
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+36
+Stage
+Duration
+Developer actions
+Soft release
+2-3 weeks
+Monitor daily watchlist (15.2); ship difficulty and UX fixes; A/B thumbnails;
+add animated thumbnail
+Global release
+2-3 weeks
+later
+Promotion system picks up category + homepage placements based on soft data
+Post-release
+ongoing
+Update waves on the roadmap below; thumbnail changes only with substantial
+content updates per policy
+ Table 15.1 - Poki pipeline with owner actions per stage (timelines from official documentation)
+15.2 Soft-Release Watchlist
+ • Conversion to play (C2P) - driven by load time and first-frame quality; target ≥ 65% of clickers reaching
+gameplay.
+• Engagement: median session ≥ 3 minutes; level-3 clear rate ≥ 70% (the tutorial-completion proxy).
+• Monetization: ≥ 1 ad per daily active user with a healthy midroll/rewarded split - Poki's stated healthy
+target.
+• Errors: dashboard error section checked twice daily; any repeated console error is a same-day fix.
+• Player feedback patterns: falls that feel unfair (specific levels named repeatedly), control confusion in the
+first 90 seconds, thumbnail mismatch complaints.
+15.3 The Word-of-Mouth Engine
+Virality is designed, not hoped for. The game's clip-ability rests on three systems. Auto-captured fail replays:
+the deterministic fixed-timestep simulation plus the input buffer means the last 8 seconds of any run can be
+re-simulated exactly; the game renders the best fall of a session as a ready-made 9:16 share card (PNG via
+canvas, saved locally at the player's touch - no external URLs, no uploads, fully CSP-safe) showing the fall
+grade, height, and bounce count over a clean biome backdrop. TikTok-native readability: slow-mo falls,
+polarity-colored field lines, and the fall-grade card are all legible at thumbnail scale with the sound off, which
+is how clip content actually gets consumed. Ghost culture: friend and regional ghosts (via Poki's AUDS data
+store - a first-party, pre-approved platform feature) turn every level into a leaderboard-shaped social object;
+beating a friend's ghost produces its own share card. The strategy is one compounding loop: a funny fail gets
+shared, a shared card carries the game's name and visual identity, a new player arrives and generates their own
+fail - the same flywheel that made Drive Mad and Level Devil TikTok phenomena, but with the shareable
+artifact manufactured by the game itself.
+15.4 Year-One Update Roadmap
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+37
+Wave
+Timing
+Content
+W1: Quality + ghosts
+Week 2-4
+post-global
+Ghost polish, assist tuning from live data, QoL from feedback, first
+seasonal cosmetic set
+W2: Chute Mode
+Month 2-3
+Endless falling-climb mode: one life, altitude scoring, weekly seed,
+regional ghost boards
+W3: Biome 6 - The Core
+Month 4-5
+Story finale biome + 14 levels + ending vignette + core-themed cosmetics
+W4: Level Pack 1 +
+events
+Month 6+
+14 remixed-gauntlet levels, seasonal themed events (Poki's guidance:
+themed content lifts engagement)
+ Table 15.2 - Post-launch content waves (shared at submission - the room-to-grow signal Poki looks for)
+16 Production Plan
+16.1 Milestones
+ Figure 16.1 - Six-month solo production plan with submission, soft, and global gates
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+38
+Milestone
+Exit criteria
+M0 (month 1): Prototype
+Magnet controller passes the 10-minute stranger test: fun with placeholder cubes;
+20 s loop; fall comedy already emergent
+M1 (month 2): Vertical slice
+10 polished levels of biome 1; full loop (load→clear→reward); 3.9 MB budget held;
+ML bot verifies fall-rate band on all 10
+M2 (months 3-4): Content production
+All 70 levels grey-boxed, 50+ art-finished; all systems feature-complete; telemetry
+live in dev builds
+M3 (month 4): Polish + playtest
+Juice pass complete (VFX/audio/motion); 5 external playtests done; Poki
+Playtesting round 1 submitted
+M4 (month 5): Optimization +
+submission
+Performance contract green on full matrix; 3.85 MB payload; QA zero-findings;
+submit for web fit
+M5 (month 6): Soft release
+Daily watchlist cadence; difficulty patches from live data; animated thumbnail;
+A/B static thumbnail
+M6 (months 6-7): Global
+Promotion pickup; W1 update staged; Chute Mode development begins
+ Table 16.1 - Milestone exit criteria (a milestone is done when its gate passes, not when its tasks end)
+16.2 The Solo + AI Workflow
+The weekly rhythm is deliberately craft-forward: Monday and Tuesday are content days (level grey-boxing,
+prop modeling, hand-balancing), Wednesday is systems day (code, physics tuning, tests), Thursday is juice day
+(animation, VFX, audio - the differentiators), Friday is verify day (bot sweeps, heatmap review, device matrix,
+and a 30-minute self-playtest with recording). The AI subscription participates as a pair-programmer and
+drafting partner under the Chapter 11.4 ledger: code review and refactoring suggestions, test scaffolding,
+GLSL drafts, localization first passes, and documentation structure. What it never does is ship: every asset,
+level, and tuning decision passes through the developer's hands, both because Poki's originality bar demands it
+and because feel - the entire product - is not delegable.
+16.3 Zero-Budget Resource Map
+ • Engine, physics, audio: Three.js, Rapier, Web Audio API - all free and open-source.
+• Tools: Blender (modeling/animation/LUTs), Vite + esbuild (build), TypeScript, VS Code, Git/GitHub free
+tier, GitHub Actions free minutes for CI.
+• Audio: self-recorded foley where synthesis needs a base (kitchen junk is literally the theme), Audacity for
+edits, everything else synthesized at runtime.
+• Testing: friends-and-family pool, then Poki Playtesting (free, real players), then Poki's own device
+telemetry.
+• Cash cost of the entire production: the existing Claude subscription and electricity.
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+39
+16.4 Risk Register
+Risk
+L×I
+Mitigation
+Magnet feel never reaches fun
+M×H
+M0 is a feel gate with a stranger test; 3 fallback tuning presets; pivot option
+to Defold stack preserved for 60 days
+Size budget regression
+M×H
+CI size gate fails builds over allocation; vertex-color-first art strategy;
+audio is synthesized
+Rejection on originality grounds
+L×H
+Clone-defense matrix + AI ledger maintained from day one; unique
+mechanic verified against live catalog monthly
+Low-end performance fails
+M×M
+Reference device in the nightly matrix; dynamic resolution + particle
+ceilings designed in, not bolted on
+Solo burnout / scope creep
+M×H
+Must/should/could scope ladder; milestone exit criteria kill zombie tasks;
+70-level scope is the ceiling, not the floor
+Poki pipeline delays
+M×M
+Submission at M4 leaves slack before the 6-month plan's soft window;
+content continues during review
+Soft-release metrics miss targets
+M×H
+Watchlist triggers pre-planned interventions: difficulty patches, thumbnail
+A/B, onboarding trim - not panic redesign
+Art inconsistency across biomes
+M×M
+Style tests automated at cook time; single palette contract; fortnightly
+silhouette review
+Monetization below 1 ad/DAU
+M×M
+Placement map reviewed against live data; Second Wind offer timing
+tuned on the fall-grade card
+Ghost system abuse (AUDS)
+L×M
+Server-side validity window; ghost replay must re-simulate within
+tolerance to be listed
+ Table 16.2 - Top risks with mitigations (reviewed at every milestone gate)
+17 Success Metrics & KPIs
+17.1 Stage Gates
+Phase
+Metric
+Target
+Action if missed
+Playtest (M3-M4)
+Stranger 10-min fun verdict
+≥ 4/5 testers choose to keep
+playing
+Return to feel tuning; do not
+submit yet
+Playtest
+First-clear of level 1
+≥ 85% within 90 s
+Trim opening; strengthen
+ghost-hand tutorial
+Soft release
+C2P
+≥ 65%
+Loading/first-frame audit;
+thumbnail A/B
+Soft release
+Median session
+≥ 3 min
+Level-length audit vs 90 s
+budget; reward pacing
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+40
+Phase
+Metric
+Target
+Action if missed
+Soft release
+Ads per DAU
+≥ 1.0
+Placement-map review vs live
+event data
+Soft release
+Level-3 clear rate
+≥ 70%
+Onboarding friction review
+from recordings
+Global
+Error rate
+Near-zero on dashboard
+Same-day hotfix policy
+Global
+Update engagement
+Each wave lifts DAU ≥ 15%
+Re-theme waves; deepen
+ghost features
+ Table 17.1 - KPI framework by phase (targets set from Poki guidance and documented web-game benchmarks)
+17.2 Decision Rules
+Numbers exist to make decisions mechanical, and three rules govern the live game. If a level's live fall rate
+drifts outside its contract band by more than 8 points for three days, it is patched in the next update window -
+the data outranks the designer's affection. If soft-release C2P misses by more than 15 points after the loading
+audit and thumbnail A/B, the problem is the first 60 seconds, and the intervention is onboarding surgery, never
+feature addition. And if the game passes soft release but engagement holds flat through two update waves, the
+year-one roadmap's fourth slot converts from content to a Chute-Mode early pull - because on a curated
+platform, the graveyard is full of games that stopped being interesting, and none of them failed their QA
+checklist.
+18 Appendix
+18.1 Appendix A: Poki Compliance Matrix (Sign-Off)
+#
+Requirement
+Status
+1
+Cross-device input (touch/keyboard/mouse-only) + tablet forced touch UI
+By design (Ch. 12)
+2
+16:9 canonical scaling, full-screen coverage
+By design (Ch. 10.6)
+3
+Incognito playable, storage guarded
+By design (Ch. 10.6)
+4
+Zero external requests; bundled fonts/assets
+By design (Ch. 10.3)
+5
+No splash screens, outbound links, foreign ads, ad-block detection
+By design (Ch. 2.2 / 14.1)
+6
+SDK events per spec, CI-verified
+By design (Ch. 10.5)
+7
+Clean production build
+Build-mode audit (Ch. 14.1)
+8
+Save with fallback + notice
+By design (Ch. 10.6)
+9
+≤ 5 MB initial / ≤ 8 MB total; < 10 s playable
+3.85 / ≤ 7 MB; CI-gated (Ch. 10.3)
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+41
+#
+Requirement
+Status
+10
+Static + animated thumbnails to spec
+628×628 + 3 s loop (Ch. 6.6)
+11
+Content safety: wholesome, zero gore, no chat, no PII
+By design (Ch. 3.3 / 5.6 / 11.5)
+12
+Originality dossier: clone-defense + AI ledger
+Tables 3.2 + Ch. 11.4
+13
+Session-0 doctrine implemented
+Ch. 5.7
+14
+Localization: 7 launch locales, getLanguage + fallback
+Ch. 12.3
+15
+Update roadmap shared at submission
+Table 15.2
+ Table 18.1 - One-page pre-submission sign-off (owner initials per row at M4 gate)
+18.2 Appendix B: Glossary
+Term
+Definition
+AUDS
+Poki's Arbitrary User Data Store - first-party key-value storage used here for ghost exchange
+C2P
+Click-to-play: share of players who start playing after clicking the game card
+Chute Mode
+Planned endless one-life climb-fall mode (post-launch wave 2)
+commercialBreak()
+Poki SDK call signaling a natural midroll ad opportunity
+DAU
+Daily active users
+Field lines
+Signature VFX: animated dipole ribbons visualizing MAGNO's polarity
+Fall rate
+Median share of level attempts ending in a fall - the difficulty metric
+Polarity flip
+The core mechanic: reversing attract/repel to stick, launch, and snap
+Second Wind
+Rewarded-video fall insurance offered on the fall-grade card
+Session 0
+The first session - which on web carries most of a game's lifetime value
+Snap
+Airborne attract-pull to the nearest ferromagnetic surface in cone/radius
+Web fit test
+Poki's technical/quality test phase before final review
+ Table 18.2 - Terms used in this document
+18.3 Appendix C: Research Sources
+Primary platform documentation (fetched and archived October 2026): Poki Developer Guide pages - What
+We Look For; Requirements; Content & Player Safety (including the clone-assessment dimensions and the
+Working-with-AI guidance); External Resources Policy; Choosing Your Web Game Engine; Easy Access &
+Onboarding; Engagement; Localization; Game Thumbnail; How Monetization Works; Monetization Tips; How
+We Partner With You (deal types); Final Review; Release Process - all at developers.poki.com. Market data:
+The Business Research Company browser-games sizing (7.81B/2025, 8.01B/2026, 9.07B/2030 forecast); Poki
+
+MAGNETOPE — Product Requirements Document
+Magnetope Studio
+42
+2026 State of Web Gaming study coverage via GamesBeat and PocketGamer.biz (2,000 players + 400
+developers surveyed; 92% positive HTML5 sentiment; 27% spending $50+; 53% of devs porting to web);
+HTML5 games market forecasts to 2035. Web performance benchmarks: Three.js vs Unity WebGL load-time
+comparisons (2026); Rapier WASM physics performance discussions; WebGPU browser rollout status
+(November 2025 milestone). Rejection-pattern context: AI shovelware coverage on Steam (Kotaku on Next
+Fest, June 2026; aiandgames.com platform-policy analysis; Valve AI-asset rejection reporting). Landscape
+scans: Poki.com live popular lists (October 2026); title-collision searches for MAGNETOPE and
+magnet-mechanic games across Poki, CrazyGames, itch.io, and general web search.

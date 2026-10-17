@@ -1,0 +1,397 @@
+import { Group, Mesh, Scene } from 'three';
+import { describe, expect, it } from 'vitest';
+import { PROPS } from '@/config/props';
+import { CameraRig } from '@/render/camera-rig';
+import { cosmeticById } from '@/config/cosmetics';
+import { blinkLook } from '@/render/blink-look';
+import { MagnoRig, skinFromLook } from '@/render/magno-rig';
+import { ParticleSystem, RingPool } from '@/render/particles';
+import { PALETTES } from '@/render/palette';
+import { buildPropParts } from '@/render/prop-mesh';
+import { layoutStage } from '@/render/stage';
+import type { MagnoView } from '@/sim/magno';
+import { createSim, makeLevel } from './helpers/harness';
+
+const everyKind = Object.values(PROPS).map((kind, i) => ({ kind: kind.id, x: i * 6, y: 2 }));
+
+describe('prop meshes', () => {
+  it('builds clean, finite geometry for every prop in the physics table', async () => {
+    const sim = await createSim(makeLevel(everyKind));
+    for (const prop of sim.physics.props) {
+      const parts = buildPropParts(prop, PALETTES.scrapyard, 3);
+      for (const builder of [parts.body, parts.glass, parts.rim, parts.glow]) {
+        expect(builder.positions.every(Number.isFinite)).toBe(true);
+        expect(builder.colors.every(Number.isFinite)).toBe(true);
+        expect(builder.positions.length).toBe(builder.colors.length);
+        expect(builder.positions.length % 9).toBe(0);
+      }
+      expect(parts.body.triangleCount + parts.glass.triangleCount).toBeGreaterThan(8);
+    }
+  });
+
+  it('keeps each prop inside the 900 triangle budget of the art bible', async () => {
+    const sim = await createSim(makeLevel(everyKind));
+    for (const prop of sim.physics.props) {
+      const parts = buildPropParts(prop, PALETTES.scrapyard, 3);
+      const total = parts.body.triangleCount + parts.glass.triangleCount + parts.rim.triangleCount + parts.glow.triangleCount;
+      expect(total, prop.kind.id).toBeLessThanOrEqual(900);
+    }
+  });
+
+  it('marks grabbable metal with a rim and leaves inert material without one', async () => {
+    const sim = await createSim(makeLevel(everyKind));
+    for (const prop of sim.physics.props) {
+      const parts = buildPropParts(prop, PALETTES.scrapyard, 3);
+      const magnetic = prop.material.magnetic !== 'inert';
+      expect(parts.rim.triangleCount > 0, prop.kind.id).toBe(magnetic);
+    }
+  });
+
+  it('keeps glass out of the opaque mesh so it can be transparent', async () => {
+    const sim = await createSim(makeLevel([{ kind: 'pane', x: 0, y: 3 }]));
+    const parts = buildPropParts(sim.physics.props[0]!, PALETTES.scrapyard, 1);
+    expect(parts.glass.triangleCount).toBeGreaterThan(0);
+  });
+
+  it('is deterministic so a level looks the same every load', async () => {
+    const sim = await createSim(makeLevel(everyKind));
+    const prop = sim.physics.props[0]!;
+    const a = buildPropParts(prop, PALETTES.scrapyard, 5).body.colors;
+    const b = buildPropParts(prop, PALETTES.scrapyard, 5).body.colors;
+    expect(a).toEqual(b);
+  });
+});
+
+const view = (overrides: Partial<MagnoView> = {}): MagnoView => ({
+  position: { x: 0, y: 0.3 },
+  velocity: { x: 0, y: 0 },
+  angle: 0,
+  visualAngle: 0,
+  state: 'airborne',
+  polarity: 'attract',
+  charge01: 0,
+  chargeLevel: 0,
+  snapArmed: false,
+  snapEngaged: false,
+  snapTarget: null,
+  attachNormal: null,
+  limp: false,
+  scramble: false,
+  recoverPhase: 0,
+  grounded: false,
+  chaining: false,
+  dropMeters: 0,
+  ...overrides,
+});
+
+const triangles = (root: Group): number => {
+  let total = 0;
+  root.traverseVisible((o) => {
+    if (o instanceof Mesh) {
+      const g = o.geometry;
+      total += (g.index ? g.index.count : g.getAttribute('position').count) / 3;
+    }
+  });
+  return total;
+};
+
+describe('MAGNO rig', () => {
+  const run = (rig: MagnoRig, v: MagnoView, ms: number) => {
+    const steps = Math.round(ms / (1000 / 120));
+    for (let i = 0; i < steps; i++) rig.update(v, v.position, 1 / 120, false);
+  };
+  const deformScale = (rig: MagnoRig): number => (rig.root.children[0] as Group).scale.y;
+
+  it('squashes to about 85% along the contact normal on attach, then recovers', () => {
+    const rig = new MagnoRig();
+    const v = view({ attachNormal: { x: 0, y: 1 }, visualAngle: 0 });
+    run(rig, v, 40);
+    rig.onAttach({ x: 0, y: 1 });
+    run(rig, v, 95);
+    expect(deformScale(rig)).toBeGreaterThan(0.82);
+    expect(deformScale(rig)).toBeLessThan(0.9);
+    run(rig, v, 400);
+    expect(deformScale(rig)).toBeCloseTo(1, 1);
+  });
+
+  it('squashes the same 85% however fast he arrives', () => {
+    const deepest = (approachSpeed: number) => {
+      const rig = new MagnoRig();
+      const v = view({ attachNormal: { x: 0, y: 1 }, visualAngle: 0, velocity: { x: 0, y: -approachSpeed } });
+      run(rig, v, 40);
+      rig.onAttach({ x: 0, y: 1 });
+      let min = 1;
+      for (let i = 0; i < 60; i++) {
+        rig.update(v, v.position, 1 / 120, false);
+        min = Math.min(min, deformScale(rig));
+      }
+      return min;
+    };
+    expect(deepest(6)).toBeCloseTo(0.85, 2);
+    expect(deepest(16)).toBeCloseTo(0.85, 2);
+  });
+
+  it('stretches 118% to 124% along the launch for a flip, scaling with power', () => {
+    const peak = (power: number) => {
+      const rig = new MagnoRig();
+      const v = view();
+      run(rig, v, 30);
+      rig.onRepel({ x: 0, y: 1 }, power);
+      let max = 1;
+      for (let i = 0; i < 12; i++) {
+        rig.update(v, v.position, 1 / 120, false);
+        max = Math.max(max, deformScale(rig));
+      }
+      return max;
+    };
+    const tap = peak(0);
+    const full = peak(1);
+    expect(tap).toBeGreaterThanOrEqual(1.16);
+    expect(full).toBeLessThanOrEqual(1.26);
+    expect(full).toBeGreaterThan(tap);
+  });
+
+  it('bottoms out near 72% on a hard landing', () => {
+    const rig = new MagnoRig();
+    const v = view();
+    run(rig, v, 30);
+    rig.onImpact({ x: 0, y: 1 }, 18);
+    let min = 1;
+    for (let i = 0; i < 14; i++) {
+      rig.update(v, v.position, 1 / 120, false);
+      min = Math.min(min, deformScale(rig));
+    }
+    expect(min).toBeLessThan(0.78);
+    expect(min).toBeGreaterThan(0.68);
+  });
+
+  it('applies a gentle 108% stretch while free-falling fast', () => {
+    const rig = new MagnoRig();
+    run(rig, view({ velocity: { x: 0, y: -16 }, dropMeters: 12 }), 800);
+    expect(deformScale(rig)).toBeGreaterThan(1.05);
+    expect(deformScale(rig)).toBeLessThanOrEqual(1.09);
+  });
+
+  it('halves the squash for reduced motion', () => {
+    const peak = (reduced: boolean) => {
+      const rig = new MagnoRig();
+      const v = view({ attachNormal: { x: 0, y: 1 } });
+      rig.update(v, v.position, 1 / 120, reduced);
+      rig.onAttach({ x: 0, y: 1 });
+      let min = 1;
+      for (let i = 0; i < 20; i++) {
+        rig.update(v, v.position, 1 / 120, reduced);
+        min = Math.min(min, deformScale(rig));
+      }
+      return 1 - min;
+    };
+    expect(peak(true)).toBeLessThan(peak(false) * 0.7);
+  });
+
+  it('stays inside the character budget with every accessory skin equipped', () => {
+    const rig = new MagnoRig();
+    for (const id of ['skin.antenna', 'skin.flag', 'skin.sticker']) {
+      const item = cosmeticById(id)!;
+      if (item.kind === 'skin') rig.applySkin(skinFromLook(item.look));
+      expect(triangles(rig.root), id).toBeLessThanOrEqual(480 + 240 + 260);
+    }
+  });
+
+  it('keeps its triangle count inside the character budget', () => {
+    expect(triangles(new MagnoRig().root)).toBeLessThanOrEqual(480 + 2 * 120 + 260);
+  });
+
+  it('keeps positions finite across a hostile sequence of states', () => {
+    const rig = new MagnoRig();
+    const states: Array<Partial<MagnoView>> = [
+      { state: 'charging', charge01: 1, chargeLevel: 3, polarity: 'repel', attachNormal: { x: 1, y: 0 }, visualAngle: -Math.PI / 2 },
+      { limp: true, velocity: { x: 30, y: -30 }, angle: 3 },
+      { state: 'recovering', recoverPhase: 0.5 },
+      { snapEngaged: true, snapTarget: { x: 4, y: 3 } },
+      { dropMeters: 40, velocity: { x: 0, y: -28 } },
+    ];
+    for (let i = 0; i < 600; i++) rig.update(view(states[i % states.length]), { x: i * 0.01, y: 3 }, 1 / 60, false);
+    rig.root.traverse((o) => {
+      expect(Number.isFinite(o.position.x + o.position.y + o.position.z)).toBe(true);
+      expect(Number.isFinite(o.scale.x + o.scale.y + o.scale.z)).toBe(true);
+    });
+  });
+});
+
+describe('camera shake grammar', () => {
+  const opts = { falling: false, slowMo: 0, bounds: { minX: -20, maxX: 20 } };
+  const makeRig = () => {
+    const rig = new CameraRig();
+    rig.setLayout(layoutStage(1280, 720));
+    rig.snapTo({ x: 0, y: 5 });
+    for (let i = 0; i < 240; i++) rig.update({ x: 0, y: 5 }, { x: 0, y: 0 }, 1 / 60, opts);
+    return rig;
+  };
+  const step = (rig: CameraRig) => rig.update({ x: 0, y: 5 }, { x: 0, y: 0 }, 1 / 60, opts);
+
+  /** Peak distance between a shaken camera and an identical camera that never shook. */
+  const deviation = (kind: 'micro' | 'small' | 'big', critical = false, reduced = false) => {
+    const shaken = makeRig();
+    const control = makeRig();
+    shaken.reducedMotion = reduced;
+    shaken.shake(kind, critical);
+    let max = 0;
+    let roll = 0;
+    for (let i = 0; i < 40; i++) {
+      step(shaken);
+      step(control);
+      max = Math.max(max, shaken.camera.position.distanceTo(control.camera.position));
+      roll = Math.max(roll, shaken.camera.quaternion.angleTo(control.camera.quaternion));
+    }
+    return { max, roll };
+  };
+
+  it('orders amplitudes micro < small < big', () => {
+    const micro = deviation('micro').max;
+    const small = deviation('small').max;
+    const big = deviation('big').max;
+    expect(micro).toBeGreaterThan(0);
+    expect(small).toBeGreaterThan(micro);
+    expect(big).toBeGreaterThan(small);
+  });
+
+  it('never shakes during an input-critical window such as a snap in progress', () => {
+    expect(deviation('big', true).max).toBe(0);
+  });
+
+  it('settles back once the shake has played out', () => {
+    const shaken = makeRig();
+    const control = makeRig();
+    shaken.shake('big', false);
+    for (let i = 0; i < 240; i++) {
+      step(shaken);
+      step(control);
+    }
+    expect(shaken.camera.position.distanceTo(control.camera.position)).toBeLessThan(0.002);
+  });
+
+  it('cuts shake by 70% for reduced motion', () => {
+    const normal = deviation('big').max;
+    const reduced = deviation('big', false, true).max;
+    expect(reduced).toBeLessThan(normal * 0.4);
+    expect(reduced).toBeGreaterThan(0);
+  });
+
+  it('removes rotational shake entirely for reduced motion', () => {
+    expect(deviation('big', false, true).roll).toBeLessThan(1e-6);
+    expect(deviation('big').roll).toBeGreaterThan(0);
+  });
+
+  it('keeps rotation under 1.2 degrees', () => {
+    expect(deviation('big').roll).toBeLessThanOrEqual((1.2 * Math.PI) / 180 + 1e-6);
+  });
+
+  it('pulls back during a long fall so the landing zone can be read', () => {
+    const rig = makeRig();
+    const start = rig.camera.position.z;
+    for (let i = 0; i < 120; i++) {
+      rig.update({ x: 0, y: 5 }, { x: 0, y: -20 }, 1 / 60, { ...opts, falling: true, slowMo: 1 });
+    }
+    expect(rig.camera.position.z).toBeGreaterThan(start * 1.3);
+  });
+
+  it('keeps the play frame framed in portrait', () => {
+    const rig = new CameraRig();
+    rig.setLayout(layoutStage(390, 844));
+    rig.snapTo({ x: 0, y: 3 });
+    expect(rig.camera.aspect).toBeCloseTo(390 / 844, 3);
+    expect(rig.camera.position.z).toBeGreaterThan(10);
+  });
+});
+
+describe('particles', () => {
+  const spark = { x: 0, y: 0, vx: 1, vy: 1, life: 0.5, size: 0.1, color: [1, 1, 1] as const };
+
+  it('never exceeds its ceiling', () => {
+    const system = new ParticleSystem(900, true, 0);
+    system.setCeiling(260);
+    let accepted = 0;
+    for (let i = 0; i < 2000; i++) if (system.emit(spark)) accepted++;
+    expect(accepted).toBe(260);
+    expect(system.alive).toBe(260);
+  });
+
+  it('retires particles at the end of their life and frees slots for new ones', () => {
+    const system = new ParticleSystem(100, true, 0);
+    for (let i = 0; i < 50; i++) system.emit(spark);
+    for (let i = 0; i < 40; i++) system.update(1 / 60);
+    expect(system.alive).toBe(0);
+    expect(system.emit(spark)).toBe(true);
+  });
+
+  it('applies gravity and drag to particle motion', () => {
+    const system = new ParticleSystem(10, true, 0);
+    system.emit({ ...spark, vx: 0, vy: 0, gravity: -10, life: 1 });
+    for (let i = 0; i < 30; i++) system.update(1 / 60);
+    const y = system.points.geometry.getAttribute('position').getY(0);
+    expect(y).toBeLessThan(-0.5);
+  });
+
+  it('keeps its buffers finite after heavy churn', () => {
+    const system = new ParticleSystem(300, false, 0);
+    for (let frame = 0; frame < 300; frame++) {
+      for (let i = 0; i < 5; i++) system.emit({ ...spark, life: 0.2 + (i % 3) * 0.1 });
+      system.update(1 / 60);
+    }
+    const position = system.points.geometry.getAttribute('position');
+    for (let i = 0; i < system.alive; i++) expect(Number.isFinite(position.getX(i) + position.getY(i))).toBe(true);
+  });
+
+  it('expands rings and then hides them', () => {
+    const scene = new Scene();
+    const pool = new RingPool(scene, 3, 0);
+    pool.spawn(0, 0, 0.1, 2, 0.3, [1, 1, 1]);
+    const ring = scene.children[0] as Mesh;
+    expect(ring.visible).toBe(true);
+    for (let i = 0; i < 10; i++) pool.update(1 / 60);
+    expect(ring.scale.x).toBeGreaterThan(0.5);
+    for (let i = 0; i < 30; i++) pool.update(1 / 60);
+    expect(ring.visible).toBe(false);
+  });
+});
+
+describe('flickering signs', () => {
+  const sample = (reduced: boolean) => Array.from({ length: 400 }, (_, i) => blinkLook('warn', i * 10, reduced).glow);
+
+  it('draws a lit sign solid and a dark one as a faint ghost the player can still plan around', () => {
+    expect(blinkLook('on', 1234, false)).toEqual({ body: 1, glow: 1, rim: 0.85 });
+    const dark = blinkLook('off', 1234, false);
+    expect(dark.body).toBeLessThan(0.2);
+    expect(dark.glow).toBeGreaterThan(0.05);
+    expect(dark.glow).toBeLessThan(0.2);
+    expect(dark.rim).toBeGreaterThan(0.1);
+  });
+
+  it('flickers in warning, but slower than three flashes a second', () => {
+    const levels = sample(false);
+    expect(new Set(levels).size).toBeGreaterThan(1);
+    let transitions = 0;
+    for (let i = 1; i < levels.length; i++) if (levels[i] !== levels[i - 1]) transitions++;
+    const flashesPerSecond = transitions / 2 / (levels.length / 100);
+    expect(flashesPerSecond).toBeLessThanOrEqual(3);
+  });
+
+  it('holds a steady dim instead of flickering when reduced motion is on', () => {
+    expect(new Set(sample(true)).size).toBe(1);
+    expect(sample(true)[0]).toBeGreaterThan(0.3);
+  });
+
+  it('never leaves its opacity range, so a sign cannot vanish or blow out', () => {
+    for (const state of ['on', 'warn', 'off'] as const) {
+      for (let ms = 0; ms < 5000; ms += 37) {
+        for (const reduced of [false, true]) {
+          const look = blinkLook(state, ms, reduced);
+          for (const v of [look.body, look.glow, look.rim]) {
+            expect(v).toBeGreaterThanOrEqual(0);
+            expect(v).toBeLessThanOrEqual(1);
+          }
+        }
+      }
+    }
+  });
+});
