@@ -19,11 +19,11 @@ export const NEUTRAL_GRADE: BiomeGrade = { contrast: 1, saturation: 1, shadow: [
  * rust and teal at the bottom, cool silence at the top.
  */
 export const GRADES: Readonly<Record<BiomeId, BiomeGrade>> = {
-  scrapyard: { contrast: 1.07, saturation: 1.06, shadow: [-0.012, 0.006, 0.02], highlight: [0.03, 0.012, -0.022], bloom: 0.4 },
-  suburbia: { contrast: 0.98, saturation: 1.1, shadow: [0.008, 0.014, 0.02], highlight: [0.012, 0.012, -0.004], bloom: 0.3 },
-  metropolis: { contrast: 1.1, saturation: 1.08, shadow: [-0.01, -0.012, 0.03], highlight: [0.028, -0.01, 0.026], bloom: 0.44 },
-  playground: { contrast: 1.08, saturation: 1.1, shadow: [0.014, 0.006, 0.016], highlight: [0.016, 0.01, -0.01], bloom: 0.28 },
-  stratosphere: { contrast: 1.1, saturation: 1.1, shadow: [-0.012, 0.004, 0.034], highlight: [-0.016, 0.018, 0.03], bloom: 0.46 },
+  scrapyard: { contrast: 1.15, saturation: 1.15, shadow: [-0.02, 0.008, 0.025], highlight: [0.035, 0.015, -0.025], bloom: 0.42 },
+  suburbia: { contrast: 1.08, saturation: 1.18, shadow: [0.006, 0.016, 0.022], highlight: [0.015, 0.015, -0.005], bloom: 0.32 },
+  metropolis: { contrast: 1.18, saturation: 1.15, shadow: [-0.015, -0.015, 0.035], highlight: [0.032, -0.012, 0.03], bloom: 0.46 },
+  playground: { contrast: 1.15, saturation: 1.18, shadow: [0.016, 0.008, 0.018], highlight: [0.018, 0.012, -0.012], bloom: 0.30 },
+  stratosphere: { contrast: 1.18, saturation: 1.15, shadow: [-0.015, 0.006, 0.038], highlight: [-0.018, 0.02, 0.035], bloom: 0.48 },
 };
 
 export const LUT_SIZE = 16;
