@@ -13,6 +13,7 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   OctahedronGeometry,
+  PCFSoftShadowMap,
   Scene,
   SRGBColorSpace,
   TorusGeometry,
@@ -170,7 +171,24 @@ export class SceneRenderer {
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.toneMapping = ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 0.92;
-    this.renderer.shadowMap.enabled = false;
+    // Directional sun shadows. The shadow map is small (1024) and the shadow
+    // camera is a tight 24x24 ortho that follows the player so the resolution
+    // is spent where the action is. Tier-low devices skip shadows entirely via
+    // the quality profile (see quality.ts) so the tier-low cold-load target holds.
+    if (this.profile.shadows) {
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.type = PCFSoftShadowMap;
+      this.sun.castShadow = true;
+      this.sun.shadow.mapSize.set(1024, 1024);
+      this.sun.shadow.camera.near = 1;
+      this.sun.shadow.camera.far = 80;
+      this.sun.shadow.camera.left = -16;
+      this.sun.shadow.camera.right = 16;
+      this.sun.shadow.camera.top = 16;
+      this.sun.shadow.camera.bottom = -16;
+      this.sun.shadow.bias = -0.0008;
+      this.sun.shadow.normalBias = 0.025;
+    }
     this.governor = new ResolutionGovernor(this.profile.minResolutionScale);
     this.post = new PostStack(this.renderer, this.profile);
 
@@ -194,6 +212,12 @@ export class SceneRenderer {
 
     this.rig = new MagnoRig(CLASSIC_SKIN);
     this.rig.root.position.z = ACTOR_Z;
+    // MAGNO casts a shadow so the player reads his position in the world even
+    // when he is airborne against a bright sky. The shadow follows the rig's
+    // root, so it tracks every animation state without per-mesh bookkeeping.
+    this.rig.root.traverse((o) => {
+      if (o instanceof Mesh) o.castShadow = true;
+    });
     this.scene.add(this.rig.root, this.parGhost.group, this.personalGhost.group, this.friendGhost.group);
 
     this.vfx = new Vfx(this.scene, this.profile, ACTOR_Z + 0.08, {
@@ -323,6 +347,13 @@ export class SceneRenderer {
       const mesh = new Mesh(builder.toGeometry(), material);
       mesh.frustumCulled = false;
       mesh.renderOrder = order;
+      // The prop body and tether cast and receive the directional sun shadow.
+      // Rim and glow passes are MeshBasicMaterial and stay out of the shadow
+      // pass so they keep their additive read against bright skies.
+      if (material === this.bodyMaterial || material === this.tetherMaterial) {
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+      }
       this.levelGroup.add(mesh);
       return mesh;
     };
