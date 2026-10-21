@@ -204,7 +204,7 @@ export class SceneRenderer {
       opacity: 0.38,
       depthWrite: false,
     });
-    this.rimMaterial = new MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false });
+    this.rimMaterial = new MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 1.0, depthWrite: false, blending: AdditiveBlending });
     this.glowMaterial = new MeshBasicMaterial({ vertexColors: true, transparent: true, fog: false, toneMapped: false, depthWrite: false });
     this.tetherMaterial = new MeshStandardMaterial({ color: 0x59626b, flatShading: true, roughness: 0.6, metalness: 0.4 });
     applyToonShading(this.bodyMaterial);
