@@ -189,6 +189,8 @@ export class SceneRenderer {
     this.rimMaterial = new MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false });
     this.glowMaterial = new MeshBasicMaterial({ vertexColors: true, transparent: true, fog: false, toneMapped: false, depthWrite: false });
     this.tetherMaterial = new MeshStandardMaterial({ color: 0x59626b, flatShading: true, roughness: 0.6, metalness: 0.4 });
+    applyToonShading(this.bodyMaterial);
+    applyToonShading(this.tetherMaterial);
 
     this.rig = new MagnoRig(CLASSIC_SKIN);
     this.rig.root.position.z = ACTOR_Z;
@@ -893,4 +895,37 @@ export class SceneRenderer {
     this.post.dispose();
     this.renderer.dispose();
   }
+}
+
+/**
+ * Patches a MeshStandardMaterial to apply a two-band hard terminator. The
+ * patch is intentionally narrow: it does not touch the standard lighting
+ * pipeline, it only multiplies the final outgoing diffuse light by a stepped
+ * factor derived from the dot product of the surface normal and the scene's
+ * first directional light. The result is the committed toon look without
+ * abandoning the standard pipeline that drives every prop in the game.
+ *
+ * The patch is skipped at runtime if the shader failed to compile, so a
+ * hostile driver never breaks the whole frame: the prop simply renders as it
+ * did before the patch.
+ */
+function applyToonShading(material: MeshStandardMaterial): void {
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <dithering_fragment>',
+        `#if NUM_DIR_LIGHTS > 0
+           {
+             vec3 toonLightDir = normalize(directionalLights[0].direction);
+             float toonNdotL = clamp(dot(normal, toonLightDir), 0.0, 1.0);
+             float toonBand = step(0.5, toonNdotL);
+             float toonEdge = smoothstep(0.45, 0.52, toonNdotL);
+             float toonFactor = mix(0.5, 1.0, toonBand) * mix(0.85, 1.0, toonEdge);
+             diffuseColor.rgb *= toonFactor;
+           }
+         #endif
+         #include <dithering_fragment>`,
+      );
+  };
+  material.needsUpdate = true;
 }
