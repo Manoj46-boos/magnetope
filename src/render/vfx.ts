@@ -105,8 +105,8 @@ export class Vfx {
     const on = sim.events.on.bind(sim.events);
     this.unsubscribe.push(
       on('attach', (e) => {
-        this.attachBurst(e.point, e.normal, MATERIALS[e.material].voice, e.speed, e.weak);
-        this.hooks.shake(e.weak ? 'micro' : e.speed > 11 ? 'big' : 'micro');
+        this.attachBurst(e.point, e.normal, MATERIALS[e.material].voice, e.speed, e.weak, e.viaSnap);
+        this.hooks.shake(e.weak ? 'micro' : e.viaSnap ? (e.speed > 9 ? 'big' : 'small') : e.speed > 11 ? 'big' : 'micro');
       }),
       on('repel', (e) => {
         this.repelBurst(e.point, e.normal, e.direction, e.power);
@@ -155,11 +155,11 @@ export class Vfx {
 
   /**
    * Ambient dust motes drifting around MAGNO's head, the atmospheric cue the
-   * PRD commits to (Chapter 13, per-biome ambient FX). A small number of slow,
-   * low-gravity motes are emitted every frame in a ring around the head (not on
-   * it), so the air feels alive without competing with the magnet silhouette
-   * for the player's attention. The motes use the biome's dust colour, so the
-   * Scrapyard gets warm motes and the Stratosphere gets cold ones.
+   * PRD commits to (Chapter 13, per-biome ambient FX). The motes are emitted
+   * on the additive pass so they read as dust catching the light, rather than
+   * as opaque specks against a bright sky. A small number are released every
+   * frame in a ring around the head (not on it), so the air feels alive without
+   * competing with the magnet silhouette for the player's attention.
    */
   private shedAmbient(head: Vec2, dt: number): void {
     if (this.profile.dustScale <= 0) return;
@@ -177,16 +177,16 @@ export class Vfx {
       const radius = this.rng.range(4, 8);
       const x = head.x + Math.cos(angle) * radius;
       const y = head.y + Math.sin(angle) * radius + 2;
-      this.dust.emit({
+      this.additive.emit({
         x,
         y,
         vx: this.rng.range(-0.3, 0.3),
         vy: this.rng.range(0.1, 0.6),
         life: this.rng.range(2.5, 4.5),
-        size: this.rng.range(2.5, 4.5),
-        sizeEnd: 0.5,
+        size: this.rng.range(0.14, 0.2),
+        sizeEnd: 0.03,
         color: this.dustRgb,
-        alpha: 0.45,
+        alpha: 0.7,
         gravity: -0.05,
         drag: 0.4,
       });
@@ -200,7 +200,7 @@ export class Vfx {
     return Math.max(0, Math.min(count, this.profile.particleCeiling - total));
   }
 
-  private attachBurst(point: Vec2, normal: Vec2, voice: string, speed: number, weak: boolean): void {
+  private attachBurst(point: Vec2, normal: Vec2, voice: string, speed: number, weak: boolean, viaSnap: boolean): void {
     const color = SPARK[voice] ?? SPARK.beam!;
     const count = this.budgetFor(Math.round(clamp(16 + speed * 1.8, 16, 40)));
     const base = Math.atan2(normal.y, normal.x);
@@ -222,6 +222,33 @@ export class Vfx {
     }
     const ringColor = weak ? ([0.9, 0.7, 0.5] as Rgb) : this.attractRgb;
     this.rings.spawn(point.x, point.y, 0.08, 0.95, 0.3, ringColor, base + Math.PI / 2, 0.42);
+    // A snap-powered attach gets a second, larger cyan burst so the player
+    // feels the magnetic click. The burst is on the additive pass so it glows
+    // against any biome, and the ring expands faster and further than the
+    // contact ring so the two reads as cause and effect. Emission count and
+    // particle size are pushed well past subtle so the snap reads as an event
+    // even on tier-low software WebGL where additive blending is dimmer.
+    if (viaSnap) {
+      const snapCount = this.budgetFor(40);
+      for (let i = 0; i < snapCount; i++) {
+        const a = this.rng.range(0, Math.PI * 2);
+        const v = this.rng.range(4, 12);
+        this.additive.emit({
+          x: point.x,
+          y: point.y,
+          vx: Math.cos(a) * v,
+          vy: Math.sin(a) * v,
+          life: this.rng.range(0.4, 0.75),
+          size: this.rng.range(0.16, 0.28),
+          sizeEnd: 0.03,
+          color: i % 3 === 0 ? [1, 1, 1] : this.attractRgb,
+          alpha: 0.95,
+          drag: 2.0,
+        });
+      }
+      this.rings.spawn(point.x, point.y, 0.16, 2.2, 0.55, this.attractRgb, base + Math.PI / 2, 0.75);
+      this.rings.spawn(point.x, point.y, 0.2, 1.4, 0.4, [1, 1, 1], base + Math.PI / 2, 0.5);
+    }
   }
 
   private repelBurst(point: Vec2, normal: Vec2, direction: Vec2, power: number): void {
