@@ -951,7 +951,9 @@ function applyToonShading(material: MeshStandardMaterial): void {
              float toonNdotL = clamp(dot(normal, toonLightDir), 0.0, 1.0);
              float toonBand = step(0.5, toonNdotL);
              float toonEdge = smoothstep(0.45, 0.52, toonNdotL);
-             float toonFactor = mix(0.5, 1.0, toonBand) * mix(0.85, 1.0, toonEdge);
+             // Shadow band pushed to 0.35 (was 0.5) for graphic punch: the
+             // shadow side reads as a committed dark, not as a softened tint.
+             float toonFactor = mix(0.35, 1.0, toonBand) * mix(0.85, 1.0, toonEdge);
              diffuseColor.rgb *= toonFactor;
            }
          #endif
