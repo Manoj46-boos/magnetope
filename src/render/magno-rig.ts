@@ -176,7 +176,13 @@ export class MagnoRig {
 
   constructor(skin: RigSkin = CLASSIC_SKIN) {
     this.bodyMaterial = new MeshStandardMaterial({ color: skin.body, flatShading: true, roughness: 0.55, metalness: 0.45 });
+    // Rim light on the body so MAGNO separates from the background even when
+    // the directional sun has him in shadow. The rim is a warm white that
+    // appears at grazing angles (where the view direction is perpendicular to
+    // the surface normal), giving him a lit edge against any biome.
+    applyMagnoRim(this.bodyMaterial);
     this.ringMaterial = new MeshStandardMaterial({ color: skin.ring, flatShading: true, roughness: 0.25, metalness: 0.85 });
+    applyMagnoRim(this.ringMaterial);
     this.tipMaterial = new MeshStandardMaterial({ color: skin.tip, flatShading: true, roughness: 0.4, metalness: 0.6 });
     // The pole materials carry a moderate emissive lift so the magnet signature
     // colours survive bloom and tone mapping without going flat. Intensity is
@@ -614,4 +620,31 @@ function rotateInto(out: Vec2, x: number, y: number, angle: number): Vec2 {
   out.x = x * c - y * s;
   out.y = x * s + y * c;
   return out;
+}
+
+/**
+ * Adds a warm-white rim light to a MeshStandardMaterial so MAGNO carries a lit
+ * edge against any background, even when the directional sun has him in shadow.
+ * The rim is driven by the dot product of the view direction and the surface
+ * normal: faces pointing away from the camera get a soft warm-white addition
+ * that separates the silhouette from the biome behind it.
+ *
+ * Intensity is kept at 0.5: higher values wash out the body colour under ACES
+ * tone mapping, lower values disappear against bright skies. 0.5 is the floor
+ * at which the rim reads as an edge without flattening the character.
+ */
+function applyMagnoRim(material: MeshStandardMaterial): void {
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <dithering_fragment>',
+        `{
+           float rimNdotV = 1.0 - clamp(dot(normalize(vViewPosition), normal), 0.0, 1.0);
+           float rim = pow(rimNdotV, 2.2);
+           diffuseColor.rgb += vec3(1.0, 0.92, 0.78) * rim * 0.5;
+         }
+         #include <dithering_fragment>`,
+      );
+  };
+  material.needsUpdate = true;
 }
