@@ -404,9 +404,14 @@ export class Backdrop {
     (u.uSunDir!.value as Vector3).set(-0.55 * Math.cos(el), Math.sin(el), -0.8 * Math.cos(el));
     (u.uStars!.value as number) = biome === 'stratosphere' ? 1 : biome === 'metropolis' ? 0.35 : 0;
 
-    const far = toColor(mixHsl(p.fog, p.dominant, 0.32)).multiplyScalar(0.9);
-    const mid = toColor(mixHsl(p.fog, p.dominant, 0.5)).multiplyScalar(0.78);
-    const near = toColor(mixHsl(p.fog, p.dominant, 0.7)).multiplyScalar(0.62);
+    // Background silhouettes are darker than the sky so they read as depth, not as
+    // washed-out colour blocks. The far layer stays just above the sky horizon; the
+    // near layer drops to a near-silhouette so the player's eye reads the layering
+    // without thinking about it. This is the atmospheric-perspective cue the renewal
+    // commits to (Sparth, Chapter 9.6 of the PRD).
+    const far = toColor(mixHsl(p.fog, p.dominant, 0.32)).multiplyScalar(0.55);
+    const mid = toColor(mixHsl(p.fog, p.dominant, 0.5)).multiplyScalar(0.38);
+    const near = toColor(mixHsl(p.fog, p.dominant, 0.7)).multiplyScalar(0.22);
     const tints = [far, mid, near];
     this.layers.forEach((layer, i) => (layer.mesh.material as MeshBasicMaterial).color.copy(tints[i % 3]!));
     const groundDim = biome === 'stratosphere' ? 0.4 : 0.62;
