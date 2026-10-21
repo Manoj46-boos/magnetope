@@ -625,25 +625,27 @@ function rotateInto(out: Vec2, x: number, y: number, angle: number): Vec2 {
 /**
  * Adds a warm-white rim light to a MeshStandardMaterial so MAGNO carries a lit
  * edge against any background, even when the directional sun has him in shadow.
- * The rim is driven by the dot product of the view direction and the surface
- * normal: faces pointing away from the camera get a soft warm-white addition
- * that separates the silhouette from the biome behind it.
  *
- * Intensity is kept at 0.5: higher values wash out the body colour under ACES
- * tone mapping, lower values disappear against bright skies. 0.5 is the floor
- * at which the rim reads as an edge without flattening the character.
+ * The rim is computed from 1 - dot(viewDir, normal) and added to the material's
+ * emissive output. Emissive is added to the final colour AFTER the diffuse
+ * lighting sum but BEFORE tone mapping, so it survives ACES compression better
+ * than a diffuseColor addition (which gets multiplied by NdotL and shadow).
+ *
+ * Fresnel power 3.0 gives a medium-tight edge; intensity 2.5 is high enough to
+ * read as a committed rim against any biome background, including busy particle
+ * scenes where a softer rim would be lost.
  */
 function applyMagnoRim(material: MeshStandardMaterial): void {
   material.onBeforeCompile = (shader) => {
     shader.fragmentShader = shader.fragmentShader
       .replace(
-        '#include <dithering_fragment>',
-        `{
+        '#include <emissivemap_fragment>',
+        `#include <emissivemap_fragment>
+         {
            float rimNdotV = 1.0 - clamp(dot(normalize(vViewPosition), normal), 0.0, 1.0);
-           float rim = pow(rimNdotV, 2.2);
-           diffuseColor.rgb += vec3(1.0, 0.92, 0.78) * rim * 0.5;
-         }
-         #include <dithering_fragment>`,
+           float rim = pow(rimNdotV, 3.0);
+           totalEmissiveRadiance += vec3(1.0, 0.92, 0.78) * rim * 2.5;
+         }`,
       );
   };
   material.needsUpdate = true;
