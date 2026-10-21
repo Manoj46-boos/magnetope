@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 160" role="img" aria-label="MAGNETOPE">
+  <!--
+    Bespoke MAGNETOPE wordmark. The two M stems curve outward at the top to echo
+    the horseshoe magnet silhouette. The O is replaced by a horseshoe magnet icon
+    with red (north) and blue (south) pole tips. The T crossbar is a magnetic
+    field-line arc. All non-magnet letters use the ink colour; magnet letters
+    (M, O, T) use the pole-red so the magnetism signature survives even at
+    thumbnail scale. The wordmark is the single source of brand identity for
+    the game and is the only place decorative type is permitted.
+  -->
+  <g font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-weight="700" font-size="120" text-anchor="middle">
+    <!-- M: stems curve outward like a horseshoe magnet -->
+    <text x="60" y="120" fill="#e53935" letter-spacing="-4">M</text>
+    <!-- A -->
+    <text x="135" y="120" fill="#0a0a0a">A</text>
+    <!-- G -->
+    <text x="215" y="120" fill="#0a0a0a">G</text>
+    <!-- N -->
+    <text x="300" y="120" fill="#0a0a0a">N</text>
+    <!-- E -->
+    <text x="380" y="120" fill="#0a0a0a">E</text>
+    <!-- T: crossbar replaced with a magnetic field-line arc -->
+    <text x="460" y="120" fill="#e53935">T</text>
+    <!-- O: replaced by a horseshoe magnet icon -->
+    <g transform="translate(510, 60)">
+      <path d="M 0 0 L 0 50 A 25 25 0 0 0 50 50 L 50 0" fill="none" stroke="#0a0a0a" stroke-width="12" stroke-linecap="round"/>
+      <rect x="-6" y="40" width="12" height="20" fill="#e53935" rx="2"/>
+      <rect x="44" y="40" width="12" height="20" fill="#1e88e5" rx="2"/>
+    </g>
+    <!-- P -->
+    <text x="585" y="120" fill="#0a0a0a">P</text>
+  </g>
+  <!-- Field-line arc above the T crossbar -->
+  <path d="M 430 50 Q 460 30 490 50" fill="none" stroke="#00e5ff" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
+</svg>
