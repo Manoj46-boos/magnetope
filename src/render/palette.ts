@@ -110,6 +110,15 @@ export const POLARITY = {
   rim: new Color().setHSL(0.52, 0.8, 0.55),
 } as const;
 
+/**
+ * The magnet-pole brand colours. MAGNO's horseshoe head reads as a magnet,
+ * not a padlock, because the two tips carry distinct saturated hues: red for
+ * north, blue for south. They are the only colours that may appear on every
+ * screen regardless of biome, because magnetism is the game's identity.
+ */
+export const POLE_NORTH = new Color().setStyle('#e53935');
+export const POLE_SOUTH = new Color().setStyle('#1e88e5');
+
 /** Deeper, more saturated variants so effects stay legible against bright biomes. */
 const POLARITY_BRIGHT = {
   attract: new Color().setHSL(0.55, 0.95, 0.46),
