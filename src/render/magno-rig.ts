@@ -19,7 +19,7 @@ import type { Accessory, SkinLook } from '@/config/cosmetics';
 import { SecondOrder, SecondOrder2, frequencyForLag, noise1 } from '@/core/dynamics';
 import { angleDelta, clamp, damp, DEG, hypot2, lerp, type Vec2 } from '@/core/mathx';
 import type { MagnoView } from '@/sim/magno';
-import { fxTheme } from './palette';
+import { POLE_NORTH, POLE_SOUTH, fxTheme } from './palette';
 
 export interface RigSkin {
   body: Color;
@@ -148,6 +148,8 @@ export class MagnoRig {
   private readonly bodyMaterial: MeshStandardMaterial;
   private readonly ringMaterial: MeshStandardMaterial;
   private readonly tipMaterial: MeshStandardMaterial;
+  private readonly northMaterial: MeshStandardMaterial;
+  private readonly southMaterial: MeshStandardMaterial;
   private readonly socketMaterial: MeshStandardMaterial;
   private readonly glowMaterial: MeshBasicMaterial;
   private readonly coreLight: Mesh;
@@ -176,6 +178,8 @@ export class MagnoRig {
     this.bodyMaterial = new MeshStandardMaterial({ color: skin.body, flatShading: true, roughness: 0.55, metalness: 0.45 });
     this.ringMaterial = new MeshStandardMaterial({ color: skin.ring, flatShading: true, roughness: 0.25, metalness: 0.85 });
     this.tipMaterial = new MeshStandardMaterial({ color: skin.tip, flatShading: true, roughness: 0.4, metalness: 0.6 });
+    this.northMaterial = new MeshStandardMaterial({ color: POLE_NORTH, flatShading: true, roughness: 0.3, metalness: 0.4, emissive: POLE_NORTH, emissiveIntensity: 0.55 });
+    this.southMaterial = new MeshStandardMaterial({ color: POLE_SOUTH, flatShading: true, roughness: 0.3, metalness: 0.4, emissive: POLE_SOUTH, emissiveIntensity: 0.55 });
     this.socketMaterial = new MeshStandardMaterial({ color: skin.socket, flatShading: true, roughness: 0.9 });
     const white = new MeshStandardMaterial({ color: 0xf6f4ee, flatShading: true, roughness: 0.35 });
     const black = new MeshStandardMaterial({ color: 0x0c1118, flatShading: true, roughness: 0.4 });
@@ -204,37 +208,49 @@ export class MagnoRig {
     this.coreLight.visible = false;
     this.inner.add(this.coreLight);
 
-    // Eye: single large eye in a dark socket.
-    const socket = new Mesh(new SphereGeometry(0.115, 8, 6), this.socketMaterial);
+    // Eye: a single large eye in a dark socket, sized to read MAGNO's
+    // personality at gameplay distance (Carter Goodrich: the eye carries it).
+    const socket = new Mesh(new SphereGeometry(0.135, 9, 6), this.socketMaterial);
     socket.scale.set(1, 1, 0.55);
     socket.position.set(0, 0.1, 0.17);
     this.inner.add(socket);
-    this.eyeGroup.position.set(0, 0.1, 0.215);
-    const eye = new Mesh(new SphereGeometry(0.085, 8, 6), white);
+    this.eyeGroup.position.set(0, 0.1, 0.22);
+    const eye = new Mesh(new SphereGeometry(0.105, 8, 6), white);
     eye.scale.set(1, 1, 0.5);
     this.eyeGroup.add(eye);
-    this.pupil = new Mesh(new SphereGeometry(0.042, 6, 5), black);
-    this.pupil.position.z = 0.032;
+    this.pupil = new Mesh(new SphereGeometry(0.052, 6, 5), black);
+    this.pupil.position.z = 0.038;
     this.eyeGroup.add(this.pupil);
-    this.lid = new Mesh(new SphereGeometry(0.092, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), this.bodyMaterial);
+    this.lid = new Mesh(new SphereGeometry(0.112, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), this.bodyMaterial);
     this.lid.scale.set(1, 1, 0.56);
     this.lid.rotation.x = -Math.PI / 2 + 0.2;
     this.eyeGroup.add(this.lid);
     this.inner.add(this.eyeGroup);
 
-    // Horseshoe magnet head, tilted a permanent 8 degrees.
+    // Horseshoe magnet head. The arch and legs stay as the steel-coloured body
+    // of the magnet; each pole tip is its own mesh, with a saturated red (north)
+    // or blue (south) material and a 15° outward flare. The flare is what makes
+    // the silhouette read as a magnet rather than a padlock shackle: real
+    // horseshoe magnets have flared pole pieces, real padlock shackles do not.
     this.headPivot.position.set(0, 0.34, 0);
     this.headPivot.rotation.z = -8 * DEG;
-    const arch = new Mesh(new TorusGeometry(0.15, 0.058, 5, 12, Math.PI), this.ringMaterial);
+    const arch = new Mesh(new TorusGeometry(0.15, 0.058, 5, 10, Math.PI), this.ringMaterial);
     arch.position.y = 0.02;
     this.headPivot.add(arch);
-    for (const side of [-1, 1]) {
-      const leg = new Mesh(new BoxGeometry(0.116, 0.16, 0.116), this.ringMaterial);
+    const POLE_FLARE = 18 * DEG;
+    for (const side of [-1, 1] as const) {
+      const leg = new Mesh(new BoxGeometry(0.12, 0.14, 0.12), this.ringMaterial);
       leg.position.set(side * 0.15, -0.055, 0);
       this.headPivot.add(leg);
-      const tip = new Mesh(new BoxGeometry(0.122, 0.07, 0.122), this.tipMaterial);
-      tip.position.set(side * 0.15, -0.13, 0);
-      this.headPivot.add(tip);
+      const polePivot = new Group();
+      polePivot.position.set(side * 0.15, -0.1, 0);
+      polePivot.rotation.z = side * POLE_FLARE;
+      // Tip and cap are merged into a single tapered box so the pole piece reads
+      // as one solid flared block at distance, without doubling the triangle count.
+      const tip = new Mesh(new BoxGeometry(0.17, 0.13, 0.17), side < 0 ? this.northMaterial : this.southMaterial);
+      tip.position.y = -0.07;
+      polePivot.add(tip);
+      this.headPivot.add(polePivot);
     }
     this.inner.add(this.headPivot);
     this.accessories = this.buildAccessories();
