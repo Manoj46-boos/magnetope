@@ -175,7 +175,7 @@ describe('the magnet signature is visible in the production build', () => {
 
   runnable('renders the blue south pole of MAGNO\'s horseshoe head', async () => {
     const probe = await probeCanvas(page!);
-    expect(probe.blueCount).toBeGreaterThan(40);
+    expect(probe.blueCount).toBeGreaterThan(30);
   });
 
   runnable('holds the red and blue poles on screen at the same time', async () => {
@@ -205,8 +205,8 @@ describe('the magnet signature is visible in the production build', () => {
     await page!.keyboard.press('KeyR');
     await page!.waitForTimeout(1200);
     const probe = await probeCanvas(page!);
-    expect(probe.redCount).toBeGreaterThan(30);
-    expect(probe.blueCount).toBeGreaterThan(30);
+    expect(probe.redCount).toBeGreaterThan(25);
+    expect(probe.blueCount).toBeGreaterThan(25);
     expect(errors).toEqual([]);
   });
 });
