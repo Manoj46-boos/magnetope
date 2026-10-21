@@ -21,8 +21,9 @@ import { GRADES, LUT_SIZE, LUT_WIDTH, buildGradeLut } from './grade';
 import { BLUR_FRAGMENT, BRIGHT_FRAGMENT, FINAL_FRAGMENT, FULLSCREEN_VERTEX } from './post-shaders';
 import type { QualityProfile } from './quality';
 
-/** PRD 8.5: threshold 0.85, strength 0.4 (the biome grade may lower it), 12% vignette. */
-const BLOOM_THRESHOLD = 0.85;
+/** PRD 8.5: threshold 0.8 (slightly lowered from 0.85 so the magnet signature
+ * colours bloom), strength 0.4 (the biome grade may lower it), 12% vignette. */
+const BLOOM_THRESHOLD = 0.8;
 const BLOOM_KNEE = 0.25;
 const VIGNETTE = 0.12;
 const BLOOM_LEVELS = 3;

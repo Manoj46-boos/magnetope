@@ -178,6 +178,10 @@ export class MagnoRig {
     this.bodyMaterial = new MeshStandardMaterial({ color: skin.body, flatShading: true, roughness: 0.55, metalness: 0.45 });
     this.ringMaterial = new MeshStandardMaterial({ color: skin.ring, flatShading: true, roughness: 0.25, metalness: 0.85 });
     this.tipMaterial = new MeshStandardMaterial({ color: skin.tip, flatShading: true, roughness: 0.4, metalness: 0.6 });
+    // The pole materials carry a moderate emissive lift so the magnet signature
+    // colours survive bloom and tone mapping without going flat. Intensity is
+    // kept under 0.6 so the red and blue stay saturated rather than blowing out
+    // to white, which would break the silhouette read.
     this.northMaterial = new MeshStandardMaterial({ color: POLE_NORTH, flatShading: true, roughness: 0.3, metalness: 0.4, emissive: POLE_NORTH, emissiveIntensity: 0.55 });
     this.southMaterial = new MeshStandardMaterial({ color: POLE_SOUTH, flatShading: true, roughness: 0.3, metalness: 0.4, emissive: POLE_SOUTH, emissiveIntensity: 0.55 });
     this.socketMaterial = new MeshStandardMaterial({ color: skin.socket, flatShading: true, roughness: 0.9 });
