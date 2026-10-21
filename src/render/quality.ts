@@ -17,12 +17,16 @@ export interface QualityProfile {
   msaa: number;
   /** Mobile replaces the shader vignette with the baked corner darkening in the overlay. */
   shaderVignette: boolean;
+  /** Directional sun shadows. Tier-low skips them so cold-load and frame time hold. */
+  shadows: boolean;
 }
 
 export const PROFILES: Readonly<Record<QualityTier, QualityProfile>> = {
-  high: { tier: 'high', particleCeiling: 900, fieldLineSegments: 24, windStreaks: 18, dustScale: 1, maxPixelRatio: 2, minResolutionScale: 0.8, glow: true, bloomDivisor: 2, msaa: 4, shaderVignette: true },
-  mid: { tier: 'mid', particleCeiling: 500, fieldLineSegments: 24, windStreaks: 12, dustScale: 0.5, maxPixelRatio: 1.5, minResolutionScale: 0.65, glow: true, bloomDivisor: 4, msaa: 2, shaderVignette: true },
-  low: { tier: 'low', particleCeiling: 260, fieldLineSegments: 12, windStreaks: 6, dustScale: 0, maxPixelRatio: 1, minResolutionScale: 0.55, glow: false, bloomDivisor: 0, msaa: 0, shaderVignette: false },
+  high: { tier: 'high', particleCeiling: 900, fieldLineSegments: 24, windStreaks: 18, dustScale: 1, maxPixelRatio: 2, minResolutionScale: 0.8, glow: true, bloomDivisor: 2, msaa: 4, shaderVignette: true, shadows: true },
+  mid: { tier: 'mid', particleCeiling: 500, fieldLineSegments: 24, windStreaks: 12, dustScale: 0.5, maxPixelRatio: 1.5, minResolutionScale: 0.65, glow: true, bloomDivisor: 4, msaa: 2, shaderVignette: true, shadows: true },
+  // Tier-low keeps a small dust scale so the ambient air never reads as empty
+  // even on the cheapest devices; the directional shadows are what we skip.
+  low: { tier: 'low', particleCeiling: 260, fieldLineSegments: 12, windStreaks: 6, dustScale: 0.35, maxPixelRatio: 1, minResolutionScale: 0.55, glow: false, bloomDivisor: 0, msaa: 0, shaderVignette: false, shadows: false },
 };
 
 export interface DeviceHints {
