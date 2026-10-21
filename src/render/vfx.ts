@@ -58,6 +58,8 @@ export class Vfx {
   private unsubscribe: Array<() => void> = [];
   private sim: Simulation | null = null;
   private crumblers: BuiltProp[] = [];
+  /** Accumulator for the ambient dust emitter, so the per-second rate is frame-rate independent. */
+  private ambientAccum = 0;
 
   constructor(scene: Scene, profile: QualityProfile, z: number, private readonly hooks: VfxHooks) {
     this.profile = profile;
@@ -145,9 +147,50 @@ export class Vfx {
     this.fieldLines.update(view, head, axisAngle, dt);
     if (view.snapEngaged) this.snapTrail(view);
     this.shedGrit(dt);
+    this.shedAmbient(head, dt);
     this.additive.update(dt);
     this.dust.update(dt);
     this.rings.update(dt);
+  }
+
+  /**
+   * Ambient dust motes drifting around MAGNO's head, the atmospheric cue the
+   * PRD commits to (Chapter 13, per-biome ambient FX). A small number of slow,
+   * low-gravity motes are emitted every frame in a ring around the head (not on
+   * it), so the air feels alive without competing with the magnet silhouette
+   * for the player's attention. The motes use the biome's dust colour, so the
+   * Scrapyard gets warm motes and the Stratosphere gets cold ones.
+   */
+  private shedAmbient(head: Vec2, dt: number): void {
+    if (this.profile.dustScale <= 0) return;
+    // Emit roughly 8 motes per second, scaled by the device's dust budget.
+    const rate = 8 * this.profile.dustScale;
+    this.ambientAccum += rate * dt;
+    const n = Math.floor(this.ambientAccum);
+    this.ambientAccum -= n;
+    if (n === 0) return;
+    const budget = this.budgetFor(n);
+    for (let i = 0; i < budget; i++) {
+      // Emit in a ring 4 to 8 units from the head, so motes drift past MAGNO
+      // without sitting on the magnet poles and washing out the signature colour.
+      const angle = this.rng.range(0, Math.PI * 2);
+      const radius = this.rng.range(4, 8);
+      const x = head.x + Math.cos(angle) * radius;
+      const y = head.y + Math.sin(angle) * radius + 2;
+      this.dust.emit({
+        x,
+        y,
+        vx: this.rng.range(-0.3, 0.3),
+        vy: this.rng.range(0.1, 0.6),
+        life: this.rng.range(2.5, 4.5),
+        size: this.rng.range(2.5, 4.5),
+        sizeEnd: 0.5,
+        color: this.dustRgb,
+        alpha: 0.45,
+        gravity: -0.05,
+        drag: 0.4,
+      });
+    }
   }
 
   // ---------------------------------------------------------------- emitters
