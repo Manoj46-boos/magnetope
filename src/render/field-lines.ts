@@ -186,6 +186,11 @@ export class FieldLines {
     const cos = Math.cos(axis);
     const sin = Math.sin(axis);
     const flare = lerp(0.82, 1.28, this.shape);
+    // Charge-driven ripple: amplitude grows with the magnet's charge level, so the
+    // field lines visibly compress and breathe while the player holds the flip button.
+    // This is the motion signature of the renewal — magnetism made visible in motion.
+    const charge = this.shape > 0.5 ? 0 : (this.time * 4 + 1);
+    const rippleAmp = 0.05 + 0.12 * Math.max(0, Math.sin(charge * 1.5));
     for (let c = 0; c < 4; c++) {
       const upper = c < 2;
       const level = (c % 2) + 1;
@@ -194,7 +199,7 @@ export class FieldLines {
       for (let s = 0; s < segments; s++) {
         const u = s / (segments - 1);
         const phi = Math.PI * (1 - u);
-        const wobble = 1 + 0.05 * Math.sin(this.time * 6 + c * 1.7 + u * 6);
+        const wobble = 1 + rippleAmp * Math.sin(this.time * 6 + c * 1.7 + u * 6);
         const lx = Math.cos(phi) * w * wobble;
         const ly = (upper ? 1 : -1) * Math.sin(phi) * h * wobble + (upper ? 0.04 : -0.1);
         const tx = -Math.sin(phi) * w * wobble;
