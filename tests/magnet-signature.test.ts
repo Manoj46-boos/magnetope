@@ -166,6 +166,9 @@ describe('the magnet signature is visible in the production build', () => {
   });
 
   runnable('renders the red north pole of MAGNO\'s horseshoe head', async () => {
+    // The boot frame is the biome poster, where MAGNO is part of the vista; let
+    // the establishing move finish so the poles are probed at gameplay scale.
+    await page!.waitForTimeout(2600);
     const probe = await probeCanvas(page!);
     // The pole tip is a small emissive box on a small character in a 960x540
     // viewport. A few dozen red pixels is enough to prove the brand colour is

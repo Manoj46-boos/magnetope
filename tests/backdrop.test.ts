@@ -1,6 +1,7 @@
 import { Color, Mesh, MeshBasicMaterial, PerspectiveCamera, ShaderMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
 import { Backdrop } from '@/render/backdrop';
+import { PALETTES } from '@/render/palette';
 import type { BiomeId } from '@/sim/types';
 
 /** The three skyline layers are the meshes that carry a flat-colour material and a hand-built ridge. */
@@ -144,7 +145,7 @@ describe('backdrop skylines', () => {
     }
   });
 
-  it('colours the aurora from the biome accent, a cyan that shifts toward green at the top', () => {
+  it('colours the aurora from the biome accent, shifted a quarter turn toward green at the top', () => {
     const backdrop = new Backdrop('stratosphere', 7);
     const material = auroraOf(backdrop)[0]!.material as ShaderMaterial;
     const hueOf = (c: Color): number => {
@@ -154,8 +155,9 @@ describe('backdrop skylines', () => {
     };
     const low = hueOf(material.uniforms.uLow!.value as Color);
     const high = hueOf(material.uniforms.uHigh!.value as Color);
-    expect(low).toBeGreaterThan(165);
-    expect(low).toBeLessThan(200);
+    const accent = PALETTES.stratosphere.accent.h;
+    expect(low).toBeCloseTo(accent, 0);
+    expect(high).toBeCloseTo((accent + 95) % 360, 0);
     expect(high).not.toBeCloseTo(low, 0);
     backdrop.dispose();
   });

@@ -69,7 +69,7 @@ afterAll(async () => {
   await context?.close();
   await browser?.close();
   await server?.close();
-});
+}, 120000);
 
 const routeOf = (id: string): unknown => JSON.parse(readFileSync(resolve(__dirname, `../src/levels/routes/${id}.json`), 'utf8'));
 
@@ -158,7 +158,10 @@ describe('a first session in a real browser', () => {
     const saved = await page!.evaluate(() => JSON.parse(localStorage.getItem('magnetope.save') ?? '{}').stars as Record<string, number>);
     for (const id of FIRST_LEVELS) expect(saved[id], id).toBeGreaterThanOrEqual(1);
 
-    await page!.reload();
+    // Tearing down a page that has played routes costs tens of seconds under
+    // swiftshader before the navigation's load event can fire; the budget reflects
+    // that machine cost, not any game work.
+    await page!.reload({ timeout: 90_000 });
     await page!.waitForFunction(() => Boolean((window as unknown as Partial<GameWindow>).__game), null, { timeout: 30000 });
     const restored = await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.save.data.stars);
     for (const id of FIRST_LEVELS) expect(restored[id], id).toBeGreaterThanOrEqual(1);

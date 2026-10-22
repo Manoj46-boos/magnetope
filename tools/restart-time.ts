@@ -26,11 +26,17 @@ export interface RestartTiming {
 export async function timeRestarts(ids: readonly string[], repeat: number): Promise<RestartTiming[]> {
   const server = await createServer({ logLevel: 'silent', server: { host: '127.0.0.1', port: 0 } });
   await server.listen();
-  const browser = await chromium.launch({
-    channel: 'chrome',
-    headless: true,
-    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'],
-  });
+  const launchArgs = { headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] };
+  let browser: import('playwright').Browser | null = null;
+  for (const channel of ['chrome' as const, undefined]) {
+    try {
+      browser = await chromium.launch(channel ? { channel, ...launchArgs } : launchArgs);
+      break;
+    } catch {
+      /* a machine without that distribution falls through to the bundled one */
+    }
+  }
+  if (!browser) throw new Error('no Chromium distribution available to measure restarts');
   try {
     const context = await browser.newContext({ viewport: { width: 640, height: 360 } });
     await context.addInitScript('window.__name = (f) => f;');

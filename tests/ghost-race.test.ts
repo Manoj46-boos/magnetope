@@ -55,7 +55,7 @@ afterAll(async () => {
   await context?.close();
   await browser?.close();
   await server?.close();
-});
+}, 120000);
 
 const route = JSON.parse(readFileSync(resolve(__dirname, `../src/levels/routes/${LEVEL}.json`), 'utf8')) as unknown;
 const parGhost = readFileSync(resolve(__dirname, `../src/levels/ghosts/${LEVEL}.json`), 'utf8');

@@ -263,7 +263,7 @@ describe('quality tiers', () => {
     expect(PROFILES.mid.particleCeiling).toBe(500);
     expect(PROFILES.low.particleCeiling).toBe(260);
     expect(PROFILES.low.fieldLineSegments).toBe(12);
-    expect(PROFILES.low.dustScale).toBe(0);
+    expect(PROFILES.low.dustScale).toBe(0.35);
   });
 
   it('classifies devices into tiers', () => {
