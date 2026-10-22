@@ -2889,3 +2889,29 @@ The code is done. The visual renewal is complete. The game is at 9.0/10 — "rel
 | 10 | Color grade boost, edge highlights, thumbnails | **9.0/10** |
 
 **From 4/10 to 9.0/10 in 10 sessions. The game is release-ready.**
+
+---
+
+# PROGRESS TRACKER — Session 11: The Opener (premium PRD W1 + W2)
+
+**This session starts the premium transformation PRD** (`docs/MAGNETOPE_PREMIUM_PRD.md`), executing its first two workstreams. The visual renewal at 9.0/10 is untouched; this session works on the first ninety seconds.
+
+## What shipped this session (Session 11)
+
+1. **The gate repair (W1, the review's one repo bug)** — `build:poki` now passes `--poki` to the byte audit, and the audit's parser learned to skip flags, so the Poki build passes its own hygiene gate at 1.49 MB.
+2. **The boot move (W2)** — every biome's first level opens on MAGNO at portrait scale, pulls out to a vista that holds the whole climb with the summit in frame, and settles home: 2.4 s total, interruptible at any frame, coach standing aside while it runs.
+3. **The idle ladder (W2)** — hand at 3 s, MAGNO attention hop at 8 s, a look up to the goal at 15 s; twice, then silence. Captured on keyframes and scored 10, 9, 9 by the vision review.
+4. **The staged HUD law (W2)** — finishes on its own at 10 s without a first input; the touch flip affordance rests at half presence so the first mobile frame still says "press me" (DOM-verified: stick hidden, one faint button).
+5. **The first-catch beat (W2)** — the game's first catch plays a one-time half-speed beat with a flash, interruptible like everything else; the second catch is ordinary.
+6. **Real behavioural tests** — 21 unit tests on the opener's state machines and 8 fresh-profile end-to-end tests in real Chromium (boot arc, camera handover, ladder timing, beat, interrupt, the 45-second contract, pause survival, zero foreign requests). Plus the test debt the run surfaced: reload budgets, the aurora palette pin, the dust floor, the restart tool's Chrome assumption.
+
+## Verification
+
+- Full suite: 71 files, 2,198 tests green; all real-Chrome suites green (opener, session, ghost-race, input, controls, restart, layout, monetization, resilience, fuzz, magnet-signature).
+- Production `build:poki`: 1.49 MB gzipped, audit passes.
+- Frame-exact QA captures (`scripts/qa-opener-capture.mjs`): the three-key boot scored 8/9/9 with a PASS verdict; the ladder, beat, mobile rest and Suburbia entry each passed.
+- Session log recorded in `docs/AI_LEDGER.md` and `docs/ROADMAP.md` (session 18).
+
+## What's next
+
+Per the premium PRD's dependency order, **W3 (the thumbnail system) and W4 (the casual on-ramp)** — the two can run in parallel. After that: W5 (juice pass on launch and snap), then the doc spine, character charm and audio identity. The human list is unchanged: device matrix, five external playtests, the ledger's human column, and the PAT revocation.
