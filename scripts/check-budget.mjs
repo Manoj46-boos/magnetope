@@ -62,7 +62,7 @@ export function auditBuild(dist, { allowPokiSdk = false } = {}) {
 
 const invoked = process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 if (invoked) {
-  const dist = resolve(process.argv[2] ?? 'dist');
+  const dist = resolve(process.argv.slice(2).find((arg) => !arg.startsWith('--')) ?? 'dist');
   const { sizes, total, problems } = auditBuild(dist, { allowPokiSdk: process.argv.includes('--poki') });
   for (const f of sizes.sort((a, b) => b.gzip - a.gzip)) console.log(`${String(f.gzip).padStart(9)} B gzip  ${f.file}`);
   console.log(`\ninitial payload: ${(total / MB).toFixed(2)} MB gzipped (target <= 4.00, hard limit 5.00)`);
