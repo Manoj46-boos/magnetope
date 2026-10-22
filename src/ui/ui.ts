@@ -222,6 +222,11 @@ export class GameUi {
     this.touch.classList.toggle('on', on);
   }
 
+  /** The flip affordance idles at half presence until the first touch, so the first frame still says "press me" (PRD 15.3). */
+  setTouchRest(rest: boolean): void {
+    this.touch.classList.toggle('rest', rest);
+  }
+
   updateHud(state: HudState): void {
     this.rail.classList.toggle('show', state.showRail);
     const pct = Math.max(0, Math.min(1, state.altitudeFrac)) * 100;

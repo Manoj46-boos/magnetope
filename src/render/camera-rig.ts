@@ -57,6 +57,11 @@ export class CameraRig {
     return { x: this.fx.value, y: this.fy.value };
   }
 
+  /** Where the follow shot comes to rest when MAGNO is still; the opener eases its shots back to exactly this. */
+  restFocus(target: Vec2): Vec2 {
+    return { x: target.x, y: target.y + this.baseVisibleHeight * (0.5 - this.framingBias) * 0.45 };
+  }
+
   setLayout(layout: StageLayout): void {
     this.camera.aspect = layout.cssWidth / layout.cssHeight;
     this.baseDistance = cameraDistance(layout, CAMERA_FOV);

@@ -21,6 +21,9 @@ export class SlowMoDirector {
   private clockMs = 0;
   private history: Entry[] = [];
   private holdMs = 0;
+  /** A beat in progress plays at its own scale and ends on its own; -1 means no beat. */
+  private beatScale: number = TUNING.fall.slowMoScale;
+  private beatHoldMs = -1;
   disabled = false;
 
   /** Current time scale handed to the fixed stepper and the audio layer. */
@@ -38,6 +41,7 @@ export class SlowMoDirector {
   /** Asks for slow motion. Returns whether the request was granted. */
   request(heightMeters: number): boolean {
     if (this.disabled || this.phase === 'in' || this.phase === 'hold') return false;
+    this.beatHoldMs = -1;
     const { maxSlowMoPerWindow, slowMoWindowMs } = TUNING.fall;
     this.history = this.history.filter((e) => this.clockMs - e.atMs < slowMoWindowMs);
     if (this.history.length >= maxSlowMoPerWindow) {
@@ -47,6 +51,15 @@ export class SlowMoDirector {
       this.history.splice(smallest, 1);
     }
     this.history.push({ atMs: this.clockMs, height: heightMeters });
+    this.enter('in');
+    return true;
+  }
+
+  /** The opener's first-catch beat: the same ramp machine as a fall, but it recovers on its own and costs no budget slot. */
+  beat(scale: number, holdMs: number): boolean {
+    if (this.disabled || this.phase === 'in' || this.phase === 'hold') return false;
+    this.beatScale = scale;
+    this.beatHoldMs = holdMs;
     this.enter('in');
     return true;
   }
@@ -61,6 +74,7 @@ export class SlowMoDirector {
     this.scale = 1;
     this.phaseMs = 0;
     this.holdMs = 0;
+    this.beatHoldMs = -1;
   }
 
   /** Advance by real (unscaled) milliseconds. */
@@ -68,7 +82,7 @@ export class SlowMoDirector {
     this.clockMs += realMs;
     if (this.disabled && (this.phase === 'in' || this.phase === 'hold')) this.enter('out');
     this.phaseMs += realMs;
-    const target = TUNING.fall.slowMoScale;
+    const target = this.beatHoldMs >= 0 ? this.beatScale : TUNING.fall.slowMoScale;
     switch (this.phase) {
       case 'in': {
         const t = clamp(this.phaseMs / TUNING.fall.slowMoRampInMs, 0, 1);
@@ -79,8 +93,9 @@ export class SlowMoDirector {
       case 'hold':
         this.holdMs += realMs;
         this.scale = target;
+        if (this.beatHoldMs >= 0 && this.holdMs >= this.beatHoldMs) this.enter('out');
         // Safety valve in case a landing never resolves.
-        if (this.holdMs > 7000) this.enter('out');
+        else if (this.holdMs > 7000) this.enter('out');
         break;
       case 'out': {
         const t = clamp(this.phaseMs / TUNING.fall.slowMoRampOutMs, 0, 1);

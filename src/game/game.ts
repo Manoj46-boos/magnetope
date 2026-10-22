@@ -30,6 +30,7 @@ import type { CoachDevice } from '@/ui/coach-overlay';
 import type { ClimbSummary } from '@/ui/ending-screen';
 import { Coach } from './coach';
 import { GhostDirector } from './ghost-director';
+import { Opener } from './opener';
 import { GhostExchange } from './ghost-exchange';
 import { HighlightStrip, type FallHighlight } from './highlights';
 import { FLAG, HudReveal } from './hud-reveal';
@@ -56,6 +57,9 @@ const CONTEXT_GRACE_MS = 6000;
 const ENDING_SETTLE_MS = 3000;
 const SHAREABLE_FALL_METERS = 3;
 const TICK_MS = 1000 / TUNING.sim.hz;
+/** The first catch of the game plays at half speed for under a second (PRD 16.2). */
+const FIRST_CATCH_SCALE = 0.5;
+const FIRST_CATCH_HOLD_MS = 900;
 /** Used by the tutorial hand when no par ghost is available to point the way. */
 const DEFAULT_HEADING = { x: 0.35, y: 1 };
 
@@ -91,6 +95,8 @@ export class Game {
   private readonly attempts: AttemptRecorder;
   private readonly hudReveal: HudReveal;
   private coach = new Coach(false, () => undefined);
+  private opener!: Opener;
+  private openerCamera = false;
   private renderer!: SceneRenderer;
   private contextGuard!: ContextGuard;
   private contextTimer = -1;
@@ -176,6 +182,22 @@ export class Game {
         tick: () => this.audio.tick(),
       },
     });
+
+    this.opener = new Opener({
+      hop: () => {
+        if (!this.settings.reducedMotion) this.renderer.attentionHop();
+      },
+      firstCatch: () => {
+        this.markSeen(FLAG.firstCatch);
+        this.slowMo.beat(FIRST_CATCH_SCALE, FIRST_CATCH_HOLD_MS);
+        this.renderer.triggerFlash(0.55);
+      },
+      hudReveal: () => {
+        this.hudShown = true;
+        this.ui.showHud(true);
+      },
+      interruptBeat: () => this.slowMo.release(),
+    });
   }
 
   static async start(host: HTMLElement, deps: GameDeps = {}): Promise<Game> {
@@ -234,6 +256,7 @@ export class Game {
     this.ui.hideLoading();
     performance.mark('magnetope:playable');
     this.ui.setTouchControls(this.touchUi);
+    this.ui.setTouchRest(this.touchUi);
     if (!this.save.persistent) this.ui.toast(t('noSave'));
     this.claimRewards();
 
@@ -247,9 +270,11 @@ export class Game {
       this.audioEngine.unlock();
       if (this.phase === 'play' && !this.ui.modalOpen) {
         this.bus.onPlayerInput();
+        this.opener.noteInput();
         if (!this.hudShown) {
           this.hudShown = true;
           this.ui.showHud(true);
+          this.ui.setTouchRest(false);
         }
         if (this.ui.fallCardOpen && this.sim?.magno.view.state === 'attached') this.ui.hideFall();
       }
@@ -330,7 +355,17 @@ export class Game {
     this.coach = new Coach(coached, () => this.markSeen(FLAG.coach));
 
     this.renderer.load(sim);
+    const enteringBiome = this.lastBiome !== level.biome && level.index === 0;
     this.announceBiome(level.biome);
+    this.opener.beginLevel({
+      establish: enteringBiome && !this.settings.reducedMotion,
+      beat: id === order[0] && !this.save.data.seen.includes(FLAG.firstCatch),
+      spawn: level.spawn,
+      summit: { x: level.summit.x, y: level.summit.y },
+      follow: this.renderer.cameraRig.restFocus(level.spawn),
+      followHeight: this.renderer.cameraRig.baseVisibleHeight,
+    });
+    this.openerCamera = false;
     this.audio.bind(sim);
     this.bindSimEvents(sim);
     this.ui.hideClear();
@@ -382,15 +417,23 @@ export class Game {
       on('fall', (report) => this.onFall(sim, report)),
       on('attach', () => {
         this.coach.onAttach();
+        this.opener.onCatch();
         this.attempts.stick();
         if (this.ui.fallCardOpen) this.ui.hideFall();
       }),
       on('repel', (e) => {
         this.coach.onRepel();
+        this.opener.onLaunch();
         this.attempts.flip(e.point);
       }),
-      on('snapEngage', () => this.attempts.snap()),
-      on('summit', (summary) => this.onSummit(summary)),
+      on('snapEngage', () => {
+        this.attempts.snap();
+        this.opener.mark('snap');
+      }),
+      on('summit', (summary) => {
+        this.opener.mark('clear');
+        this.onSummit(summary);
+      }),
     );
   }
 
@@ -501,6 +544,13 @@ export class Game {
     this.beginEnding();
   }
 
+  /** Hands the camera back if the opener was holding a directed shot. */
+  private stopOpenerCamera(): void {
+    if (!this.openerCamera) return;
+    this.openerCamera = false;
+    this.renderer.releaseCamera();
+  }
+
   private beginEnding(): void {
     if (!this.sim || this.phase === 'ending') return;
     this.phase = 'ending';
@@ -510,6 +560,8 @@ export class Game {
     this.ui.hideClear();
     this.ui.closeScreens();
     this.ui.banner.hide();
+    this.opener.suspend();
+    this.stopOpenerCamera();
     this.renderer.beginEnding();
 
     const director = new EndingDirector();
@@ -560,6 +612,8 @@ export class Game {
     this.bus.stop();
     this.input.setEnabled(false);
     this.ui.coach.hide();
+    this.opener.suspend();
+    this.stopOpenerCamera();
     this.ui.syncSettings(this.settings);
     this.ui.openPause();
     this.audioEngine.suspend();
@@ -854,6 +908,17 @@ export class Game {
     this.slowMo.update(realDt * 1000);
 
     if (this.phase === 'play' && !this.ui.modalOpen) {
+      const { framing } = this.opener.update(realDt * 1000, sim.run.started);
+      if (framing) {
+        this.renderer.directCamera(framing);
+        this.openerCamera = true;
+      } else if (this.openerCamera) {
+        this.renderer.releaseCamera();
+        this.openerCamera = false;
+      }
+    }
+
+    if (this.phase === 'play' && !this.ui.modalOpen) {
       const { steps, alpha } = this.stepper.advance(realDt, this.slowMo.scale);
       for (let i = 0; i < steps; i++) {
         const frame = this.scripted && !this.scripted.done ? this.scripted.next() : this.input.sample();
@@ -920,10 +985,12 @@ export class Game {
     });
   }
 
-  /** Shows the ghost hand while the tutorial still has something to teach. */
+  /** Shows the ghost hand while the tutorial still has something to teach, and as the idle ladder's first rung. */
   private updateCoach(sim: Simulation, realDt: number): void {
     const playing = this.phase === 'play' && !this.ui.modalOpen && !sim.run.cleared;
-    const cue = playing ? this.coach.update(realDt * 1000, sim.magno.view.state) : null;
+    // While the opening shot owns the camera, the stage stays clear: the hand
+    // has its say the moment the move is done (or is skipped by any input).
+    const cue = playing && !this.opener.presenting ? this.coach.update(realDt * 1000, sim.magno.view.state) ?? (this.opener.hand ? 'launch' : null) : null;
     const anchor = this.renderer.playerScreen();
     if (!cue || !anchor) {
       if (this.ui.coach.visible) this.ui.coach.hide();
@@ -969,6 +1036,7 @@ export class Game {
       bus: this.bus,
       save: this.save,
       telemetry: this.telemetry,
+      openerLog: this.opener.log,
       slowScale: () => this.slowMo.scale,
       ending: () => this.endingDirector,
       beginEnding: () => this.beginEnding(),

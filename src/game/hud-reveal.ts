@@ -5,6 +5,7 @@ import type { LevelDef } from '@/sim/types';
 export const FLAG = {
   coach: 'coach',
   charge: 'hud.charge',
+  firstCatch: 'opener.first-catch',
 } as const;
 
 const RAIL_GAIN_METERS = 1.5;

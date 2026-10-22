@@ -374,6 +374,11 @@ select:focus-visible {
   opacity: 1;
 }
 
+/* The flip affordance waits at half presence until the first touch (PRD 15.3). */
+.touch.on.rest {
+  opacity: 0.45;
+}
+
 .stick-ring,
 .stick-thumb {
   position: absolute;

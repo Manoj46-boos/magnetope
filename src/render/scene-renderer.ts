@@ -670,6 +670,16 @@ export class SceneRenderer {
     if (!framing && this.sim) this.cameraRig.snapTo(this.sim.magno.view.position);
   }
 
+  /** Hands the camera back to the follow shot without a cut, letting the rig ease home from the last framing. */
+  releaseCamera(): void {
+    this.directed = null;
+  }
+
+  /** MAGNO's attention hop for the idle ladder (PRD 15.3): presentation only, the simulation never hears about it. */
+  attentionHop(): void {
+    this.rig.attentionHop();
+  }
+
   /** MAGNO in CSS pixels, for cursor-relative aim and HUD anchoring. */
   playerScreen(): Vec2 | null {
     if (!this.sim) return null;

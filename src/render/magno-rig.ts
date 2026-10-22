@@ -56,6 +56,10 @@ interface Pulse {
 /** PRD 7.2: scale to 85% along the contact normal, held 90 ms, with a 140 ms elastic recovery. */
 const ATTACH_SQUASH = 0.85;
 
+/** The idle ladder's attention hop: a small parabolic lift, never a simulation move. */
+const HOP_MS = 520;
+const HOP_HEIGHT = 0.42;
+
 const ARM_UPPER = 0.15;
 const ARM_LOWER = 0.15;
 const SHOULDER_X = 0.2;
@@ -173,6 +177,7 @@ export class MagnoRig {
   /** Scratch for the per-frame rotations, so the update loop allocates nothing. */
   private readonly local: Vec2 = { x: 0, y: 0 };
   private joy = 0;
+  private hopMs = -1;
 
   constructor(skin: RigSkin = CLASSIC_SKIN) {
     this.bodyMaterial = new MeshStandardMaterial({ color: skin.body, flatShading: true, roughness: 0.55, metalness: 0.45 });
@@ -354,6 +359,13 @@ export class MagnoRig {
     this.pulse = { axis, peak: lerp(1.18, 1.24, power01), hold: 0.04, recover: 0.2, age: 0 };
   }
 
+  /** A small bounce in place for the idle ladder: a stretch on the way up, a landing squash, no simulation involvement. */
+  attentionHop(): void {
+    if (this.hopMs >= 0) return;
+    this.hopMs = 0;
+    this.pulse = { axis: 0, peak: 1.16, hold: 0.05, recover: 0.24, age: 0 };
+  }
+
   onImpact(normal: Vec2, speed: number): void {
     if (speed < 4) return;
     const axis = Math.atan2(-normal.x, normal.y);
@@ -412,6 +424,16 @@ export class MagnoRig {
 
     this.followAngle(view, dt);
     this.root.position.set(position.x + this.offset.x, position.y + this.offset.y, 0);
+    if (this.hopMs >= 0) {
+      this.hopMs += dt * 1000;
+      const u = this.hopMs / HOP_MS;
+      if (u >= 1) {
+        this.hopMs = -1;
+        this.pulse = { axis: 0, peak: ATTACH_SQUASH, hold: 0.06, recover: 0.16, age: 0 };
+      } else {
+        this.root.position.y += Math.sin(u * Math.PI) * HOP_HEIGHT;
+      }
+    }
     this.inner.rotation.z = this.visualAngle - this.deform.rotation.z;
 
     this.applyDeformation(view, dt, reducedMotion);
