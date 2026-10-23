@@ -1047,7 +1047,7 @@
     grid-row: 1 / span 6;
   }
 
-  .clear-card > :not(.stack) {
+  .clear-card > :not(.stack):not(.stamp) {
     grid-column: 1;
   }
 

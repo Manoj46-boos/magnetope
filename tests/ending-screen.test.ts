@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vite
 import { endingFrame } from '@/game/ending';
 import { setLocale } from '@/locale';
 import { EndingScreen, type ClimbSummary } from '@/ui/ending-screen';
+import { LOCKUP } from '@/ui/lockup';
 import { GameUi, type ClearCardData, type UiHandlers } from '@/ui/ui';
 
 const SUMMARY: ClimbSummary = { stars: 87, maxStars: 105, levelsCleared: 35, totalLevels: 35, bestFall: { heightMeters: 31.4, grade: 'SSS' } };
@@ -89,7 +90,6 @@ describe('ending screen', () => {
   it('shows the climb on the closing card', () => {
     screen.show(SUMMARY, skipped);
     const text = screen.element.querySelector('.credits')!.textContent!;
-    expect(text).toContain('MAGNETOPE');
     expect(text).toContain('87');
     expect(text).toContain('/105');
     expect(text).toContain('35');
@@ -97,6 +97,18 @@ describe('ending screen', () => {
     expect(text).toContain('SSS');
     expect(text).toContain('Thank you for climbing');
     expect(text).toContain('Magnetope Studio');
+  });
+
+  it('brands the closing card with the lockup (R-TH-08)', () => {
+    screen.show(SUMMARY, skipped);
+    const mark = screen.element.querySelector('.mark')!;
+    const lockup = mark.querySelector('.lockup') as HTMLElement;
+    expect(lockup.getAttribute('role')).toBe('img');
+    expect(lockup.getAttribute('aria-label')).toBe('MAGNETOPE');
+    expect(lockup.querySelector('.lockup-o svg')).not.toBeNull();
+    expect(mark.innerHTML).toContain(LOCKUP.poleNorth);
+    expect(mark.innerHTML).toContain(LOCKUP.poleSouth);
+    expect(mark.innerHTML).toContain(LOCKUP.arc);
   });
 
   it('shows a dash instead of a best fall when the player never fell', () => {
@@ -176,5 +188,15 @@ describe('level clear card on the last level', () => {
     const ui = new GameUi(document.body, handlers(noop));
     ui.showClear({ ...card, finale: false, hasNext: true });
     expect(labels()).not.toContain('Watch the ending');
+  });
+
+  it('carries the corner stamp of the lockup (R-TH-08)', () => {
+    const ui = new GameUi(document.body, handlers(noop));
+    ui.showClear(card);
+    const stamp = document.querySelector('.clear-card .stamp')!;
+    const seal = stamp.querySelector('svg') as SVGSVGElement;
+    expect(seal.getAttribute('aria-hidden')).toBe('true');
+    expect(stamp.innerHTML).toContain(LOCKUP.poleNorth);
+    expect(stamp.innerHTML).toContain(LOCKUP.poleSouth);
   });
 });

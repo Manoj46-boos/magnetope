@@ -11,6 +11,7 @@ import { EndingScreen } from './ending-screen';
 import { GhostExchangeScreen, type ExchangeHandlers } from './ghost-exchange';
 import { ICONS, MAGNO_SILHOUETTE, STUDIO_MARK } from './icons';
 import { LockerScreen, type LockerHandlers } from './locker-screen';
+import { LOCKUP_IDENT } from './lockup';
 import { MapScreen, type MapHandlers } from './map-screen';
 import { ModalHost } from './modal-host';
 
@@ -406,6 +407,7 @@ export class GameUi {
     const panel = el('div', { class: 'panel clear-card' });
     const par = formatTime(data.parSeconds * 1000);
     panel.innerHTML = `
+      <div class="stamp">${LOCKUP_IDENT}</div>
       ${data.newBest ? `<p class="best-tag">${t('newBest')}</p>` : ''}
       ${data.friend ? `<p class="duel-tag ${data.friend.beaten ? 'won' : ''}">${esc(this.duelLine(data.friend))}</p>` : ''}
       <div class="banner">${t('levelClear')}</div>

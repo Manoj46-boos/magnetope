@@ -2,6 +2,7 @@ import { t } from '@/locale';
 import type { EndingFrame } from '@/game/ending';
 import { el } from './dom';
 import { ICONS } from './icons';
+import { LOCKUP_WORDMARK } from './lockup';
 
 export interface ClimbSummary {
   stars: number;
@@ -93,7 +94,7 @@ export class EndingScreen {
     const fall = bestFall ? `${bestFall.heightMeters.toFixed(1)} ${t('meters')} · ${bestFall.grade}` : '–';
     const fact = (value: string, label: string): string => `<div class="fact"><b>${value}</b><span>${label}</span></div>`;
     return `
-      <div class="mark">MAGNETOPE</div>
+      <div class="mark">${LOCKUP_WORDMARK}</div>
       <p class="thanks">${t('thanksForClimbing')}</p>
       <div class="facts">
         ${fact(`${stars}<small>/${maxStars}</small>`, t('stars'))}
