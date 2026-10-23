@@ -33,17 +33,29 @@ No sign-in, no waiting, no downloads after the first load.
 
 **Suggested tags:** physics, magnet, skill, one button, ragdoll, rage game, 3D, casual, speedrun.
 
-## 3. Thumbnails (PRD 6.6)
+## 3. Thumbnails (PRD 17.3)
 
 | Asset | File | Status |
 | --- | --- | --- |
-| Static, 628 x 628 | `thumbnails/static/thumbnail-628.png` | Done, captured in-engine, no text, no UI, no rim tint |
-| Static, 1256 x 1256 | `thumbnails/static/thumbnail-1256.png` | Done, same composition for sharp stores |
-| Animated loop, 3 s at 60 fps | `thumbnails/animated/` as WebM, WebP and GIF | Done, a flip, spark and catch with a cross-faded loop point |
+| Hero card, 628 x 628 | `thumbnails/static/thumbnail-hero-628.png` | Done. MAGNO caught mid-launch on a live beam, arms and eye already on the junk stack above him; dusk sky, six degree roll |
+| Blooper card, 628 x 628 | `thumbnails/static/thumbnail-fall-628.png` | Done. The flip that never connected: windmilling fall, panic eye, amber repel glow, the calm stack for scale |
+| Ambience card, 628 x 628 | `thumbnails/static/thumbnail-tower-628.png` | Done. The whole Tin Roof shaft, summit beacon lit, clouds and ridges, MAGNO small on his beam up the left wall |
+| Sharp copies, 1256 x 1256 | `thumbnails/static/thumbnail-*-1256.png` | Done, the same three compositions for stores that want the extra pixels |
+| Animated ident | `thumbnails/animated/` as WebM, WebP and GIF | Done. The Cooper timeline: flip-in inside half a second, the catch with its flash by 2.0 s, settle and one blink, loop-clean at 3.0 s. WebM is 245 KB against the 300 KB budget |
 
-Regenerate with `npm run thumbnails` while `npm run dev` is running. `python tools/check-thumbnail.py <png>` checks the rules Poki publishes: square, at least 628 px, opaque corners, no letterbox bars, and under 1% of pixels near the playground background `#83FFE7`.
+Every number behind the cards lives in one module, `src/render/thumbnail-scene.ts`: the framing, the staged pose, the dress props, the sky grade and the ident timeline. The engine renders the card with the same rig, field lines and post pass as gameplay, so the store frame is a designed shot, not a screenshot luck produced, and it cannot drift from the game. Regenerate the family with `npm run dev` in one terminal and `npm run thumbnails` in another. The run ends by auditing every card and the ident budgets (`python tools/check-thumbnail.py --report thumbnails`) and exits non-zero when any rule fails.
 
-The composition follows the brief: MAGNO mid-flip in the lower left, repel rings and sparks behind him, a tower of fridge, washer and locker filling the upper right, the Scrapyard sky, a seven degree tilt. It has not been A/B tested; that is a soft-release task.
+### The five-point pre-flight (R-TH-09)
+
+No web-fit request is sent until all five points read green in `thumbnails/report.json`. The first four are machine audits, re-runnable any time; the fifth is people.
+
+1. **Text-free.** `audits.ocrEmpty` is true: tesseract finds no glyphs at confidence 65 or more (R-TH-02).
+2. **Legible at 128 px.** `audits.legibility128` is true: the subject holds 1.6:1 tonal separation in a phone-row crop (R-TH-01).
+3. **Contrast holds.** `audits.contrast` is 3:1 or better around the subject, and still 2:1 on a screen dimmed to 30% (R-TH-05).
+4. **No Poki-background collision.** `audits.hueCollision` is false: no sampled pixel within ΔE 10 of the playground's `#83FFE7`.
+5. **The panel says yes.** `panel.score` is at least 0.9 from the forced-choice test (R-TH-07): ten naive viewers, 200 ms exposure, "which would you click?". Record the winner in `panel.forcedChoiceWinner`, then fill `uploaded` with what actually shipped.
+
+Current state: the four machine points pass for all three cards and the ident (`detail` in `report.json` lists no failures). `panel.score` is still null — the forced-choice test needs ten people in a room, and no build step can conjure them. Until it runs and scores at least 0.9, the pre-flight is not passed and nothing uploads.
 
 ## 4. Clone defence (PRD table 3.2)
 
@@ -68,7 +80,7 @@ The composition follows the brief: MAGNO mid-flip in the lower left, repel rings
 | Clean production build | Done | dev hooks compile out; audited in `tests/build.test.ts` |
 | Save system and notice | Done | `tests/session.test.ts` reloads the page and finds the stars; `tests/platform.test.ts` covers the fallbacks |
 | Size and load speed | Done. 1.48 MB gzipped against a 4 MB target and 5 MB limit. Cold load measured in Chrome with a throttled CPU and network: about 1.3 s on desktop, 4 to 5 s on a mid-range phone over 4G, about 12 s on a low-end phone over slow 4G (software rendering, so drawing is pessimistic). Real devices not yet tried | `npm run build`, `npm run loadtime`, `tests/load-time.test.ts` |
-| Static and animated thumbnails | Done | section 3 |
+| Static and animated thumbnails | Done. Three scored variants at 628 and 1256, audited by `tools/check-thumbnail.py`; the panel leg of the upload ritual is section 3's open point | section 3, `thumbnails/report.json` |
 | Keyboard pause | Done | `tests/session.test.ts` presses Escape in the real game and checks the clock stops |
 | Skippable cutscenes, visual tutorials | Done | `tests/ending.test.ts`, `tests/ending-screen.test.ts`, ghost-hand tutorial in `src/game/coach.ts` |
 
