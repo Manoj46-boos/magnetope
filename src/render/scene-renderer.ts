@@ -22,6 +22,7 @@ import {
   WebGLRenderer,
   BoxGeometry,
   ConeGeometry,
+  type Material,
 } from 'three';
 import type { FieldLook } from '@/config/cosmetics';
 import { TUNING } from '@/config/tuning';
@@ -45,7 +46,10 @@ import { mountainLayout, pullbackFraming, type Framing } from './mountain';
 import { CLASSIC_SKIN, MagnoRig, type RigSkin } from './magno-rig';
 import { PALETTES, fxTheme, toColor } from './palette';
 import { PostStack } from './post-stack';
+import type { PropPlacement } from '@/sim/types';
 import { PROP_DEPTH, buildPropParts, type PropParts } from './prop-mesh';
+import { CARD_GRADE } from './grade';
+import { CARD_SKY, ThumbnailStage, cardDressProp, type ThumbnailVariant } from './thumbnail-scene';
 import { PROFILES, type QualityProfile, type QualityTier } from './quality';
 import { ResolutionGovernor, layoutStage } from './stage';
 import { Vfx } from './vfx';
@@ -136,6 +140,11 @@ export class SceneRenderer {
   private guideRings: Array<{ ring: Mesh; phase: number }> = [];
   private beacon: Group | null = null;
   private endingStage: EndingStage | null = null;
+  private thumbnail: ThumbnailStage | null = null;
+  private thumbnailDress: Group | null = null;
+  private dressGuideStart = -1;
+  /** Light, sky and bloom lift that carries the staged catch flash onto the captured card; the shell's own flash veil is a DOM layer the capture's photo mode hides. */
+  private thumbFlash = 0;
   private pullStart: PullStart | null = null;
   private directed: Framing | null = null;
   private resolutionHeld = false;
@@ -623,6 +632,110 @@ export class SceneRenderer {
     this.onShake('big');
   }
 
+  /** Enters the store-card composition scene (PRD 17.3): staged sky, card LUT, staged pose. */
+  enterThumbnail(variant: ThumbnailVariant, ident = false): void {
+    this.exitThumbnail();
+    if (!this.sim) return;
+    this.thumbnail = new ThumbnailStage(variant, ident);
+    const sky = CARD_SKY;
+    const palette = PALETTES[this.sim.level.biome];
+    this.backdrop?.gradeSky({ ...sky.top }, { ...sky.horizon }, { ...sky.sun });
+    this.backdrop?.setAmbientVisible(this.thumbnail.ambientSky);
+    this.post.setGrade(CARD_GRADE);
+    // The card is a dusk shot: the graded sky goes deep amber behind a thin fog,
+    // while a hotter key light keeps MAGNO and the junk stack lit (R-TH-05).
+    this.sun.intensity = palette.sunIntensity * 2.6;
+    this.hemi.intensity = palette.hemiIntensity * 0.9;
+    this.fog.density = this.baseFogDensity * 0.55;
+    this.flashAmount = 0;
+    this.thumbFlash = 0;
+    this.buildThumbnailDress(this.thumbnail.dress, this.thumbnail.guide);
+  }
+
+  /** Puts the world's own grade, sky and pose back; the follow camera resumes on its own. */
+  exitThumbnail(): void {
+    if (!this.thumbnail) return;
+    this.thumbnail = null;
+    const dress = this.thumbnailDress;
+    if (dress) {
+      this.scene.remove(dress);
+      const shared: Material[] = [this.bodyMaterial, this.glassMaterial, this.rimMaterial, this.glowMaterial, this.tetherMaterial];
+      dress.traverse((o) => {
+        if (!(o instanceof Mesh)) return;
+        o.geometry.dispose();
+        if (!shared.includes(o.material as Material)) (o.material as Material).dispose();
+      });
+      this.thumbnailDress = null;
+    }
+    this.guideRings.splice(this.dressGuideStart).forEach((entry) => {
+      this.levelGroup.remove(entry.ring);
+      entry.ring.geometry.dispose();
+      (entry.ring.material as Material).dispose();
+    });
+    this.dressGuideStart = -1;
+    this.rig.setJoy(0);
+    this.rig.setBrace(0);
+    this.rig.setGrab(null);
+    if (this.sim) {
+      const palette = PALETTES[this.sim.level.biome];
+      this.sun.intensity = palette.sunIntensity;
+      this.hemi.intensity = palette.hemiIntensity;
+      this.fog.density = this.baseFogDensity;
+      this.backdrop?.setAmbientVisible(true);
+      this.backdrop?.applyBiome(this.sim.level.biome);
+      this.post.setBiome(this.sim.level.biome);
+    }
+  }
+
+  /** Builds the composition scene's staged props with the game's own dressing rules. */
+  private buildThumbnailDress(placements: readonly PropPlacement[], guide: { x: number; y: number } | null): void {
+    if (!this.sim) return;
+    this.dressGuideStart = this.guideRings.length;
+    if (guide) this.buildDressGuide(guide);
+    if (placements.length === 0) return;
+    const palette = PALETTES[this.sim.level.biome];
+    const merged = { body: new GeometryBuilder(), glass: new GeometryBuilder(), rim: new GeometryBuilder(), glow: new GeometryBuilder() };
+    placements.forEach((placement, index) => {
+      const parts = buildPropParts(cardDressProp(placement, index), palette, 97);
+      const rot = placement.rot ?? 0;
+      merged.body.append(parts.body, placement.x, placement.y, rot);
+      merged.glass.append(parts.glass, placement.x, placement.y, rot);
+      merged.rim.append(parts.rim, placement.x, placement.y, rot);
+      merged.glow.append(parts.glow, placement.x, placement.y, rot);
+    });
+    const group = new Group();
+    const add = (builder: GeometryBuilder, material: Material, order: number, shadow: boolean): void => {
+      if (builder.triangleCount === 0) return;
+      const mesh = new Mesh(builder.toGeometry(), material);
+      mesh.frustumCulled = false;
+      mesh.renderOrder = order;
+      mesh.castShadow = shadow;
+      mesh.receiveShadow = shadow;
+      group.add(mesh);
+    };
+    // The rim stays out of rimMeshes on purpose: the card keeps its magnetic
+    // affordance even when the player's rim-tint setting is off.
+    add(merged.body, this.bodyMaterial, 0, true);
+    add(merged.glass, this.glassMaterial, 5, false);
+    add(merged.glow, this.glowMaterial, 3, false);
+    add(merged.rim, this.rimMaterial, 6, false);
+    this.scene.add(group);
+    this.thumbnailDress = group;
+  }
+
+  /** A tight two-ring bullseye at the catch point, sized for the card where the gameplay rings would read as abstract circles. */
+  private buildDressGuide(point: { x: number; y: number }): void {
+    const geometry = new TorusGeometry(0.42, 0.03, 5, 28);
+    for (let i = 0; i < 2; i++) {
+      const material = new MeshBasicMaterial({ color: new Color().setHSL(0.52, 0.95, 0.66), transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false });
+      const ring = new Mesh(geometry, material);
+      ring.position.set(point.x, point.y, ACTOR_Z - 0.12);
+      ring.renderOrder = 5;
+      this.levelGroup.add(ring);
+      this.guideRings.push({ ring, phase: i / 2 });
+    }
+  }
+
   /** Records the post-step transforms that rendering interpolates between. */
   captureStep(): void {
     if (!this.sim) return;
@@ -717,19 +830,23 @@ export class SceneRenderer {
 
     this.cameraRig.reducedMotion = ctx.reducedMotion;
     const ending = this.endingStage ? ctx.ending ?? null : null;
-    if (this.directed && !ending) {
-      this.cameraRig.direct(this.directed.center, this.directed.visibleHeight, this.directed.rollDeg);
-    } else if (ending) {
-      this.frameEndingCamera(ending, pos, ctx.dt, sim);
+    if (this.thumbnail) {
+      this.frameThumbnail(ctx);
     } else {
-      const falling = view.velocity.y < -9 && !view.attachNormal;
-      this.cameraRig.update(pos, view.velocity, ctx.dt, { falling, slowMo: ctx.slowMo, bounds: sim.level.bounds });
-    }
+      if (this.directed && !ending) {
+        this.cameraRig.direct(this.directed.center, this.directed.visibleHeight, this.directed.rollDeg);
+      } else if (ending) {
+        this.frameEndingCamera(ending, pos, ctx.dt, sim);
+      } else {
+        const falling = view.velocity.y < -9 && !view.attachNormal;
+        this.cameraRig.update(pos, view.velocity, ctx.dt, { falling, slowMo: ctx.slowMo, bounds: sim.level.bounds });
+      }
 
-    this.reachHands(sim, view);
-    this.rig.update(view, pos, ctx.dt, ctx.reducedMotion);
-    this.vfx.update(ctx.dt, view, this.rig.headWorld(this.headScratch), view.visualAngle);
-    if (ending) this.poseEnding(ending, sim);
+      this.reachHands(sim, view);
+      this.rig.update(view, pos, ctx.dt, ctx.reducedMotion);
+      this.vfx.update(ctx.dt, view, this.rig.headWorld(this.headScratch), view.visualAngle);
+      if (ending) this.poseEnding(ending, sim);
+    }
     this.parGhost.update(ctx.ghosts.par, ctx.dt);
     this.personalGhost.update(ctx.ghosts.personal, ctx.dt);
     this.friendGhost.update(ctx.ghosts.friend, ctx.dt);
@@ -745,12 +862,46 @@ export class SceneRenderer {
     this.animateGlow();
     this.animateGuides();
     this.updateFlags(sim);
-    this.backdrop?.update(this.cameraRig.camera, ctx.dt, Math.min(1, Math.max(0, view.position.y / Math.max(1, sim.level.summit.y))));
+    const altitude = this.thumbnail ? this.thumbnail.altitude : Math.min(1, Math.max(0, view.position.y / Math.max(1, sim.level.summit.y)));
+    this.backdrop?.update(this.cameraRig.camera, ctx.dt, altitude);
 
     const camera = this.cameraRig.camera;
     this.sun.target.position.set(camera.position.x - 3.4, camera.position.y - 1.4, 0);
     this.sun.position.set(camera.position.x - 12, camera.position.y + 18, 18);
     this.post.render(this.scene, camera);
+  }
+
+  /** One staged frame of the composition scene: the stage owns camera, pose and field lines. */
+  private frameThumbnail(ctx: FrameContext): void {
+    const staged = this.thumbnail!.step(ctx.dt * 1000);
+    // The ident's catch flash rides the sky grade, the key light and the bloom, decaying
+    // on the shell veil's own curve: the post pipeline tone maps nothing, so the renderer's
+    // exposure knob cannot reach the captured pixels.
+    this.thumbFlash = Math.max(0, this.thumbFlash - ctx.dt * 7);
+    if (staged.flash > 0) {
+      this.triggerFlash(staged.flash);
+      this.thumbFlash = Math.max(this.thumbFlash, staged.flash);
+    }
+    // A flash bright enough to punctuate the catch in a 3 s loop, never enough to
+    // white out the frame: the sky lifts a little, the key light flares the
+    // subject, the bloom adds a halo — the scene stays legible through the beat.
+    const lift = this.thumbFlash * 7;
+    this.backdrop?.gradeSky(
+      { h: CARD_SKY.top.h, s: CARD_SKY.top.s, l: CARD_SKY.top.l + lift },
+      { h: CARD_SKY.horizon.h, s: CARD_SKY.horizon.s, l: CARD_SKY.horizon.l + lift },
+      { h: CARD_SKY.sun.h, s: CARD_SKY.sun.s, l: CARD_SKY.sun.l + lift },
+    );
+    const palette = PALETTES[this.sim!.level.biome];
+    this.sun.intensity = palette.sunIntensity * 2.6 * (1 + this.thumbFlash * 0.35);
+    this.post.setBloomBoost(this.thumbFlash * 1.2);
+    this.cameraRig.direct(staged.framing.center, staged.framing.visibleHeight, staged.framing.rollDeg ?? 0);
+    this.rig.setBrace(0);
+    this.rig.setGrab(null);
+    this.rig.setJoy(staged.joy);
+    if (staged.blink) this.rig.blink();
+    if (staged.flash > 0) this.triggerFlash(staged.flash);
+    this.rig.update(staged.view, staged.view.position, ctx.dt, ctx.reducedMotion);
+    this.vfx.update(ctx.dt, staged.view, this.rig.headWorld(this.headScratch), staged.view.visualAngle);
   }
 
   /** Holds the follow shot until the pull-back begins, then flies out along a path that ends on the whole mountain. */

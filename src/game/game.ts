@@ -19,6 +19,7 @@ import { CLASSIC_SKIN, skinFromLook } from '@/render/magno-rig';
 import { ContextGuard } from '@/render/context-guard';
 import { detectTier, stepDown, type QualityTier } from '@/render/quality';
 import { SceneRenderer } from '@/render/scene-renderer';
+import { thumbnailLevel, thumbnailVariant } from '@/render/thumbnail-scene';
 import type { FallReport } from '@/sim/fall';
 import { guideDirection } from '@/sim/ghost';
 import { loadRapier } from '@/sim/rapier';
@@ -97,6 +98,8 @@ export class Game {
   private coach = new Coach(false, () => undefined);
   private opener!: Opener;
   private openerCamera = false;
+  /** True while the composition scene owns the frame: no opener, no player input, pause cycles included. */
+  private thumbnailActive = false;
   private renderer!: SceneRenderer;
   private contextGuard!: ContextGuard;
   private contextTimer = -1;
@@ -357,6 +360,10 @@ export class Game {
     this.renderer.load(sim);
     const enteringBiome = this.lastBiome !== level.biome && level.index === 0;
     this.announceBiome(level.biome);
+    // A shot still playing in the level being left would strand the camera on a
+    // dead framing: this startLevel hands the renderer back, and the new level's
+    // opener re-arms on its own first tick.
+    this.stopOpenerCamera();
     this.opener.beginLevel({
       establish: enteringBiome && !this.settings.reducedMotion,
       beat: id === order[0] && !this.save.data.seen.includes(FLAG.firstCatch),
@@ -365,7 +372,6 @@ export class Game {
       follow: this.renderer.cameraRig.restFocus(level.spawn),
       followHeight: this.renderer.cameraRig.baseVisibleHeight,
     });
-    this.openerCamera = false;
     this.audio.bind(sim);
     this.bindSimEvents(sim);
     this.ui.hideClear();
@@ -627,7 +633,8 @@ export class Game {
     this.audioEngine.resume();
     await this.bus.commercialBreak();
     this.input.reset();
-    this.input.setEnabled(true);
+    // A capture stage keeps its hands off the controls, even across a pause cycle
+    this.input.setEnabled(!this.thumbnailActive);
     this.phase = 'play';
     this.lastStamp = performance.now();
   }
@@ -907,7 +914,7 @@ export class Game {
 
     this.slowMo.update(realDt * 1000);
 
-    if (this.phase === 'play' && !this.ui.modalOpen) {
+    if (this.phase === 'play' && !this.ui.modalOpen && !this.thumbnailActive) {
       const { framing } = this.opener.update(realDt * 1000, sim.run.started);
       if (framing) {
         this.renderer.directCamera(framing);
@@ -1055,6 +1062,23 @@ export class Game {
       advance: (seconds: number) => this.tick(seconds),
       startLevel: (id: string) => this.startLevel(id),
       setUiVisible: (visible: boolean) => this.ui.root.classList.toggle('photo', !visible),
+      /** Boots the composition scene for card and ident capture; `null` hands play back. */
+      thumbnail: (variant: string | null, ident = false) => {
+        const id = variant ? thumbnailVariant(variant) : null;
+        if (!id) {
+          this.thumbnailActive = false;
+          this.renderer.exitThumbnail();
+          this.input.setEnabled(this.phase === 'play');
+          return;
+        }
+        this.startLevel(thumbnailLevel(id));
+        this.thumbnailActive = true;
+        this.opener.suspend();
+        this.stopOpenerCamera();
+        this.input.setEnabled(false);
+        this.renderer.enterThumbnail(id, ident);
+        this.renderer.captureStep();
+      },
       /** Restarts the level and feeds the recording through the real game loop. */
       autoplay: (recording: Recording) => {
         this.startLevel(this.currentLevelId);

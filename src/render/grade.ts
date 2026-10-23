@@ -26,6 +26,20 @@ export const GRADES: Readonly<Record<BiomeId, BiomeGrade>> = {
   stratosphere: { contrast: 1.18, saturation: 1.15, shadow: [-0.015, 0.006, 0.038], highlight: [-0.018, 0.02, 0.035], bloom: 0.48 },
 };
 
+/**
+ * The store card's own grade (PRD 17.3, R-TH-01): more contrast and saturation
+ * than any biome because the tile is shrunk to a phone-row crop, cool highlights
+ * to buy back the warm-to-cyan sky, and the strongest bloom so the arc reads as
+ * light, not as paint. Only the composition scene ever applies it.
+ */
+export const CARD_GRADE: BiomeGrade = {
+  contrast: 1.24,
+  saturation: 1.28,
+  shadow: [-0.018, 0.004, 0.03],
+  highlight: [0.02, 0.012, -0.028],
+  bloom: 0.52,
+};
+
 export const LUT_SIZE = 16;
 export const LUT_WIDTH = LUT_SIZE * LUT_SIZE;
 

@@ -16,7 +16,7 @@ import {
 import { Rng } from '@/core/rng';
 import { clamp } from '@/core/mathx';
 import type { BiomeId } from '@/sim/types';
-import { PALETTES, mixHsl, toColor } from './palette';
+import { PALETTES, mixHsl, toColor, type Hsl } from './palette';
 
 const SKY_VERTEX = /* glsl */ `
   varying vec3 vDir;
@@ -424,6 +424,22 @@ export class Backdrop {
       toColor({ h: p.accent.h, s: 85, l: 56 }, material.uniforms.uLow!.value as Color);
       toColor({ h: p.accent.h + 95, s: 80, l: 60 }, material.uniforms.uHigh!.value as Color);
     }
+  }
+
+  /** Re-tints the sky dome and its sun glow for the staged card grade; `applyBiome` restores the world's own sky. */
+  gradeSky(top: Hsl, horizon: Hsl, sun: Hsl): void {
+    const u = this.skyMaterial.uniforms;
+    toColor(top, u.uTop!.value as Color);
+    toColor(horizon, u.uHorizon!.value as Color);
+    toColor(sun, u.uSunColor!.value as Color);
+  }
+
+  /** Hides or restores the ground, silhouettes, clouds and aurora; the close store cards compose their own sky. */
+  setAmbientVisible(visible: boolean): void {
+    this.ground.visible = visible;
+    for (const layer of this.layers) layer.mesh.visible = visible;
+    for (const cloud of this.clouds) cloud.mesh.visible = visible;
+    for (const { mesh } of this.aurora) mesh.visible = visible;
   }
 
   /** Curtains of light hung far behind the climb: additive ribbons that sway with the shared clock. */

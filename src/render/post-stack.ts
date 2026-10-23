@@ -17,7 +17,7 @@ import {
   type WebGLRenderer,
 } from 'three';
 import type { BiomeId } from '@/sim/types';
-import { GRADES, LUT_SIZE, LUT_WIDTH, buildGradeLut } from './grade';
+import { GRADES, LUT_SIZE, LUT_WIDTH, buildGradeLut, type BiomeGrade } from './grade';
 import { BLUR_FRAGMENT, BRIGHT_FRAGMENT, FINAL_FRAGMENT, FULLSCREEN_VERTEX } from './post-shaders';
 import type { QualityProfile } from './quality';
 
@@ -59,6 +59,7 @@ export class PostStack {
   private levels: BlurLevel[] = [];
   private lut: DataTexture | null = null;
   private frameIndex = 0;
+  private bloomBase = GRADES.scrapyard.bloom;
 
   constructor(
     private readonly renderer: WebGLRenderer,
@@ -107,14 +108,24 @@ export class PostStack {
   }
 
   setBiome(biome: BiomeId): void {
-    const grade = GRADES[biome];
+    this.setGrade(GRADES[biome]);
+  }
+
+  /** Any grade, not just a biome's; the composition scene installs the card LUT (PRD 17.3). */
+  setGrade(grade: BiomeGrade): void {
     this.lut?.dispose();
     this.lut = new DataTexture(buildGradeLut(grade), LUT_WIDTH, LUT_SIZE, RGBAFormat, UnsignedByteType);
     this.lut.minFilter = this.lut.magFilter = LinearFilter;
     this.lut.generateMipmaps = false;
     this.lut.needsUpdate = true;
     this.final.uniforms.tLut!.value = this.lut;
-    this.final.uniforms.bloomStrength!.value = grade.bloom;
+    this.bloomBase = grade.bloom;
+    this.final.uniforms.bloomStrength!.value = this.bloomBase;
+  }
+
+  /** Transient bloom lift for one-frame beats, the ident's catch flash; `setGrade` resets the base. */
+  setBloomBoost(boost: number): void {
+    this.final.uniforms.bloomStrength!.value = this.bloomBase + boost;
   }
 
   /** Drawing-buffer size in device pixels. */

@@ -64,7 +64,7 @@ def main():
     if ffmpeg:
         encoder = subprocess.Popen(
             [ffmpeg, "-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", "60", "-c:v", "mjpeg", "-i", "pipe:0",
-             "-c:v", "libvpx-vp9", "-b:v", "0", "-crf", "30", "-pix_fmt", "yuv420p",
+             "-c:v", "libvpx-vp9", "-b:v", "0", "-crf", "33", "-pix_fmt", "yuv420p",
              os.path.join(out, "thumbnail-animated.webm")],
             stdin=subprocess.PIPE,
         )

@@ -60,6 +60,9 @@ const ATTACH_SQUASH = 0.85;
 const HOP_MS = 520;
 const HOP_HEIGHT = 0.42;
 
+/** The blink pulse: the lid dips and returns inside a seventh of a second. */
+const BLINK_MS = 140;
+
 const ARM_UPPER = 0.15;
 const ARM_LOWER = 0.15;
 const SHOULDER_X = 0.2;
@@ -178,6 +181,7 @@ export class MagnoRig {
   private readonly local: Vec2 = { x: 0, y: 0 };
   private joy = 0;
   private hopMs = -1;
+  private blinkMs = -1;
 
   constructor(skin: RigSkin = CLASSIC_SKIN) {
     this.bodyMaterial = new MeshStandardMaterial({ color: skin.body, flatShading: true, roughness: 0.55, metalness: 0.45 });
@@ -366,6 +370,11 @@ export class MagnoRig {
     this.pulse = { axis: 0, peak: 1.16, hold: 0.05, recover: 0.24, age: 0 };
   }
 
+  /** A 140 ms lid close, a one-shot like the hop; the ident's settle beat ends on it. */
+  blink(): void {
+    this.blinkMs = 0;
+  }
+
   onImpact(normal: Vec2, speed: number): void {
     if (speed < 4) return;
     const axis = Math.atan2(-normal.x, normal.y);
@@ -514,6 +523,13 @@ export class MagnoRig {
       lid = 0.55;
     }
     if (view.state === 'recovering') lid = 0.8 + 0.2 * view.recoverPhase;
+
+    if (this.blinkMs >= 0) {
+      this.blinkMs += dt * 1000;
+      const u = this.blinkMs / BLINK_MS;
+      lid = Math.min(lid, 1 - 0.95 * Math.sin(Math.PI * Math.min(1, u)));
+      if (u >= 1) this.blinkMs = -1;
+    }
 
     this.lidOpen.update(lid, dt);
     this.eyeScale.update(size, dt);

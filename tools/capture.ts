@@ -11,8 +11,12 @@ import { chromium, type Page } from 'playwright';
  *   npx tsx tools/capture.ts --level=scrapyard-02 --size=628 --from=40 --frames=1 --center=2,8 --height=22
  *   npx tsx tools/capture.ts --level=scrapyard-02 --trace
  *   npx tsx tools/capture.ts --level=scrapyard-04 --from=60 --frames=180 --chase=2.4,2.2 --height=9 --roll=-7
+ *   npx tsx tools/capture.ts --thumb=hero-launch --size=628 --from=20 --frames=1
+ *   npx tsx tools/capture.ts --thumb=hero-launch --ident --size=628 --frames=180
  *
  * `--chase=dx,dy` eases the camera after MAGNO instead of holding the framing.
+ * `--thumb` renders the composition scene instead of gameplay (PRD 17.3), and
+ * `--ident` plays its 3 s Cooper timeline frame by frame.
  */
 
 const arg = (name: string): string | undefined => process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=')[1];
@@ -30,6 +34,8 @@ const roll = Number(arg('roll') ?? 0);
 const follow = flag('follow');
 const chase = arg('chase')?.split(',').map(Number) as [number, number] | undefined;
 const rim = flag('rim');
+const thumb = arg('thumb');
+const ident = flag('ident');
 const url = arg('url') ?? 'http://localhost:5173';
 const outDir = resolve(arg('out') ?? 'thumbnails/frames');
 const name = arg('name');
@@ -47,6 +53,21 @@ async function prepare(page: Page): Promise<void> {
   await page.goto(url);
   await page.waitForFunction(() => Boolean((window as unknown as { __game?: unknown }).__game), null, { timeout: 30000 });
   await page.waitForTimeout(1200);
+  if (thumb) {
+    await page.evaluate(
+      ({ thumb, ident, rim }) => {
+        const g = (window as any).__game;
+        g.debug.setQuality('high');
+        g.debug.holdClock(true);
+        g.debug.setUiVisible(false);
+        g.debug.settings.ghosts = false;
+        g.debug.settings.rimTint = rim;
+        g.debug.thumbnail(thumb, ident);
+      },
+      { thumb, ident, rim },
+    );
+    return;
+  }
   await page.evaluate(
     async ({ id, framing, follow, rim }) => {
       const g = (window as any).__game;
@@ -77,11 +98,17 @@ async function trace(page: Page, ticks: number): Promise<TracePoint[]> {
   }, ticks);
 }
 
-const browser = await chromium.launch({
-  channel: 'chrome',
-  headless: true,
-  args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'],
-});
+let browser: import('playwright').Browser | null = null;
+const launchArgs = { headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] };
+for (const channel of ['chrome' as const, undefined]) {
+  try {
+    browser = await chromium.launch(channel ? { channel, ...launchArgs } : launchArgs);
+    break;
+  } catch {
+    /* a machine without that distribution falls through to the bundled one */
+  }
+}
+if (!browser) throw new Error('no Chromium distribution available to capture');
 const context = await browser.newContext({ viewport: { width: size, height: size }, deviceScaleFactor: scale });
 await context.addInitScript('window.__name = (f) => f;');
 const page = await context.newPage();

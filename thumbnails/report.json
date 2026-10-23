@@ -1,0 +1,50 @@
+{
+  "date": null,
+  "variants": [
+    "A-hero-launch",
+    "B-fall-comedy",
+    "C-tower-scale"
+  ],
+  "panel": {
+    "n": 10,
+    "exposureMs": 200,
+    "forcedChoiceWinner": null,
+    "score": null
+  },
+  "audits": {
+    "legibility128": true,
+    "contrast": 5.16,
+    "hueCollision": false,
+    "ocrEmpty": true
+  },
+  "uploaded": null,
+  "detail": {
+    "hero-launch": {
+      "failures": [],
+      "contrast": 5.16,
+      "dimmed": 3.79,
+      "at128": 5.12,
+      "arcBand": 257,
+      "arc128": 817
+    },
+    "fall-comedy": {
+      "failures": [],
+      "contrast": 4.38,
+      "dimmed": 3.41,
+      "at128": 4.3
+    },
+    "tower-scale": {
+      "failures": [],
+      "contrast": 1.3,
+      "dimmed": 1.26,
+      "at128": 1.26,
+      "arcBand": 33,
+      "arc128": 1100
+    },
+    "animated": {
+      "failures": [],
+      "frames": 168,
+      "durationMs": 2800
+    }
+  }
+}
