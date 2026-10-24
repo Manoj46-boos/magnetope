@@ -24,7 +24,6 @@ interface GameWindow {
   };
 }
 
-const CLIMB = { stars: 210, maxStars: 210, levelsCleared: 70, totalLevels: 70, bestFall: { heightMeters: 123.4, grade: 'SSS' } };
 
 const SIZES = [
   { name: 'desktop', width: 1280, height: 720 },
