@@ -58,17 +58,19 @@
     ]
   },
   "scrapyard-04": {
-    "clearSeconds": 11.5,
-    "macros": 6,
-    "slipRate": 0.27,
-    "worstHop": 0.79,
+    "clearSeconds": 15,
+    "macros": 8,
+    "slipRate": 0.33,
+    "worstHop": 0.83,
     "perHop": [
       1,
       1,
-      0.79,
-      0.96,
-      0.96,
-      1
+      1,
+      1,
+      0.83,
+      0.83,
+      1,
+      0.96
     ]
   },
   "scrapyard-05": {
@@ -89,20 +91,17 @@
     ]
   },
   "scrapyard-06": {
-    "clearSeconds": 16.3,
-    "macros": 9,
-    "slipRate": 0.5,
-    "worstHop": 0.79,
+    "clearSeconds": 12.4,
+    "macros": 6,
+    "slipRate": 0.78,
+    "worstHop": 0.54,
     "perHop": [
       0.79,
-      0.96,
-      0.92,
-      0.92,
-      1,
       0.79,
+      0.54,
+      0.88,
       1,
-      1,
-      1
+      0.75
     ]
   },
   "scrapyard-07": {

@@ -80,6 +80,8 @@ export class PhysicsWorld {
   private clockMs = 0;
   private readonly probeShape: RAPIER.Ball;
   private readonly snapShape: RAPIER.Ball;
+  /** The capture radius this level plays with: the base, widened by the on-ramp (R-LD-14). */
+  readonly snapRadius: number;
 
   constructor(
     private readonly rapier: Rapier,
@@ -91,7 +93,8 @@ export class PhysicsWorld {
     this.world = new rapier.World({ x: 0, y: -g, z: 0 });
     this.world.timestep = 1 / TUNING.sim.hz;
     this.probeShape = new rapier.Ball(TUNING.body.radius + PROBE_REACH);
-    this.snapShape = new rapier.Ball(TUNING.snap.radius);
+    this.snapRadius = TUNING.snap.radius * (level.onRamp?.catchWindow ?? 1);
+    this.snapShape = new rapier.Ball(this.snapRadius);
     this.buildLevel();
     this.buildMagno();
   }
@@ -468,7 +471,7 @@ export class PhysicsWorld {
         if (!proj) return true;
         const point = { x: proj.point.x, y: proj.point.y };
         const distance = len2({ x: point.x - pos.x, y: point.y - pos.y });
-        if (distance > TUNING.snap.radius || !this.hasLineOfSight(pos, point, handle)) return true;
+        if (distance > this.snapRadius || !this.hasLineOfSight(pos, point, handle)) return true;
         found.push({ surface, point, distance });
         return true;
       },

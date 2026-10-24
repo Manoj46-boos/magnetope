@@ -86,6 +86,9 @@ const FRICTION_FREE = 0.5;
 const NEVER = -1e9;
 /** Surfaces at least this bouncy throw MAGNO back up instead of knocking him limp. */
 const SPRINGY_RESTITUTION = 0.85;
+/** The fall assist at strength one: how much the aim cone still counts, and how hard a surface well below is shunned. */
+const ASSIST_CONE_WEIGHT = 0.25;
+const ASSIST_BELOW_BIAS = 0.4;
 
 const freshData = (): MagnoData => ({
   state: 'airborne',
@@ -585,24 +588,29 @@ export class MagnoController {
 
   private pickSnapTarget(input: InputFrame, pose: Vec2): SnapCandidate | null {
     const d = this.data;
-    const candidates = this.physics.snapCandidates(pose, this.excludedTargets());
-    if (candidates.length === 0) return null;
     const aim = this.aimDirection(input);
     const coneCos = Math.cos(TUNING.snap.coneDeg * DEG);
     const falling = this.physics.magnoBody.linvel().y < -4;
     const impactSoon =
       falling && this.physics.castDistance(pose, { x: 0, y: -1 }, Math.abs(this.physics.magnoBody.linvel().y) * 0.3 + 0.4) < Infinity;
     const assisting = d.assist && impactSoon;
+    const strength = assisting ? (this.physics.level.onRamp?.assist ?? 1) : 1;
+    const coneWeight = assisting ? Math.max(0, 1 - (1 - ASSIST_CONE_WEIGHT) * strength) : 1;
+    // The on-ramp's extra reach is a training wheel for saves: while flight is
+    // deliberate the window is the base radius, so a level's catches keep their
+    // authored order, and only a falling player sees the widened band.
+    const reach = assisting ? this.physics.snapRadius : TUNING.snap.radius;
+    const candidates = this.physics.snapCandidates(pose, this.excludedTargets()).filter((c) => c.distance <= reach);
+    if (candidates.length === 0) return null;
 
     let best: SnapCandidate | null = null;
     let bestScore = Infinity;
     for (const c of candidates) {
       const dir = norm2({ x: c.point.x - pose.x, y: c.point.y - pose.y });
       const cos = dot2(dir, aim);
-      const coneWeight = assisting ? 0.25 : 1;
       let score = c.distance / TUNING.snap.radius + (1 - cos) * 0.55 * coneWeight;
       if (cos >= coneCos) score -= 0.35 * coneWeight;
-      if (assisting && c.point.y < pose.y - 0.2) score += 0.4;
+      if (assisting && c.point.y < pose.y - 0.2) score += ASSIST_BELOW_BIAS * strength;
       if (score < bestScore) {
         bestScore = score;
         best = c;
@@ -661,7 +669,7 @@ export class MagnoController {
     target.point = { x: proj.point.x, y: proj.point.y };
     const delta = { x: target.point.x - pose.x, y: target.point.y - pose.y };
     const dist = len2(delta);
-    if (dist > TUNING.snap.radius * 1.6) {
+    if (dist > this.physics.snapRadius * 1.6) {
       this.endSnap();
       return;
     }

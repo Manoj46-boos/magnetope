@@ -1,4 +1,5 @@
 import type { MaterialId } from '@/config/materials';
+import type { OnRampBoost } from '@/config/onramp';
 
 export type BiomeId = 'scrapyard' | 'suburbia' | 'metropolis' | 'playground' | 'stratosphere';
 
@@ -93,6 +94,8 @@ export interface LevelDef {
   bounds: { minX: number; maxX: number };
   /** Target fall-rate band the bots verify against (PRD 5.4). */
   fallRateTarget: number;
+  /** The casual on-ramp boosts this level plays with (config/onramp, PRD R-LD-14); absent once the ramp ends. */
+  onRamp?: OnRampBoost;
   props: PropPlacement[];
   gravityScale?: number;
   /** Metropolis and above. */
