@@ -599,9 +599,12 @@ select:focus-visible {
   width: 0.88em;
   height: 0.88em;
   /* The ident's ink starts 12% in from its box: sink the box so the magnet's
-     feet rest on the baseline and the field-line arc crests at cap height,
-     with matching negative margins so the kerning keeps the letter rhythm. */
-  margin: 0 -0.1em;
+     feet rest on the baseline and the field-line arc crests at cap height.
+     Letter-spacing is not applied around an inline-block, and the letter
+     before it carries its spacing inside its own box, so the left margin only
+     has to cancel the ink inset — the right margin must also hand the title's
+     0.22em back, or the P rides the pole at a sixth of the word's rhythm. */
+  margin: 0 0.12em 0 -0.1em;
   vertical-align: -0.11em;
 }
 
