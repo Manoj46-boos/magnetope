@@ -167,6 +167,15 @@ describe('forgiveness windows', () => {
     expect(d.view.state).not.toBe('charging');
     expect(d.view.snapArmed).toBe(true);
   });
+
+  it('keeps both windows named in the tuning table and under the 150 ms line', () => {
+    // R-GF-03: forgiving, not sloppy — a window past this line would start
+    // answering presses the player has already unmeant.
+    expect(TUNING.windows.coyoteMs).toBeGreaterThan(0);
+    expect(TUNING.windows.coyoteMs).toBeLessThanOrEqual(150);
+    expect(TUNING.windows.bufferMs).toBeGreaterThan(0);
+    expect(TUNING.windows.bufferMs).toBeLessThanOrEqual(150);
+  });
 });
 
 describe('weak metal', () => {

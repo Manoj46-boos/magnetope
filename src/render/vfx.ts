@@ -14,7 +14,8 @@ import type { ShakeKind } from './camera-rig';
 
 type Rgb = readonly [number, number, number];
 
-const SPARK: Record<string, Rgb> = {
+/** Spark colours per material voice: every surface answers in its own tone (R-GF-04). */
+export const SPARK: Record<string, Rgb> = {
   beam: [1, 0.92, 0.62],
   body: [1, 0.76, 0.46],
   crumple: [0.95, 0.66, 0.46],
@@ -247,13 +248,40 @@ export class Vfx {
         });
       }
       this.rings.spawn(point.x, point.y, 0.16, 2.2, 0.55, this.attractRgb, base + Math.PI / 2, 0.75);
-      this.rings.spawn(point.x, point.y, 0.2, 1.4, 0.4, [1, 1, 1], base + Math.PI / 2, 0.5);
+      // The snap line: a near-white ring that spends itself in a couple of
+      // frames, the solenoid click the catch is named for (panel note).
+      this.rings.spawn(point.x, point.y, 0.22, 1.6, 0.25, [1, 1, 1], base + Math.PI / 2, 0.5);
+      // The caught surface lights up where the magnet grabbed it: a cyan patch
+      // squashed onto the surface plane, slower and wider than the contact ring
+      // so it reads as the surface itself answering (R-GF-04).
+      this.rings.spawn(
+        point.x + normal.x * 0.06,
+        point.y + normal.y * 0.06,
+        0.25,
+        1.7,
+        0.5,
+        this.attractRgb,
+        base + Math.PI / 2,
+        0.32,
+      );
+      // The snap ident (R-SM-03): the same flash the thumbnail and the opener
+      // carry, at gameplay strength so every catch speaks the same word.
+      this.hooks.flash(0.35);
     }
   }
 
   private repelBurst(point: Vec2, normal: Vec2, direction: Vec2, power: number): void {
     const base = Math.atan2(normal.y, normal.x);
     this.rings.spawn(point.x, point.y, 1.15, 0.12, 0.24, this.repelRgb, base + Math.PI / 2, 0.5);
+    // A full-power release adds the origin's spark-ring burst (R-GF-01): the
+    // field snaps inward (the collapse above) and the launch point blows out.
+    if (power >= 1) {
+      this.rings.spawn(point.x, point.y, 0.32, 3.0, 0.42, this.repelCoreRgb, base + Math.PI / 2, 0.55);
+      // The white-hot beat inside the burst: against a warm dusk biome the
+      // amber alone sinks into the sky, so the launch owns its first frames
+      // with a near-white core that spends itself fastest of the set.
+      this.rings.spawn(point.x, point.y, 0.2, 1.8, 0.3, [1, 0.98, 0.92], base + Math.PI / 2, 0.5);
+    }
     const dir = norm2(direction);
     const heading = Math.atan2(dir.y, dir.x);
     const wisps = this.budgetFor(6 + Math.round(power * 10));

@@ -48,7 +48,14 @@ export const TUNING = {
 
   air: { tiltAccel: 2.4 },
 
-  windows: { coyoteMs: 120, bufferMs: 140 },
+  /** R-GF-03: the forgiveness windows, named and small — both live under the
+   * 150 ms line so the game stays forgiving without turning sloppy. */
+  windows: {
+    /** A flip pressed this soon after leaving a surface still launches (coyote). */
+    coyoteMs: 120,
+    /** A flip pressed this early before a surface arrives is held until it does (buffer). */
+    bufferMs: 140,
+  },
 
   weakMetal: { holdMs: 1200, fadeMs: 450, lockoutMs: 700 },
 

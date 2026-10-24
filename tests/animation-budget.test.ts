@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { SecondOrder } from '@/core/dynamics';
 import { Rng } from '@/core/rng';
+import { FixedStepper } from '@/core/stepper';
+import { HitStop } from '@/game/hit-stop';
 import { BUDGET_MS, MID_TIER_SLOWDOWN, POSES, allocationPerCall, rigAllocation, timeAnimation } from '../tools/anim-cost';
 
 /**
@@ -32,6 +34,68 @@ describe('MAGNO animation cost', () => {
       expect(rigAllocation(view)).toBeLessThan(MAX_BYTES_PER_FRAME);
     });
   }
+});
+
+describe('the hit-stop ledger (R-GF-06)', () => {
+  /** Runs the clock in 5 ms slices and reports how long the freeze actually held. */
+  const heldFor = (stop: HitStop): number => {
+    let held = 0;
+    for (let i = 0; i < 30; i++) {
+      stop.update(5);
+      if (stop.active) held += 5;
+    }
+    return held;
+  };
+
+  it('holds the release freeze inside the 40-80 ms band', () => {
+    const stop = new HitStop();
+    expect(stop.request()).toBe(true);
+    const held = heldFor(stop);
+    expect(held).toBeGreaterThanOrEqual(40);
+    expect(held).toBeLessThanOrEqual(80);
+  });
+
+  it('never stacks a second freeze on a live one', () => {
+    const stop = new HitStop();
+    expect(stop.request()).toBe(true);
+    stop.update(10);
+    expect(stop.request()).toBe(false);
+    expect(stop.active).toBe(true);
+  });
+
+  it('grants at most one freeze per second', () => {
+    const stop = new HitStop();
+    expect(stop.request()).toBe(true);
+    heldFor(stop);
+    stop.update(500);
+    expect(stop.request()).toBe(false);
+    stop.update(1000);
+    expect(stop.request()).toBe(true);
+  });
+
+  it('respects the reduced-motion switch', () => {
+    const stop = new HitStop();
+    stop.disabled = true;
+    expect(stop.request()).toBe(false);
+  });
+
+  it('is presentation only: the freeze holds steps back, it never reorders them', () => {
+    // A held frame contributes no accumulator time, so the step sequence after
+    // the pause is exactly the sequence an unimpeded run produces four frames
+    // later — the trajectory is untouched, only wall clock moved.
+    const frozen = new FixedStepper(60, 5);
+    const plain = new FixedStepper(60, 5);
+    let frozenSteps = 0;
+    for (let i = 0; i < 4; i++) frozenSteps += frozen.advance(1 / 60, 0).steps;
+    for (let i = 0; i < 60; i++) frozenSteps += frozen.advance(1 / 60, 1).steps;
+    let plainSteps = 0;
+    for (let i = 0; i < 64; i++) plainSteps += plain.advance(1 / 60, 1).steps;
+    expect(frozenSteps).toBe(60);
+    expect(plainSteps).toBe(64);
+    const tail = frozen.advance(1 / 60, 1);
+    const tailControl = plain.advance(1 / 60, 1);
+    expect(tail.alpha).toBeCloseTo(tailControl.alpha, 6);
+  });
 });
 
 describe('the allocation meter', () => {

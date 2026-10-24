@@ -72,4 +72,25 @@ describe('hazard clock', () => {
     expect(again.sim.hazardClockMs).toBe(0);
     expect(liftHeight(again)).toBeCloseTo(1, 6);
   });
+
+  it('holds the frame at a full-power release without touching the hazard timeline', async () => {
+    // R-GF-01's hit-stop freezes presentation only: hazards read the run clock,
+    // and the run clock advances in simulation steps alone. Whatever the frame
+    // rate does around the release — a 60 ms freeze included — the lift is
+    // exactly where its tick count says, on every attempt.
+    const run = async () => {
+      const d = new Driver(await createSim(levelWithHazards())).start();
+      const repels: number[] = [];
+      d.sim.events.on('repel', (e) => repels.push(e.power));
+      d.press().ms(900).release().tick();
+      expect(repels).toEqual([1]);
+      const afterRelease = d.sim.hazardClockMs;
+      d.ms(600);
+      return { afterRelease, end: d.sim.hazardClockMs, lift: liftHeight(d) };
+    };
+    const a = await run();
+    const b = await run();
+    expect(a).toEqual(b);
+    expect(a.end - a.afterRelease).toBeGreaterThanOrEqual(600);
+  });
 });

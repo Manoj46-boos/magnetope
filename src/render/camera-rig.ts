@@ -18,6 +18,18 @@ export type ShakeKind = keyof typeof SHAKE;
 const SHAKE_HZ = 10;
 const MAX_ROLL = 1.2 * DEG;
 
+/** Release kick (R-GF-01): the camera punches along the flight vector and gives it back well inside 300 ms. */
+const KICK_METERS = 1.1;
+const KICK_TAU = 0.07;
+/** FOV pop (R-GF-01): +3° at the release, settling home over 400 ms. */
+const POP_DEG = 3;
+const POP_TAU = 0.115;
+/** Catch settle (R-GF-04): a small dolly that eases onto the catch and back off. */
+const SETTLE_DOLLY = 0.03;
+const SETTLE_TAU = 0.09;
+/** Charge dolly (R-GF-05): the lens closes by at most 4% while the player holds a charge. */
+const CHARGE_DOLLY = 0.04;
+
 interface ActiveShake {
   amplitude: number;
   duration: number;
@@ -45,6 +57,11 @@ export class CameraRig {
   private dolly = 0;
   private visibleHeight = 11;
   private directedRoll = 0;
+  private kickX = 0;
+  private kickY = 0;
+  private fovPop = 0;
+  private settlePulse = 0;
+  private chargeDolly = 0;
   reducedMotion = false;
 
   /** Height of the view at the standard follow distance, in metres. */
@@ -81,6 +98,7 @@ export class CameraRig {
     this.shakes = [];
     this.ready = true;
     this.directedRoll = 0;
+    this.clearBeats();
     if (this.camera.far !== DEFAULT_FAR) {
       this.camera.far = DEFAULT_FAR;
       this.camera.updateProjectionMatrix();
@@ -98,12 +116,43 @@ export class CameraRig {
     this.dolly = 0;
     this.ready = true;
     this.directedRoll = rollDeg * DEG;
+    this.clearBeats();
     const reach = this.baseDistance * zoom * 1.6 + 200;
     if (this.camera.far < reach) {
       this.camera.far = reach;
       this.camera.updateProjectionMatrix();
     }
     this.place(center.x, center.y);
+  }
+
+  /** The release lunge (R-GF-01): a short pan along the flight vector, spent inside 300 ms. */
+  kick(direction: Vec2): void {
+    const scale = this.reducedMotion ? 0.3 : 1;
+    this.kickX = direction.x * KICK_METERS * scale;
+    this.kickY = direction.y * KICK_METERS * scale;
+  }
+
+  /** The release FOV pop (R-GF-01): widened lens for the flight, settling back over 400 ms. Skipped for reduced motion. */
+  pop(): void {
+    if (this.reducedMotion) return;
+    this.fovPop = 1;
+  }
+
+  /** The catch settle (R-GF-04): a brief dolly onto the catch point, easing straight back off. */
+  settle(): void {
+    this.settlePulse = 1;
+  }
+
+  private clearBeats(): void {
+    this.kickX = 0;
+    this.kickY = 0;
+    this.fovPop = 0;
+    this.settlePulse = 0;
+    this.chargeDolly = 0;
+    if (this.camera.fov !== CAMERA_FOV) {
+      this.camera.fov = CAMERA_FOV;
+      this.camera.updateProjectionMatrix();
+    }
   }
 
   /** Request a shake. Ignored while an input-critical window is open. */
@@ -115,7 +164,7 @@ export class CameraRig {
     if (this.shakes.length > 6) this.shakes.shift();
   }
 
-  update(target: Vec2, velocity: Vec2, dt: number, opts: { falling: boolean; slowMo: number; bounds: { minX: number; maxX: number } }): void {
+  update(target: Vec2, velocity: Vec2, dt: number, opts: { falling: boolean; slowMo: number; charge?: number; bounds: { minX: number; maxX: number } }): void {
     if (!this.ready) this.snapTo(target);
     this.time += dt;
 
@@ -126,7 +175,20 @@ export class CameraRig {
     const wantWiden = opts.falling ? 0.45 : 0;
     this.widen = damp(this.widen, wantWiden, opts.falling ? 2.4 : 1.2, dt);
     this.dolly = damp(this.dolly, opts.slowMo, 5, dt);
-    const zoomTarget = 1 + this.widen + (this.reducedMotion ? 0 : this.dolly * 0.22);
+    this.chargeDolly = damp(this.chargeDolly, opts.charge ?? 0, 4, dt);
+    this.kickX *= Math.exp(-dt / KICK_TAU);
+    this.kickY *= Math.exp(-dt / KICK_TAU);
+    this.fovPop *= Math.exp(-dt / POP_TAU);
+    this.settlePulse *= Math.exp(-dt / SETTLE_TAU);
+    if (this.fovPop < 0.003) this.fovPop = 0;
+    if (this.settlePulse < 0.003) this.settlePulse = 0;
+    const settleScale = this.reducedMotion ? 0.3 : 1;
+    const zoomTarget =
+      1 +
+      this.widen +
+      (this.reducedMotion ? 0 : this.dolly * 0.22) -
+      CHARGE_DOLLY * this.chargeDolly -
+      SETTLE_DOLLY * this.settlePulse * settleScale;
     this.zoom.update(zoomTarget, dt);
 
     const half = this.visibleHeight / 2;
@@ -156,9 +218,18 @@ export class CameraRig {
     }
     this.shakes = alive;
 
+    // The FOV pop widens the lens while it lasts and hands the projection back the moment it is spent.
+    if (this.fovPop > 0) {
+      this.camera.fov = CAMERA_FOV + POP_DEG * this.fovPop;
+      this.camera.updateProjectionMatrix();
+    } else if (this.camera.fov !== CAMERA_FOV) {
+      this.camera.fov = CAMERA_FOV;
+      this.camera.updateProjectionMatrix();
+    }
+
     const offsetX = 3.4 + this.zoom.value * 0.4;
-    this.camera.position.set(cx + offsetX + sx, cy + 1.4 + sy, distance);
-    this.camera.lookAt(cx + sx, cy + sy, 0);
+    this.camera.position.set(cx + offsetX + sx + this.kickX, cy + 1.4 + sy + this.kickY, distance);
+    this.camera.lookAt(cx + sx + this.kickX, cy + sy + this.kickY, 0);
     this.camera.rotateZ(clamp(roll, -MAX_ROLL, MAX_ROLL) + this.directedRoll);
   }
 
