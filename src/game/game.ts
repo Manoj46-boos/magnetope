@@ -41,6 +41,8 @@ import { biomeAnnouncement, scrapForClear, totalStars } from './progress';
 import { deliverShareCard, renderDuelCard, renderShareCard, type DuelCardSpec, type ShareCardSpec } from './share-card';
 import { EndingDirector } from './ending';
 import { SlowMoDirector } from './slowmo';
+import { HitStop } from './hit-stop';
+import { SpectacleLedger } from './spectacle';
 
 interface FriendRun {
   name: string;
@@ -86,6 +88,8 @@ export class Game {
   private readonly audioEngine = new AudioEngine();
   private readonly audio = new AudioDirector(this.audioEngine);
   private readonly slowMo = new SlowMoDirector();
+  private readonly hitStop = new HitStop();
+  private readonly spectacle = new SpectacleLedger();
   /** Development only: frames advance when asked, so captures do not depend on machine speed. */
   private manualClock = false;
   private readonly stepper = new FixedStepper(TUNING.sim.hz, TUNING.sim.maxStepsPerFrame);
@@ -191,8 +195,10 @@ export class Game {
         if (!this.settings.reducedMotion) this.renderer.attentionHop();
       },
       firstCatch: () => {
+        const granted = this.slowMo.beat(FIRST_CATCH_SCALE, FIRST_CATCH_HOLD_MS);
+        if (!granted) return;
         this.markSeen(FLAG.firstCatch);
-        this.slowMo.beat(FIRST_CATCH_SCALE, FIRST_CATCH_HOLD_MS);
+        this.spectacle.mark('first-catch');
         this.renderer.triggerFlash(0.55);
       },
       hudReveal: () => {
@@ -346,6 +352,7 @@ export class Game {
     this.sim = sim;
     sim.magno.setAssist(this.settings.assist);
     this.slowMo.reset();
+    this.hitStop.reset();
     this.stepper.reset();
     this.clearTimer = -1;
     this.endingSettleMs = -1;
@@ -372,6 +379,7 @@ export class Game {
       follow: this.renderer.cameraRig.restFocus(level.spawn),
       followHeight: this.renderer.cameraRig.baseVisibleHeight,
     });
+    if (enteringBiome && !this.settings.reducedMotion) this.spectacle.mark('establish');
     this.audio.bind(sim);
     this.bindSimEvents(sim);
     this.ui.hideClear();
@@ -406,7 +414,12 @@ export class Game {
     const on = sim.events.on.bind(sim.events);
     this.simUnsubscribe.push(
       on('slowMo', (e) => {
-        if (this.slowMo.request(e.heightMeters)) this.ui.hideFall();
+        // R-SM-06: a fall straight after a staged moment stays at full speed.
+        if (!this.spectacle.clear) return;
+        if (this.slowMo.request(e.heightMeters)) {
+          this.spectacle.mark('slow-mo');
+          this.ui.hideFall();
+        }
       }),
       on('impact', (e) => {
         if (this.slowMo.active && e.speed > 3) {
@@ -431,6 +444,9 @@ export class Game {
         this.coach.onRepel();
         this.opener.onLaunch();
         this.attempts.flip(e.point);
+        // R-GF-01/06: only a full-power release earns the freeze, never during
+        // an input-critical window and never on top of a slow-mo beat.
+        if (e.power >= 1 && !this.inputCritical() && !this.slowMo.active) this.hitStop.request();
       }),
       on('snapEngage', () => {
         this.attempts.snap();
@@ -560,6 +576,7 @@ export class Game {
   private beginEnding(): void {
     if (!this.sim || this.phase === 'ending') return;
     this.phase = 'ending';
+    this.spectacle.mark('ending');
     this.hudShown = false;
     this.ui.showHud(false);
     this.ui.hideFall();
@@ -841,6 +858,7 @@ export class Game {
     this.audioEngine.setSound(s.sound);
     this.audioEngine.setMusic(s.music);
     this.slowMo.disabled = s.reducedMotion;
+    this.hitStop.disabled = s.reducedMotion;
     this.sim?.magno.setAssist(s.assist);
     this.ui.syncSettings(s);
   }
@@ -913,6 +931,8 @@ export class Game {
     if (!sim) return;
 
     this.slowMo.update(realDt * 1000);
+    this.hitStop.update(realDt * 1000);
+    this.spectacle.update(realDt * 1000);
 
     if (this.phase === 'play' && !this.ui.modalOpen && !this.thumbnailActive) {
       const { framing } = this.opener.update(realDt * 1000, sim.run.started);
@@ -926,7 +946,7 @@ export class Game {
     }
 
     if (this.phase === 'play' && !this.ui.modalOpen) {
-      const { steps, alpha } = this.stepper.advance(realDt, this.slowMo.scale);
+      const { steps, alpha } = this.stepper.advance(realDt, this.hitStop.active ? 0 : this.slowMo.scale);
       for (let i = 0; i < steps; i++) {
         const frame = this.scripted && !this.scripted.done ? this.scripted.next() : this.input.sample();
         if (this.scripted && (frame.flipDown || frame.tiltX !== 0 || frame.tiltY !== 0)) this.bus.onPlayerInput();
@@ -946,7 +966,8 @@ export class Game {
 
     const filming = this.phase === 'ending' && this.endingDirector !== null;
     const live = this.phase === 'play' || this.clearTimer >= 0 || this.phase === 'cleared';
-    const visualDt = filming ? realDt : live ? realDt * Math.max(this.slowMo.scale, 0.2) : 0;
+    const timeScale = this.hitStop.active ? 0 : this.slowMo.scale;
+    const visualDt = filming ? realDt : live ? realDt * Math.max(timeScale, 0.2) : 0;
     const view = sim.magno.view;
     const heldMs = view.state === 'charging' ? view.charge01 * TUNING.repel.chargeMs : 0;
     this.renderer.setChargeMeterVisible(this.hudReveal.chargeMeterVisible(sim.level, heldMs));

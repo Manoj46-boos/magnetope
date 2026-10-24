@@ -116,6 +116,69 @@ async function glowPixelCount(target: Page): Promise<number> {
   }, png);
 }
 
+/** Counts the release burst's warm pixels: the repel ring, its wisps and the hot core. */
+async function warmBurstPixels(target: Page): Promise<number> {
+  const png = (await target.screenshot()).toString('base64');
+  return target.evaluate(async (data) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${data}`;
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(image, 0, 0);
+    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let warm = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      const r = pixels[i]!;
+      const g = pixels[i + 1]!;
+      const b = pixels[i + 2]!;
+      // The repel burst's orange and its near-white core, bright enough that the
+      // dusk backdrop never answers.
+      if (r > 225 && g > 100 && b < 140) warm++;
+    }
+    return warm;
+  }, png);
+}
+
+/** Longest extent of the red and blue pole pixels: the rig's silhouette ruler. */
+async function poleSpan(target: Page): Promise<number> {
+  const png = (await target.screenshot()).toString('base64');
+  return target.evaluate(async (data) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${data}`;
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(image, 0, 0);
+    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let minX = canvas.width;
+    let maxX = 0;
+    let minY = canvas.height;
+    let maxY = 0;
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        const i = (y * canvas.width + x) * 4;
+        const r = pixels[i]!;
+        const g = pixels[i + 1]!;
+        const b = pixels[i + 2]!;
+        const red = r > 180 && g < 90 && b < 90;
+        const blue = b > 180 && r < 90 && g > 60 && g < 180;
+        if (!red && !blue) continue;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+    if (maxX < minX) return 0;
+    return Math.max(maxX - minX, maxY - minY);
+  }, png);
+}
+
 describe('the snap burst fires when MAGNO sticks to a steel surface', () => {
   runnable('boots clean and draws an initial frame', async () => {
     expect(await page!.locator('.loading').count()).toBe(0);
@@ -177,6 +240,29 @@ describe('the snap burst fires when MAGNO sticks to a steel surface', () => {
     }, png);
     expect(probe.red).toBeGreaterThan(25);
     expect(probe.blue).toBeGreaterThan(25);
+    expect(errors).toEqual([]);
+  });
+
+  runnable('stacks the release composition on a full-power launch (R-GF-01)', async () => {
+    // Wait for MAGNO to be back on a surface with the world settled.
+    await page!.waitForTimeout(1200);
+
+    // Full charge: the coiled rig and its quiet baseline.
+    await page!.keyboard.down('Space');
+    await page!.waitForTimeout(1050);
+    const coiledBurst = await warmBurstPixels(page!);
+
+    // Release. The frame that follows must carry the burst out of the origin —
+    // the half of the stack a production frame can prove at play pace. The
+    // hit-stop, the camera lunge, the lens pop and the stretch envelope are
+    // measured exactly by the unit suites and the held-clock capture set.
+    await page!.keyboard.up('Space');
+    await page!.waitForTimeout(50);
+    const releaseBurst = await warmBurstPixels(page!);
+    const releaseSpan = await poleSpan(page!);
+
+    expect(releaseBurst, 'the origin blows a warm ring and wisps on the release frame').toBeGreaterThan(coiledBurst + 150);
+    expect(releaseSpan, 'the stretched rig still reads its poles on the release frame').toBeGreaterThan(12);
     expect(errors).toEqual([]);
   });
 });

@@ -167,6 +167,8 @@ export class SceneRenderer {
   private cssHeight = 1;
   private deviceRatio = 1;
   private flashAmount = 0;
+  /** The same one-frame beats as the flash veil, carried by the bloom so the snap ident reads at gameplay strength (R-SM-03). */
+  private beatFlash = 0;
   private frameMs = 16;
   private lastFrameStamp = 0;
 
@@ -231,7 +233,12 @@ export class SceneRenderer {
 
     this.vfx = new Vfx(this.scene, this.profile, ACTOR_Z + 0.08, {
       shake: (kind) => this.onShake(kind),
-      flash: (amount) => (this.flashAmount = Math.max(this.flashAmount, amount)),
+      // Only the snap ident rides the bloom: the staged beats keep their veil,
+      // so a catch never washes the pole colours the silhouette lives on.
+      flash: (amount) => {
+        this.flashAmount = Math.max(this.flashAmount, amount);
+        this.beatFlash = Math.max(this.beatFlash, amount);
+      },
     });
     this.windStreaks = new WindStreaks(this.scene, ACTOR_Z + 0.12);
     this.windStreaks.setCeiling(this.profile.windStreaks);
@@ -315,8 +322,19 @@ export class SceneRenderer {
   }
 
   private bindRig(sim: Simulation): void {
-    sim.events.on('attach', (e) => this.rig.onAttach(e.normal));
-    sim.events.on('repel', (e) => this.rig.onRepel(e.direction, e.power));
+    sim.events.on('attach', (e) => {
+      this.rig.onAttach(e.normal);
+      // The catch settle (R-GF-04) rides the snap: the click eases the lens in and back out.
+      if (e.viaSnap) this.cameraRig.settle();
+    });
+    sim.events.on('repel', (e) => {
+      this.rig.onRepel(e.direction, e.power);
+      // The full-power release owns the camera beats (R-GF-01): a lunge along the flight and a brief wide lens.
+      if (e.power >= 1) {
+        this.cameraRig.kick(e.direction);
+        this.cameraRig.pop();
+      }
+    });
     sim.events.on('impact', (e) => this.rig.onImpact(e.normal, e.speed));
     sim.events.on('boing', (e) => {
       const visual = this.animatedByProp.get(e.propIndex);
@@ -839,13 +857,22 @@ export class SceneRenderer {
         this.frameEndingCamera(ending, pos, ctx.dt, sim);
       } else {
         const falling = view.velocity.y < -9 && !view.attachNormal;
-        this.cameraRig.update(pos, view.velocity, ctx.dt, { falling, slowMo: ctx.slowMo, bounds: sim.level.bounds });
+        this.cameraRig.update(pos, view.velocity, ctx.dt, {
+          falling,
+          slowMo: ctx.slowMo,
+          charge: view.state === 'charging' ? view.charge01 : 0,
+          bounds: sim.level.bounds,
+        });
       }
 
       this.reachHands(sim, view);
       this.rig.update(view, pos, ctx.dt, ctx.reducedMotion);
       this.vfx.update(ctx.dt, view, this.rig.headWorld(this.headScratch), view.visualAngle);
       if (ending) this.poseEnding(ending, sim);
+      // The gameplay flash ident rides the bloom: a halo with the catch burst,
+      // spent in a fraction of a second and never enough to wash the frame.
+      this.beatFlash = Math.max(0, this.beatFlash - ctx.dt * 2.5);
+      this.post.setBloomBoost(this.beatFlash * 0.6);
     }
     this.parGhost.update(ctx.ghosts.par, ctx.dt);
     this.personalGhost.update(ctx.ghosts.personal, ctx.dt);
