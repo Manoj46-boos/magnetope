@@ -116,6 +116,7 @@ export class GameUi {
   private readonly toastEl: HTMLElement;
   private readonly speedLines: HTMLElement;
   private readonly flashEl: HTMLElement;
+  private assistValue: HTMLElement | null = null;
   private toggles = new Map<string, HTMLButtonElement>();
   private languageSelect!: HTMLSelectElement;
   private fallTimer = 0;
@@ -321,6 +322,9 @@ export class GameUi {
     addToggle('assist', 'assist', 'assist');
     addToggle('reducedMotion', 'reducedMotion', 'motion');
     addToggle('ghosts', 'ghosts', 'ghost');
+    // R-GF-03: the assist setting names its state without shame — CATCH ME or LET ME FLY.
+    this.assistValue = el('span', { class: 'value' });
+    this.toggles.get('assist')!.appendChild(this.assistValue);
 
     const lang = el('label', { class: 'lang' }, ICONS.globe);
     this.languageSelect = el('select', { 'data-nav': true, 'data-ui': true, 'aria-label': t('language') });
@@ -357,6 +361,12 @@ export class GameUi {
     for (const [key, b] of this.toggles) b.setAttribute('aria-pressed', String(Boolean(settings[key as keyof Settings])));
     this.languageSelect.value = settings.language;
     document.documentElement.classList.toggle('reduced-motion', settings.reducedMotion);
+    this.syncAssistValue();
+  }
+
+  /** The assist toggle carries its current promise in its own label, in the active language. */
+  private syncAssistValue(): void {
+    if (this.assistValue) this.assistValue.textContent = `: ${this.settings.assist ? t('assistCatch') : t('assistFly')}`;
   }
 
   openPause(): void {
@@ -518,6 +528,7 @@ export class GameUi {
     this.root.querySelectorAll<HTMLElement>('[data-i18n]').forEach((node) => {
       node.textContent = t(node.dataset.i18n as StringKey);
     });
+    this.syncAssistValue();
     this.pauseButton.setAttribute('aria-label', t('pause'));
     this.ending.applyLocale();
     this.loading.setAttribute('aria-label', t('loading'));
