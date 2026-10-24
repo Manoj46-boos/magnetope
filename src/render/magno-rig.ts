@@ -56,6 +56,18 @@ interface Pulse {
 /** PRD 7.2: scale to 85% along the contact normal, held 90 ms, with a 140 ms elastic recovery. */
 const ATTACH_SQUASH = 0.85;
 
+/** R-GF-02: the coil before a launch — squash along the body axis, grown with the charge so it is already reading about 120 ms before a full release lets go. */
+const COIL_SQUASH = 0.12;
+/** R-GF-02: the post-catch wobble — a damped sway along the contact axis, spent inside three cycles. */
+const WOBBLE_HZ = 8.5;
+const WOBBLE_DECAY = 8;
+const WOBBLE_AMPLITUDE = 0.035;
+/** R-GF-05: at full charge the whole rig trembles on the edge of letting go. */
+const SHIVER_METERS = 0.009;
+/** R-GF-05: a meter segment punches in for this long when its threshold is crossed. */
+const SEGMENT_PULSE_S = 0.15;
+const SEGMENT_PULSE_SCALE = 0.22;
+
 /** The idle ladder's attention hop: a small parabolic lift, never a simulation move. */
 const HOP_MS = 520;
 const HOP_HEIGHT = 0.42;
@@ -166,8 +178,15 @@ export class MagnoRig {
   private pulse: Pulse | null = null;
   private visualAngle = 0;
   private angleReady = false;
+  private wobbleAge = -1;
+  private wobbleAxis = 0;
+  private prevChargeLevel = 0;
+  private readonly segmentPulse = new Float64Array(3);
   private headLag = new SecondOrder(frequencyForLag(HEAD_LAG_S, HEAD_DAMPING), HEAD_DAMPING, 0);
   private gaze = new SecondOrder2(5, 0.7, 0, 0, 0);
+  /** The in-flight gaze: quick enough to beat the head's 30 ms lag, so the eye leads the line of action (R-GF-02). */
+  private readonly gazeQuick = new SecondOrder2(14, 0.8, 0, 0, 0);
+  private gazeIntent = false;
   private lidOpen = new SecondOrder(7, 0.8, 0, 1);
   private eyeScale = new SecondOrder(7, 0.7, 0, 1);
   private time = 0;
@@ -356,6 +375,8 @@ export class MagnoRig {
   onAttach(normal: Vec2): void {
     const axis = Math.atan2(-normal.x, normal.y);
     this.pulse = { axis, peak: ATTACH_SQUASH, hold: 0.09, recover: 0.14, age: 0 };
+    this.wobbleAge = 0;
+    this.wobbleAxis = axis;
   }
 
   onRepel(direction: Vec2, power01: number): void {
@@ -433,6 +454,10 @@ export class MagnoRig {
 
     this.followAngle(view, dt);
     this.root.position.set(position.x + this.offset.x, position.y + this.offset.y, 0);
+    if (view.state === 'charging' && view.chargeLevel >= 3 && !reducedMotion) {
+      this.root.position.x += noise1(this.time * 90, 3) * SHIVER_METERS;
+      this.root.position.y += noise1(this.time * 90, 7) * SHIVER_METERS * 0.6;
+    }
     if (this.hopMs >= 0) {
       this.hopMs += dt * 1000;
       const u = this.hopMs / HOP_MS;
@@ -449,7 +474,7 @@ export class MagnoRig {
     this.animateHead(view, dt);
     this.animateEye(view, dt, t);
     this.animateArms(view, dt, t);
-    this.animateAura(view, t);
+    this.animateAura(view, dt, t);
   }
 
   private followAngle(view: MagnoView, dt: number): void {
@@ -482,12 +507,33 @@ export class MagnoRig {
       scaleAlong = 1 + (this.pulse.peak - 1) * e * (reducedMotion ? 0.5 : 1);
       axis = this.pulse.axis;
       if (this.pulse.age > this.pulse.hold + this.pulse.recover) this.pulse = null;
+    } else if (view.state === 'charging') {
+      // The coil: squash along the body axis while the charge builds, so the
+      // release stretch unwinds something the player already saw winding.
+      const coil = COIL_SQUASH * view.charge01 ** 1.5 * (reducedMotion ? 0.5 : 1);
+      if (coil > 0.002) {
+        scaleAlong = 1 - coil;
+        axis = view.visualAngle;
+      }
+    }
+
+    if (this.wobbleAge >= 0 && !this.pulse) {
+      // The sway waits out the squash it follows: catch, squash, then the wobble
+      // the recovery leaves behind — anticipation, impact, follow-through.
+      this.wobbleAge += dt;
+      const decay = Math.exp(-this.wobbleAge * WOBBLE_DECAY);
+      if (decay < 0.02) {
+        this.wobbleAge = -1;
+      } else {
+        scaleAlong += Math.sin(this.wobbleAge * WOBBLE_HZ * Math.PI * 2) * WOBBLE_AMPLITUDE * decay * (reducedMotion ? 0.5 : 1);
+        axis = this.wobbleAxis;
+      }
     }
 
     const speedDown = -view.velocity.y;
     const wantStretch = !view.attachNormal && !view.limp && speedDown > 9 ? 1.08 : 1;
     this.fallStretch = damp(this.fallStretch, wantStretch, 8, dt);
-    if (this.fallStretch > 1.002 && !this.pulse) {
+    if (this.fallStretch > 1.002 && !this.pulse && view.state !== 'charging') {
       scaleAlong = this.fallStretch;
       axis = view.visualAngle;
     }
@@ -542,8 +588,17 @@ export class MagnoRig {
     const len = hypot2(towardX, towardY) || 1;
     const local = rotateInto(this.local, towardX / len, towardY / len, -this.visualAngle);
     const amount = view.snapTarget ? 0.034 : 0.026 * clamp(len / 6, 0, 1);
-    this.gaze.update(local.x * amount, local.y * amount, dt);
-    this.pupil.position.set(this.gaze.x.value, this.gaze.y.value, 0.032);
+    const intent = !view.attachNormal && !view.limp && hypot2(view.velocity.x, view.velocity.y) > 4;
+    if (intent !== this.gazeIntent) {
+      // Hand the current gaze across so the spring swap never twitches the pupil.
+      const from = intent ? this.gaze : this.gazeQuick;
+      const to = intent ? this.gazeQuick : this.gaze;
+      to.snap(from.x.value, from.y.value);
+      this.gazeIntent = intent;
+    }
+    const spring = this.gazeIntent ? this.gazeQuick : this.gaze;
+    spring.update(local.x * amount, local.y * amount, dt);
+    this.pupil.position.set(spring.x.value, spring.y.value, 0.032);
     this.pupil.scale.setScalar(view.limp ? 0.6 + 0.4 * Math.sin(t * 18) : 1);
   }
 
@@ -605,7 +660,7 @@ export class MagnoRig {
     }
   }
 
-  private animateAura(view: MagnoView, t: number): void {
+  private animateAura(view: MagnoView, dt: number, t: number): void {
     const polar = view.polarity === 'repel' ? fxTheme.repel : fxTheme.attract;
     this.glowMaterial.blending = fxTheme.blending;
     const intensity = view.state === 'charging' ? 0.3 + view.charge01 * 0.6 : view.snapEngaged ? 0.7 : 0.18;
@@ -614,14 +669,21 @@ export class MagnoRig {
     this.glow.scale.setScalar(1 + (view.state === 'charging' ? view.charge01 * 0.55 : 0));
 
     const level = view.state === 'charging' ? view.chargeLevel : 0;
+    // A newly crossed threshold punches its segment in; the pulse decays on its own.
+    for (let i = this.prevChargeLevel; i < level && i < 3; i++) this.segmentPulse[i] = 1;
+    this.prevChargeLevel = level;
     for (let i = 0; i < 3; i++) {
       const lit = level > i;
       const material = this.arcMaterials[i]!;
       const full = level === 3 && lit;
-      material.opacity = lit ? (full ? 0.85 + 0.15 * Math.sin(t * 28) : 0.8) : view.state === 'charging' ? 0.14 : 0;
+      const pulse = this.segmentPulse[i]!;
+      const base = lit ? (full ? 0.85 + 0.15 * Math.sin(t * 28) : 0.8) : view.state === 'charging' ? 0.14 : 0;
+      material.opacity = Math.min(1, base + pulse * 0.35);
       material.blending = fxTheme.blending;
       material.color.copy(lit ? (level === 3 ? fxTheme.repelCore : fxTheme.repel) : fxTheme.repel);
+      this.arcs[i]!.scale.setScalar(1 + SEGMENT_PULSE_SCALE * pulse);
       this.arcs[i]!.visible = view.state === 'charging' && this.chargeMeter;
+      this.segmentPulse[i] = Math.max(0, pulse - dt / SEGMENT_PULSE_S);
     }
     // Arcs stay upright in screen space regardless of how the body is oriented.
     for (const arc of this.arcs) arc.rotation.z = 0;

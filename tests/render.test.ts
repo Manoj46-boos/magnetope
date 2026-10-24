@@ -172,6 +172,65 @@ describe('MAGNO rig', () => {
     expect(deformScale(rig)).toBeLessThanOrEqual(1.09);
   });
 
+  it('coils along its axis while the charge builds, reading well before a full release', () => {
+    // R-GF-02: the anticipation is a squash that grows with the charge, so the
+    // release stretch unwinds a spring the player already saw winding. At 900 ms
+    // of charge, 120 ms before the top is charge01 = 0.867.
+    const rig = new MagnoRig();
+    const coilAt = (charge01: number) => {
+      const v = view({ state: 'charging', charge01, chargeLevel: 3, polarity: 'repel', attachNormal: { x: 0, y: 1 } });
+      run(rig, v, 200);
+      return deformScale(rig);
+    };
+    expect(coilAt(0.2)).toBeGreaterThan(0.98);
+    expect(coilAt(0.867)).toBeLessThan(0.92);
+    expect(coilAt(1)).toBeLessThan(0.9);
+  });
+
+  it('wobbles after a catch in a damped sway spent inside three cycles', () => {
+    // R-GF-02: the follow-through after the squash is an oscillation around
+    // rest, small enough to read as weight and short enough to never noodle.
+    const rig = new MagnoRig();
+    const v = view({ attachNormal: { x: 0, y: 1 }, visualAngle: 0 });
+    run(rig, v, 40);
+    rig.onAttach({ x: 0, y: 1 });
+    let crossings = 0;
+    let above = 0;
+    let latePeak = 0;
+    for (let i = 0; i < Math.round(0.5 / (1 / 120)); i++) {
+      rig.update(v, v.position, 1 / 120, false);
+      const s = deformScale(rig);
+      const side = s > 1.0015 ? 1 : s < 0.9985 ? -1 : above;
+      if (side !== 0 && above !== 0 && side !== above) crossings++;
+      if (side !== 0) above = side;
+      if (i * (1 / 120) > 0.23) latePeak = Math.max(latePeak, Math.abs(s - 1));
+    }
+    expect(crossings).toBeGreaterThanOrEqual(2);
+    expect(crossings).toBeLessThanOrEqual(7);
+    expect(latePeak).toBeGreaterThan(0.002);
+    expect(latePeak).toBeLessThan(0.04);
+  });
+
+  it('lets the eye lead the flight while the head is still arriving', () => {
+    // R-GF-02: overlapping action — in flight the gaze rides a quick spring so
+    // it is on the heading before the head's 30 ms lean has finished arriving.
+    const rig = new MagnoRig();
+    const pupil = (rig as unknown as { pupil: { position: { x: number } } }).pupil;
+    const head = (rig as unknown as { headPivot: { rotation: { z: number } } }).headPivot;
+    const still = view({ velocity: { x: 0, y: 0 } });
+    run(rig, still, 400);
+    const rest = head.rotation.z;
+    const flying = view({ velocity: { x: 10, y: 0 } });
+    for (let i = 0; i < 6; i++) rig.update(flying, flying.position, 1 / 120, false);
+    const gazeEarly = pupil.position.x;
+    const leanEarly = Math.abs(head.rotation.z - rest);
+    run(rig, flying, 500);
+    const gazeSettled = pupil.position.x;
+    const leanSettled = Math.abs(head.rotation.z - rest);
+    expect(gazeEarly / gazeSettled).toBeGreaterThan(leanEarly / leanSettled + 0.05);
+    expect(gazeEarly / gazeSettled).toBeGreaterThan(0.8);
+  });
+
   it('halves the squash for reduced motion', () => {
     const peak = (reduced: boolean) => {
       const rig = new MagnoRig();
