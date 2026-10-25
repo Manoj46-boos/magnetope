@@ -3,10 +3,12 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import * as recipes from '@/audio/recipes';
 import * as continuous from '@/audio/continuous';
-import { AudioEngine } from '@/audio/engine';
-import { renderColorScript, renderEconomy, renderEvents, renderFeel, renderSpectacle } from '../tools/doc-spine';
+import { AudioEngine, BUS_DB } from '@/audio/engine';
+import { renderColorScript, renderEconomy, renderEvents, renderFeel, renderMagno, renderSpectacle } from '../tools/doc-spine';
 import { FEEL_GAME_BEATS, FEEL_ROWS, SIM_EVENT_NAMES } from '@/game/feel-table';
 import { SPECTACLE_BEATS } from '@/game/spectacle-table';
+import { CHIRP_WORDS, MAGNO_EMOTIONS } from '@/game/magno-table';
+import { EYE_STATES } from '@/render/magno-rig';
 import { TUNING } from '@/config/tuning';
 import { SPECTACLE_SPACING_MS } from '@/game/spectacle';
 import { HIT_STOP_BAND_MS, HOLD_MS } from '@/game/hit-stop';
@@ -169,5 +171,31 @@ describe('the event vocabulary (R-AN-01)', () => {
     }
     expect(sent.some((r) => r.category === 'session')).toBe(true);
     expect(MAX_QUEUE).toBe(200);
+  });
+});
+
+describe('the MAGNO bible (R-CH-04)', () => {
+  it('is the generated file, byte for byte', () => {
+    expect(doc('MAGNO.md')).toBe(renderMagno());
+  });
+
+  it('carries one row per word of the language, exactly', () => {
+    expect(new Set(MAGNO_EMOTIONS.map((e) => e.word))).toEqual(new Set(CHIRP_WORDS));
+    expect(MAGNO_EMOTIONS.length).toBe(CHIRP_WORDS.length);
+  });
+
+  it('names only faces the rig performs, and the silent face is the settled one', () => {
+    const faces = new Set(MAGNO_EMOTIONS.map((e) => e.face));
+    for (const face of faces) expect(EYE_STATES, `${face} is not a rig face`).toContain(face);
+    expect(EYE_STATES.filter((s) => !faces.has(s))).toEqual(['idle']);
+  });
+
+  it('quotes the code\u2019s own numbers', () => {
+    const text = doc('MAGNO.md');
+    expect(text).toContain(`band-limited ${recipes.CHIRP_BAND_HZ[0]}\u2013${recipes.CHIRP_BAND_HZ[1]} Hz`);
+    expect(text).toContain(`${BUS_DB.music - BUS_DB.chirp} under the music bed`);
+    expect(text).toContain(`by ${TUNING.character.headLagMs} ms and the hands by ${TUNING.character.handLagMs} ms`);
+    expect(text).toContain(`every ${(TUNING.character.beatMs / 1000).toFixed(0)}`);
+    expect(text).toContain(`deeper than ${TUNING.character.dazeMeters} m`);
   });
 });
