@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AudioDirector } from '@/audio/director';
+import { EventEnvelope, EVENT_WEIGHTS } from '@/audio/intensity';
 import { AD_DUCK_DB, AudioEngine, BUS_DB, MASTER, ceilingCurve, fromDb } from '@/audio/engine';
-import { AMBIENCE, axleGroan, windVoice } from '@/audio/mix';
+import { AMBIENCE, axleGroan, layerMix, windVoice } from '@/audio/mix';
 import { playAttach, playBird, playFanfare, playRepel } from '@/audio/recipes';
 import { prop } from '@/levels/author';
 import { levelById } from '@/levels';
@@ -269,6 +270,70 @@ describe('AudioDirector on a real run', () => {
     fake.raw.currentTime = 1;
     director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
     expect(count(fake.nodes, 'oscillator')).toBeGreaterThan(quiet);
+  });
+});
+
+describe('the score follows the level event sequence (R-LD-08)', () => {
+  it('rises on a beat and settles through the quiet', () => {
+    const envelope = new EventEnvelope();
+    for (let i = 0; i < 70; i++) envelope.update(1 / 60);
+    expect(envelope.intensity).toBe(0);
+    envelope.event(EVENT_WEIGHTS.snap);
+    expect(envelope.intensity).toBeGreaterThan(0.4);
+    for (let i = 0; i < 60; i++) envelope.update(1 / 60);
+    expect(envelope.intensity).toBeLessThan(0.4);
+  });
+
+  it('peaks where a level histogram is densest, not where it is quiet', () => {
+    const envelope = new EventEnvelope();
+    const marks: Array<{ at: number; intensity: number }> = [];
+    // A clockwork shape: a quiet establish, a twist, an escalation burst, a resolve.
+    const beats = [5, 5.5, 9.4, 9.6, 9.8, 10.0, 13.6];
+    for (let t = 0; t < 16; t += 1 / 60) {
+      envelope.update(1 / 60);
+      if (beats.some((b) => Math.abs(b - t) < 1 / 120)) envelope.event(EVENT_WEIGHTS.snap);
+      marks.push({ at: t, intensity: envelope.intensity });
+    }
+    const peak = marks.reduce((best, m) => (m.intensity > best.intensity ? m : best));
+    expect(peak.at).toBeGreaterThan(9);
+    expect(peak.at).toBeLessThan(11);
+    const establish = marks.filter((m) => m.at < 4.9).map((m) => m.intensity);
+    expect(Math.max(...establish)).toBe(0);
+  });
+
+  it('mixes the stems by the envelope: quiet open, full escalation, breathing after', () => {
+    const quiet = layerMix({ running: true, heightFrac: 0.05, chaining: false, timeScale: 1, intensity: 0.05 });
+    expect(quiet.layer1).toBe(0);
+    expect(quiet.layer2).toBe(0);
+    const twisting = layerMix({ running: true, heightFrac: 0.3, chaining: false, timeScale: 1, intensity: 0.42 });
+    expect(twisting.layer1).toBeGreaterThan(0);
+    expect(twisting.layer2).toBe(0);
+    const escalation = layerMix({ running: true, heightFrac: 0.7, chaining: true, timeScale: 1, intensity: 0.9 });
+    expect(escalation.layer1).toBe(1);
+    expect(escalation.layer2).toBe(1);
+    const settling = layerMix({ running: true, heightFrac: 0.7, chaining: false, timeScale: 1, intensity: 0.3 });
+    expect(settling.layer2).toBe(0);
+    expect(settling.layer1).toBeGreaterThan(0);
+  });
+
+  it('breathes on a real verified route, not a flat line', async () => {
+    const { engine } = setup();
+    engine.unlock();
+    const director = new AudioDirector(engine);
+    const level = levelById('scrapyard-01');
+    const sim = new Simulation(await loadRapier(), level);
+    director.bind(sim);
+    const player = new ReplayPlayer(decodeRecording(readFileSync(resolve(__dirname, '../src/levels/routes/scrapyard-01.json'), 'utf8')));
+    const samples: number[] = [];
+    while (!player.done && !sim.run.cleared) {
+      sim.step(player.next());
+      director.update({ running: true, timeScale: 1, dt: 1 / 60, slowMo: false });
+      samples.push(director.intensity);
+    }
+    sim.dispose();
+    director.unbind();
+    expect(Math.max(...samples)).toBeGreaterThan(3 * Math.min(...samples));
+    expect(Math.max(...samples)).toBeGreaterThan(0.5);
   });
 });
 

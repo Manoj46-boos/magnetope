@@ -1,4 +1,4 @@
-import { clamp, lerp } from '@/core/mathx';
+import { clamp, lerp, smoothstep } from '@/core/mathx';
 import type { BiomeId } from '@/sim/types';
 
 /** Pure rules behind the audio layer, kept free of Web Audio so they are testable. */
@@ -12,6 +12,8 @@ export interface MusicState {
   chaining: boolean;
   /** Current simulation time scale; below 1 during the slow-motion fall. */
   timeScale: number;
+  /** Event-density envelope, 0..1: how thick the run's beats are right now (R-LD-08). */
+  intensity: number;
 }
 
 export interface LayerMix {
@@ -26,15 +28,20 @@ export interface LayerMix {
 
 /**
  * Deterministic layering (PRD 9.4): ground always plays during a run, the melodic
- * layer fades in above 40% of the climb, the pad engages for snap-chain streaks,
- * and everything darkens and stretches with the time scale during slow motion.
+ * layer rides the run's own event density and keeps a floor at altitude, the
+ * pad engages for the densest stretches — a snap chain pushes it there on its
+ * own — and everything darkens and stretches with the time scale during slow
+ * motion.
  */
 export function layerMix(state: MusicState): LayerMix {
   const slow = clamp((1 - state.timeScale) / 0.65, 0, 1);
+  const events = smoothstep(0.3, 0.55, state.intensity);
+  const altitude = smoothstep(0.45, 0.65, state.heightFrac);
+  const pad = Math.max(state.chaining ? 1 : 0, smoothstep(0.6, 0.85, state.intensity));
   return {
     ground: state.running ? 1 : 0.35,
-    layer1: state.running && state.heightFrac > 0.4 ? 1 : 0,
-    layer2: state.running && state.chaining ? 1 : 0,
+    layer1: state.running ? Math.max(events, altitude) : 0,
+    layer2: state.running ? pad : 0,
     cutoffHz: lerp(14000, 480, slow),
     tempo: clamp(state.timeScale, 0.35, 1),
   };

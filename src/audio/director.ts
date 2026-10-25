@@ -4,6 +4,7 @@ import { MATERIALS } from '@/config/materials';
 import { TUNING } from '@/config/tuning';
 import type { Simulation } from '@/sim/simulation';
 import { gustForecast } from '@/sim/wind';
+import { EventEnvelope, EVENT_WEIGHTS } from './intensity';
 import { AxleVoice, BuzzVoice, HumVoice, WhistleVoice, WindVoice } from './continuous';
 import type { AudioEngine } from './engine';
 import { AMBIENCE, axleGroan, humParams, whistleFrequency, whistleGain, windVoice, type Ambience } from './mix';
@@ -59,6 +60,7 @@ export class AudioDirector {
   private readonly axle: AxleVoice;
   private readonly whistle: WhistleVoice;
   private readonly rng = new Rng(404);
+  private readonly envelope = new EventEnvelope();
   private sim: Simulation | null = null;
   private unsubscribe: Array<() => void> = [];
   private proximity = 0;
@@ -78,15 +80,20 @@ export class AudioDirector {
   bind(sim: Simulation): void {
     this.unbind();
     this.sim = sim;
+    this.envelope.reset();
     this.music.setBiome(sim.level.biome);
     const e = this.engine;
     const on = sim.events.on.bind(sim.events);
     this.unsubscribe.push(
       on('attach', (ev) => {
         playAttach(e, MATERIALS[ev.material].voice, clamp(ev.speed / 12, 0.2, 1));
+        this.envelope.event(ev.viaSnap ? EVENT_WEIGHTS.snap : EVENT_WEIGHTS.catch);
         if (ev.viaSnap) playTick(e, 2000, 'sfx');
       }),
-      on('repel', (ev) => playRepel(e, ev.power)),
+      on('repel', (ev) => {
+        playRepel(e, ev.power);
+        this.envelope.event(EVENT_WEIGHTS.launch);
+      }),
       on('snapEngage', () => playSnapEngage(e)),
       on('snapWhiff', () => playSnapWhiff(e)),
       on('impact', (ev) => {
@@ -119,6 +126,11 @@ export class AudioDirector {
 
   starStamp(index: number): void {
     playStarStamp(this.engine, index, this.music.tonicHz);
+  }
+
+  /** The score's event-density envelope, 0..1 (R-LD-08): how thick the beats are right now. */
+  get intensity(): number {
+    return this.envelope.intensity;
   }
 
   tick(): void {
@@ -191,7 +203,8 @@ export class AudioDirector {
     const voice = windVoice(level.biome, altitude, gust);
     this.wind.update(voice.centerHz, voice.gain);
 
-    this.music.update({ running: frame.running, heightFrac: altitude, chaining: view.chaining, timeScale: frame.timeScale });
+    this.envelope.update(frame.dt);
+    this.music.update({ running: frame.running, heightFrac: altitude, chaining: view.chaining, timeScale: frame.timeScale, intensity: this.envelope.intensity });
 
     const groan = axleGroan(frame.running ? sim.physics.axleSpeed() : 0);
     this.axle.update(groan.pitchHz, groan.cutoffHz, groan.gain);

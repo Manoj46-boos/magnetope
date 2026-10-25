@@ -165,21 +165,25 @@ describe('progression', () => {
 });
 
 describe('adaptive music rules', () => {
-  const base = { running: true, heightFrac: 0.1, chaining: false, timeScale: 1 };
+  const base = { running: true, heightFrac: 0.1, chaining: false, timeScale: 1, intensity: 0 };
 
   it('always plays the ground layer during a run and only a ghost of it otherwise', () => {
     expect(layerMix(base).ground).toBe(1);
     expect(layerMix({ ...base, running: false }).ground).toBeLessThan(1);
   });
 
-  it('brings in the melody above 40% of the climb', () => {
-    expect(layerMix({ ...base, heightFrac: 0.39 }).layer1).toBe(0);
-    expect(layerMix({ ...base, heightFrac: 0.41 }).layer1).toBe(1);
+  it('rides the melody on the run event density, keeping its floor at altitude', () => {
+    expect(layerMix({ ...base, intensity: 0.29 }).layer1).toBe(0);
+    expect(layerMix({ ...base, intensity: 0.56 }).layer1).toBe(1);
+    expect(layerMix({ ...base, heightFrac: 0.44 }).layer1).toBe(0);
+    expect(layerMix({ ...base, heightFrac: 0.66, intensity: 0 }).layer1).toBe(1);
   });
 
-  it('engages the pad only during a snap-chain streak', () => {
+  it('engages the pad only for the densest stretches of the run', () => {
     expect(layerMix(base).layer2).toBe(0);
     expect(layerMix({ ...base, chaining: true }).layer2).toBe(1);
+    expect(layerMix({ ...base, intensity: 0.59 }).layer2).toBe(0);
+    expect(layerMix({ ...base, intensity: 0.86 }).layer2).toBe(1);
   });
 
   it('darkens and stretches with the time scale in slow motion', () => {
