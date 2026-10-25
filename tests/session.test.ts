@@ -19,6 +19,7 @@ interface GameWindow {
       phase: string;
       sim: { run: { timeMs: number; started: boolean }; level: { id: string } };
       save: { data: { stars: Record<string, number>; scrap: number } };
+      soundOn(): boolean;
       holdClock(held: boolean): void;
       advance(seconds: number): void;
       autoplay(recording: unknown): void;
@@ -175,6 +176,46 @@ describe('a first session in a real browser', () => {
     } finally {
       await context!.setOffline(false);
     }
+  });
+
+  runnable('plays a full level with the sound off, the way a muted player meets it (R-AU-12)', async () => {
+    // A live level first — the pause menu only belongs to a run in progress.
+    await page!.evaluate(() => {
+      const game = (window as unknown as GameWindow).__game;
+      game.startLevel('scrapyard-00');
+      game.debug.holdClock(true);
+    });
+    await page!.keyboard.press('Space');
+    await page!.waitForFunction(() => (window as unknown as GameWindow).__game.debug.phase === 'play');
+    await page!.keyboard.press('Escape');
+    await page!.waitForFunction(() => (window as unknown as GameWindow).__game.debug.phase === 'paused');
+    // The pause menu's own toggles, clicked the way a player clicks them.
+    await page!.locator('button.toggle:has(span[data-i18n="sound"])').click();
+    await page!.locator('button.toggle:has(span[data-i18n="music"])').click();
+    expect(await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.soundOn())).toBe(false);
+    await page!.keyboard.press('Escape');
+    await page!.waitForFunction(() => (window as unknown as GameWindow).__game.debug.phase === 'play');
+
+    const outcome = await play('scrapyard-00');
+    expect(outcome.phase, 'the game is fully playable with the sound off').toBe('cleared');
+    expect(outcome.stars).toBeGreaterThanOrEqual(1);
+    expect(await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.soundOn())).toBe(false);
+
+    // Sound back on, the way the same player would put it back.
+    await page!.evaluate(() => {
+      const game = (window as unknown as GameWindow).__game;
+      game.startLevel('scrapyard-00');
+      game.debug.holdClock(true);
+    });
+    await page!.keyboard.press('Space');
+    await page!.waitForFunction(() => (window as unknown as GameWindow).__game.debug.phase === 'play');
+    await page!.keyboard.press('Escape');
+    await page!.waitForFunction(() => (window as unknown as GameWindow).__game.debug.phase === 'paused');
+    await page!.locator('button.toggle:has(span[data-i18n="sound"])').click();
+    await page!.locator('button.toggle:has(span[data-i18n="music"])').click();
+    expect(await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.soundOn())).toBe(true);
+    await page!.keyboard.press('Escape');
+    await page!.waitForFunction(() => (window as unknown as GameWindow).__game.debug.phase === 'play');
   });
 
   runnable('made no request outside its own origin and raised no error', async () => {

@@ -160,6 +160,10 @@ const checkpointOf = (): Promise<{ x: number; y: number }> =>
     return { ...sim.level.checkpoints[0] };
   });
 
+/** R-AU-09: the level the mix has decided on for the bed, read straight off the engine. */
+const musicDb = (): Promise<number | null> =>
+  page!.evaluate(() => (window as unknown as { __game: any }).__game.debug.musicDb());
+
 const runnable = (name: string, body: () => Promise<void>, timeout = 90000) =>
   it(
     name,
@@ -247,6 +251,18 @@ describe('Second Wind', () => {
     expect(calls.filter((c) => c === 'gameplayStart').length, `trace ${calls.join(' > ')}`).toBe(2);
     expect(calls.slice(calls.indexOf('rewardedBreak') - 1)).toEqual(['gameplayStop', 'rewardedBreak', 'gameplayStart']);
     expect(problems).toEqual([]);
+  });
+
+  runnable('ducks the music bed with the ad — no tail crosses the break — and restores it after (R-AU-09)', async () => {
+    await fallFar();
+    await page!.locator('.fall-card .actions .btn').nth(1).click();
+    await page!.waitForFunction(() => (window as unknown as { __game: any }).__game.debug.bus.state === 'ad');
+    const during = await musicDb();
+    expect(during, 'the bed sits at the ad floor the moment the ad owns the screen').toBeLessThanOrEqual(-24);
+    await endAd(true);
+    await page!.waitForFunction(() => (window as unknown as { __game: any }).__game.debug.phase === 'play');
+    await advance(2);
+    expect(await musicDb(), 'the bed never came back').toBeCloseTo(-18, 1);
   });
 
   runnable('changes nothing when the video is not completed', async () => {

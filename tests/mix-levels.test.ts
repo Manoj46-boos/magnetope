@@ -1,9 +1,9 @@
 import type { Browser, Page } from 'playwright';
 import type { ViteDevServer } from 'vite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AD_DUCK_DB } from '@/audio/engine';
+import { AD_DUCK_DB, type BusName } from '@/audio/engine';
 import { launchBrowser, startServer } from './browser/harness';
-import type { RenderReport, RenderSpec } from './browser/audio-fixture';
+import type { RenderReport, RenderSpec, UiVoice } from './browser/audio-fixture';
 
 /**
  * Renders the game's real audio graph offline in Chrome, while the real simulation
@@ -86,12 +86,18 @@ describe('the mix of a real run, measured offline', () => {
   });
 
   run('before mastering, effects peak above the score and the ambience stays far under it', async () => {
-    const scenario = { kind: 'route', levelId: 'scrapyard-03' } as const;
-    const effects = await render({ scenario, seconds: 30, mute: ['music', 'amb'], flatMaster: true });
-    const score = await render({ scenario, seconds: 30, mute: ['sfx', 'amb', 'ui'], flatMaster: true });
-    const ambience = await render({ scenario, seconds: 30, mute: ['sfx', 'music', 'ui'], flatMaster: true });
+    // The tumble at six seconds keeps the run from clearing — the winning
+    // launch is already airborne by nine — so the verdict's stingers never
+    // spend, and the engine's duck never owns the music bus mid-render.
+    const scenario = { kind: 'tumble', levelId: 'scrapyard-03', fallAtSeconds: 6 } as const;
+    const effects = await render({ scenario, seconds: 30, mute: ['music', 'amb', 'chirp'], flatMaster: true });
+    const score = await render({ scenario, seconds: 30, mute: ['sfx', 'amb', 'ui', 'chirp'], flatMaster: true });
+    const ambience = await render({ scenario, seconds: 30, mute: ['sfx', 'music', 'ui', 'chirp'], flatMaster: true, watch: 'music' });
     expect(effects.samplePeakDb).toBeGreaterThan(score.samplePeakDb + 2);
     expect(score.integratedLufs).toBeGreaterThan(ambience.integratedLufs + 10);
+    // A bus muted for measurement stays muted through the whole render: nothing
+    // in the stack may re-gain it behind the mutes (the unbind duck once did).
+    expect(ambience.watchedDb.every((db) => db <= -100), 'a muted bus came back mid-render').toBe(true);
   });
 
   run('raises no script error while rendering', async () => {
@@ -107,5 +113,57 @@ describe('the mix of a real run, measured offline', () => {
     expect(window(open) - window(ducked)).toBeGreaterThan(-AD_DUCK_DB - 0.5);
     const before = (r: RenderReport): number => r.perSecondDb.slice(2, 7).reduce((s, db) => s + db, 0) / 5;
     expect(Math.abs(before(open) - before(ducked))).toBeLessThan(0.5);
+  });
+
+  run('side-chains the bed three under for the length of a stinger, then gives it back (R-AU-05/07)', async () => {
+    const spec = (call: 'biome' | 'none') =>
+      ({
+        scenario: { kind: 'stinger', levelId: 'scrapyard-03', callAtSeconds: 5, call },
+        seconds: 12,
+        mute: ['sfx', 'amb', 'ui', 'chirp'] as BusName[],
+      }) satisfies RenderSpec;
+    // The same score twice, one word over it: the difference at the word's
+    // second is the side-chain itself, whatever the phrase was playing.
+    const open = await render(spec('none'));
+    const ducked = await render(spec('biome'));
+    const dip = open.perSecondDb[5]! - ducked.perSecondDb[5]!;
+    expect(dip, `the bed held ${dip.toFixed(2)} dB under the word`).toBeGreaterThan(2);
+    expect(dip, 'the side-chain is three under, no more').toBeLessThan(4.3);
+    const after = open.perSecondDb[9]! - ducked.perSecondDb[9]!;
+    expect(Math.abs(after), 'the bed never came back').toBeLessThan(1.2);
+  });
+
+  run('holds one loudness across all five biomes — parity inside 1 LU (R-AU-08)', async () => {
+    const levels = ['scrapyard-03', 'suburbia-03', 'metropolis-03', 'playground-03', 'stratosphere-03'];
+    const readings: number[] = [];
+    for (const levelId of levels) {
+      const r = await render({ scenario: { kind: 'route', levelId }, seconds: 30 });
+      readings.push(r.integratedLufs);
+    }
+    const spread = Math.max(...readings) - Math.min(...readings);
+    expect(spread, `the biomes sit ${spread.toFixed(2)} LU apart: ${readings.map((l) => l.toFixed(2)).join(', ')}`).toBeLessThanOrEqual(1);
+  });
+
+  run('peaks the UI voices as one class (R-AU-08)', async () => {
+    const voices: UiVoice[] = ['tick', 'charge1', 'charge2', 'charge3', 'stamp0', 'stamp1', 'stamp2', 'fanfare', 'biomeCall', 'parCall', 'ghostSet', 'fallTopper'];
+    const medians: number[] = [];
+    for (const name of voices) {
+      // Three takes a voice, the middle one counted: a noise-burst voice's peak
+      // rides its slice of the shared noise buffer, so the class law reads the
+      // take, not the luck.
+      const peaks: number[] = [];
+      for (let take = 0; take < 3; take++) {
+        const r = await render({
+          scenario: { kind: 'voice', name, levelId: 'scrapyard-03' },
+          seconds: 2.5,
+          mute: ['sfx', 'music', 'amb', 'chirp'] as BusName[],
+          flatMaster: true,
+        });
+        peaks.push(r.samplePeakDb);
+      }
+      medians.push(peaks.sort((a, b) => a - b)[1]!);
+    }
+    const spread = Math.max(...medians) - Math.min(...medians);
+    expect(spread, `the class peaks ${spread.toFixed(2)} dB apart: ${medians.map((p) => p.toFixed(1)).join(', ')}`).toBeLessThanOrEqual(3);
   });
 });
