@@ -19,6 +19,8 @@
     "ablate": "tsx tools/ablate.ts",
     "reach": "tsx tools/reach.ts",
     "uses": "tsx tools/uses.ts",
+    "clockwork": "tsx tools/clockwork.ts",
+    "levels": "tsx tools/levels.ts",
     "design": "tsx tools/design.ts",
     "thumbnails": "tsx tools/thumbnails.ts",
     "capture": "tsx tools/capture.ts",

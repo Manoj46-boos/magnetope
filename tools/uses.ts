@@ -7,7 +7,9 @@ import { Simulation } from '@/sim/simulation';
 /**
  * Which props a level's stored route actually grabs. A prop kind that the
  * route never touches is scenery, so this shows whether a level's signature
- * element is really part of the way up.
+ * element is really part of the way up. The same replay counts the
+ * magnet-native moments (R-LD-10): a level whose route never snaps a catch or
+ * launches off a surface is filler and is named as one.
  */
 
 const ids = process.argv.slice(2).filter((a) => !a.startsWith('--'));
@@ -23,8 +25,11 @@ for (const level of targets) {
   const sim = new Simulation(rapier, level);
   const player = new ReplayPlayer(decodeRecording(readFileSync(file, 'utf8')));
   const counts = new Map<string, number>();
+  let snaps = 0;
+  let launches = 0;
 
-  sim.events.on('attach', () => {
+  sim.events.on('attach', (ev) => {
+    if (ev.viaSnap) snaps++;
     const at = sim.magno.view.position;
     let best = '';
     let bestDistance = Infinity;
@@ -38,9 +43,11 @@ for (const level of targets) {
     }
     counts.set(best, (counts.get(best) ?? 0) + 1);
   });
+  sim.events.on('repel', () => launches++);
 
   while (!player.done && !sim.run.cleared) sim.step(player.next());
   const summary = [...counts].sort((a, b) => b[1] - a[1]).map(([kind, n]) => `${kind}x${n}`).join(' ');
-  console.log(`${level.id}: ${sim.run.cleared ? 'cleared' : 'NOT CLEARED'}  ${summary}`);
+  const native = snaps + launches > 0 ? `${snaps} snaps + ${launches} launches` : 'FILLER: no magnet-native moment';
+  console.log(`${level.id}: ${sim.run.cleared ? 'cleared' : 'NOT CLEARED'}  ${native}  ${summary}`);
   sim.dispose();
 }
