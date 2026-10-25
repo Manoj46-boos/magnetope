@@ -91,11 +91,13 @@ interface Layer {
   baseY: number;
 }
 
-interface LayerSpec {
+export interface LayerSpec {
   z: number;
   scale: number;
   height: number;
   parallax: number;
+  /** The one layer that carries the biome's landmark silhouette (R-AR-06). */
+  hero?: boolean;
 }
 
 interface Lights {
@@ -108,6 +110,8 @@ interface Skyline {
   lights: Lights;
   /** Free-standing silhouettes the ridge cannot express, as flat triangles: six numbers each. */
   shapes?: number[];
+  /** The biome's landmark, kept apart so it can draw in front of its own layer (R-AR-06). */
+  hero?: number[];
 }
 
 const WINDOW_TONES: ReadonlyArray<readonly [number, number, number]> = [
@@ -322,20 +326,94 @@ function spaceSkyline(spec: LayerSpec, rng: Rng): Skyline {
   return { ridge, lights: { positions: [], colors: [] }, shapes };
 }
 
-function skylineFor(biome: BiomeId, spec: LayerSpec, rng: Rng): Skyline {
+/**
+ * One landmark silhouette per biome (R-AR-06): the hero piece that makes a sky
+ * recognisable from any level — the yard's gantry crane, the water tower on
+ * its legs, the city's spire, the big wheel, the dish listening over the cloud
+ * deck. The camera is a long 24-degree lens, so at the middle layer the frame
+ * spans barely thirty-odd metres: the hero keeps its distinctive profile
+ * inside that band, tall enough to top the ridge's own lumps, close enough to
+ * the centre line to always be in the shot.
+ */
+function craneLandmark(out: number[], cx: number, h: number): void {
+  const base = h * 0.05;
+  const head = base + h * 0.6;
+  bar(out, cx - h * 0.09, base, cx, head, h * 0.022);
+  bar(out, cx + h * 0.09, base, cx, head, h * 0.022);
+  bar(out, cx, head, cx + h * 0.34, head - h * 0.045, h * 0.02);
+  bar(out, cx, head, cx - h * 0.16, head - h * 0.025, h * 0.016);
+  bar(out, cx + h * 0.3, head - h * 0.05, cx + h * 0.3, base + h * 0.24, h * 0.012);
+}
+
+function waterTowerLandmark(out: number[], cx: number, h: number): void {
+  const base = h * 0.05;
+  // The classic profile: long spider legs, a small tank riding high above the
+  // roofline, a finial past it — it must read over a street of gables.
+  const legs = h * 0.55;
+  for (const dx of [-h * 0.13, -h * 0.04, h * 0.04, h * 0.13]) bar(out, cx + dx, base, cx + dx * 0.12, base + legs, h * 0.013);
+  bar(out, cx - h * 0.13, base + legs, cx + h * 0.13, base + legs, h * 0.012);
+  blob(out, cx, base + legs + h * 0.07, h * 0.085, 10);
+  bar(out, cx, base + legs + h * 0.14, cx, base + legs + h * 0.2, h * 0.012);
+}
+
+function spireLandmark(out: number[], cx: number, h: number): void {
+  const base = h * 0.05;
+  const body = base + h * 0.5;
+  out.push(cx - h * 0.07, base, cx + h * 0.07, base, cx, body);
+  out.push(cx - h * 0.07, base, cx, body, cx - h * 0.015, body);
+  bar(out, cx, body, cx, base + h * 0.98, h * 0.012);
+  bar(out, cx - h * 0.11, base + h * 0.05, cx + h * 0.11, base + h * 0.014, h * 0.016);
+}
+
+function bigWheelLandmark(out: number[], cx: number, h: number): void {
+  ferrisWheel(out, cx, h * 0.05, h * 0.3, h * 0.04);
+}
+
+function radioDishLandmark(out: number[], cx: number, h: number): void {
+  const base = h * 0.05;
+  const center = base + h * 0.36;
+  annulus(out, cx, center, h * 0.24, h * 0.19, 18);
+  bar(out, cx, center, cx, center + h * 0.3, h * 0.014);
+  bar(out, cx - h * 0.24, center, cx + h * 0.24, center, h * 0.02);
+  bar(out, cx - h * 0.09, base, cx, center, h * 0.02);
+  bar(out, cx + h * 0.09, base, cx, center, h * 0.02);
+}
+
+const LANDMARKS: Readonly<Record<BiomeId, (out: number[], cx: number, h: number) => void>> = {
+  scrapyard: craneLandmark,
+  suburbia: waterTowerLandmark,
+  metropolis: spireLandmark,
+  playground: bigWheelLandmark,
+  stratosphere: radioDishLandmark,
+};
+
+export function skylineFor(biome: BiomeId, spec: LayerSpec, rng: Rng): Skyline {
   const none: Lights = { positions: [], colors: [] };
+  let skyline: Skyline;
   switch (biome) {
     case 'suburbia':
-      return { ridge: suburbRidge(spec, rng), lights: none };
+      skyline = { ridge: suburbRidge(spec, rng), lights: none, shapes: [] };
+      break;
     case 'metropolis':
-      return cityRidge(spec, rng);
+      skyline = cityRidge(spec, rng);
+      break;
     case 'playground':
-      return playgroundSkyline(spec, rng);
+      skyline = playgroundSkyline(spec, rng);
+      break;
     case 'stratosphere':
-      return spaceSkyline(spec, rng);
+      skyline = spaceSkyline(spec, rng);
+      break;
     default:
-      return { ridge: junkRidge(spec, rng), lights: none };
+      skyline = { ridge: junkRidge(spec, rng), lights: none, shapes: [] };
   }
+  if (spec.hero) {
+    // The hero rides the near silhouette layer — the haze is heavy enough at
+    // the middle depth that nothing reads there — and keeps inside the
+    // 24-degree lens's frame at that depth, in front of its own ridge.
+    skyline.hero ??= [];
+    LANDMARKS[biome](skyline.hero, rng.range(-16, 16), spec.height);
+  }
+  return skyline;
 }
 
 /** Lit windows as one unshaded mesh pinned to its skyline layer. */
@@ -496,10 +574,10 @@ export class Backdrop {
   }
 
   private buildSilhouettes(biome: BiomeId, rng: Rng): void {
-    const specs = [
+    const specs: LayerSpec[] = [
       { z: -150, scale: 3.2, height: 70, parallax: 0.12 },
       { z: -90, scale: 2.2, height: 46, parallax: 0.07 },
-      { z: -52, scale: 1.5, height: 28, parallax: 0.03 },
+      { z: -52, scale: 1.5, height: 28, parallax: 0.03, hero: true },
     ];
     for (const spec of specs) {
       const skyline = skylineFor(biome, spec, rng);
@@ -512,6 +590,8 @@ export class Backdrop {
       }
       const shapes = skyline.shapes ?? [];
       for (let i = 0; i < shapes.length; i += 2) positions.push(shapes[i]!, shapes[i + 1]!, spec.z);
+      const hero = skyline.hero ?? [];
+      for (let i = 0; i < hero.length; i += 2) positions.push(hero[i]!, hero[i + 1]!, spec.z + 0.4);
       const geometry = new BufferGeometry();
       geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
       const mesh = new Mesh(geometry, new MeshBasicMaterial({ color: 0x888888, fog: true }));

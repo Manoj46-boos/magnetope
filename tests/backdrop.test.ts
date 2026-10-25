@@ -1,7 +1,8 @@
 import { Color, Mesh, MeshBasicMaterial, PerspectiveCamera, ShaderMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
-import { Backdrop } from '@/render/backdrop';
+import { Backdrop, skylineFor } from '@/render/backdrop';
 import { PALETTES } from '@/render/palette';
+import { Rng } from '@/core/rng';
 import type { BiomeId } from '@/sim/types';
 
 /** The three skyline layers are the meshes that carry a flat-colour material and a hand-built ridge. */
@@ -187,5 +188,45 @@ describe('backdrop skylines', () => {
   it('disposes the window lights along with everything else', () => {
     const backdrop = new Backdrop('metropolis', 9);
     expect(() => backdrop.dispose()).not.toThrow();
+  });
+});
+
+describe('the landmark silhouette (R-AR-06)', () => {
+  const heroSpec = { z: -52, scale: 1.5, height: 28, parallax: 0.03, hero: true };
+  const plainSpec = { z: -52, scale: 1.5, height: 28, parallax: 0.03 };
+
+  const maxY = (pairs: number[]): number => {
+    let top = -Infinity;
+    for (let i = 1; i < pairs.length; i += 2) top = Math.max(top, pairs[i]!);
+    return top;
+  };
+
+  it('raises one hero piece inside the camera band that tops its own ridge lumps', () => {
+    for (const biome of ['scrapyard', 'suburbia', 'metropolis', 'playground', 'stratosphere'] as BiomeId[]) {
+      const skyline = skylineFor(biome, heroSpec, new Rng(11));
+      expect(skyline.hero, `${biome}: landmark shapes`).toBeDefined();
+      expect(skyline.hero!.length, `${biome}: the hero is made of triangles`).toBeGreaterThanOrEqual(6);
+      // The 24-degree lens frames barely twenty metres at the near depth, so
+      // the hero keeps its profile in that band while topping the ridge lumps.
+      expect(maxY(skyline.hero!), `${biome}: the hero reads above the ridge`).toBeGreaterThanOrEqual(maxY(skyline.ridge.flat()) * 0.55);
+    }
+  });
+
+  it('keeps the landmark to the one hero layer, so the other skies stay anonymous', () => {
+    for (const biome of ['scrapyard', 'suburbia'] as BiomeId[]) {
+      expect(skylineFor(biome, plainSpec, new Rng(11)).hero ?? [], biome).toHaveLength(0);
+    }
+  });
+
+  it('hangs the landmark on the built backdrop near layer', () => {
+    for (const biome of ['scrapyard', 'suburbia', 'metropolis', 'playground', 'stratosphere'] as BiomeId[]) {
+      const backdrop = new Backdrop(biome, 11);
+      const near = skylineMeshes(backdrop)[2]!;
+      const heights = heightsOf(near);
+      const hero = skylineFor(biome, heroSpec, new Rng(11));
+      // The mesh keeps its vertices as 32-bit floats, so allow the last bit to round.
+      expect(Math.max(...heights), `${biome}: the built layer carries the hero`).toBeGreaterThanOrEqual(maxY(hero.hero!) - 0.01);
+      backdrop.dispose();
+    }
   });
 });
