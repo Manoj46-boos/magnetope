@@ -398,8 +398,13 @@ export class Game {
   private announceBiome(biome: BiomeId): void {
     const card = biomeAnnouncement(this.lastBiome, biome);
     this.lastBiome = biome;
-    if (card) this.ui.banner.show(card.name, t(card.tagline));
-    else this.ui.banner.hide();
+    if (card) {
+      this.ui.banner.show(card.name, t(card.tagline));
+      // R-AU-01/03: the announcement is the motif, re-harmonized in the biome's own key.
+      this.audio.biomeCall();
+    } else {
+      this.ui.banner.hide();
+    }
   }
 
   private teardownSim(): void {
@@ -497,6 +502,8 @@ export class Game {
       // R-CH-06: only a spectacular fail earns MAGNO's own verdict — the deadpan
       // blip lands with the grade badge the card is about to show.
       if (gradeRank(report.grade) >= gradeRank('A')) this.audio.chirp('deadpan');
+      // R-AU-05: the card's own word for the small grades; the spectacular ones keep the stage for the deadpan.
+      this.audio.fallVerdict(report.grade);
     }
   }
 
@@ -517,6 +524,8 @@ export class Game {
       if (ghost) s.ghosts[id] = ghost;
       s.scrap += award.amount;
     });
+    // R-AU-05: the run went on record — the toast rides the clear card's own verdict chain.
+    if (ghost) this.audio.ghostToast();
     this.lastClear = { summary, levelId: id, scrap: award.amount, doubled: false, friend };
     this.consecutiveFalls = 0;
     this.attempts.finish('clear', summary.clearTimeMs, summary.stars);
@@ -1069,6 +1078,9 @@ export class Game {
       telemetry: this.telemetry,
       openerLog: this.opener.log,
       slowScale: () => this.slowMo.scale,
+      /** R-AU-09: the level the mix has decided on for the bed, and whether any voice may sound. */
+      musicDb: () => this.audioEngine.musicTargetDb,
+      soundOn: () => this.audioEngine.audible,
       ending: () => this.endingDirector,
       beginEnding: () => this.beginEnding(),
       setQuality: (tier: QualityTier) => {

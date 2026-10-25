@@ -44,10 +44,10 @@ MAGNO lives in five states — airborne, attached, charging, repelled, recoverin
 | --- | --- | --- | --- | --- |
 | boot | cold page → world | the loading film, then the world with the opener already moving — no menu before the game | — | the opener sequence |
 | opener | first input → first catch | the scripted first launch, the attention hop, the half-speed first catch, the nudge ladder — the ninety-second contract | — | the opener owns the frame until it hands the camera back |
-| biome card | one biome → the next | the establishing shot: the hero silhouette in its sky, the name and its one-line promise | — | a staged beat, recorded by the ledger |
-| clear card | cleared → next level | the stamps land one by one, the par ghost verdict, the next-level path — the breathing space the ledger banks on | playStarStamp, playFanfare | the card |
-| star stamp | each earned star | the stamp punch with the score's own tonic | playStarStamp | free |
-| fall card | the settle after a fall | the comedy verdict: height, bounces, junk, the grade badge — shame-free retry copy | — | the card |
+| biome card | one biome → the next | the establishing shot: the hero silhouette in its sky, the name and its one-line promise | playBiomeCall | a staged beat, recorded by the ledger |
+| clear card | cleared → next level | the stamps land one by one, the par ghost verdict, the next-level path — the breathing space the ledger banks on | playStarStamp, playParCall, playGhostSet, playFanfare | the card |
+| star stamp | each earned star | the stamp punch, each star a step up the motif's own shape | playStarStamp | free |
+| fall card | the settle after a fall | the comedy verdict: height, bounces, junk, the grade badge — shame-free retry copy; the small grades get the deadpan plop, the spectacular ones keep the stage for MAGNO’s own word | playFallTopper | the card |
 | pause | play → paused | the world holds its breath; the menu offers controls, keys, ghosts, the locker | — | free |
 | retry | cleared or fallen → play again | the rebuild, 19-37 ms on the heaviest levels, no menu on the way | — | the level rebuild |
 | ending cue | the film's four beats | seat, bloom, pullback, credits — the wordless homecoming | playCoreSeat, playBloomSwell, playPullbackPad, playFanfare | the film owns the frame |
