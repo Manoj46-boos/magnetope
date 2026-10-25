@@ -78,6 +78,32 @@ export const TUNING = {
 
   recover: { getUpMs: 650, settleBounceMs: 120, scrambleMs: 400, scrambleAuthority: 0.4, hardImpactSpeed: 7 },
 
+  /** R-CH: MAGNO's performance layer. The rig reads every number from here so the
+   *  character's timing is tuning, not code — and the doc quotes the same values. */
+  character: {
+    /** R-CH-05: the head trails the body by this much; the eye leads both (PRD 7.4). */
+    headLagMs: 30,
+    handLagMs: 80,
+    /** The lid dip of a blink, whole cycle. */
+    blinkMs: 140,
+    /** R-CH-02: while settled, a blink lands inside this window; the next one is re-rolled. */
+    idleBlinkMinMs: 4000,
+    idleBlinkMaxMs: 7000,
+    /** R-CH-02: one character beat every ~20 s of idling — a look-around and a flip. */
+    beatMs: 20_000,
+    beatJitterMs: 4000,
+    /** R-CH-02: settled means attached, not charging, and slower than this. */
+    idleSpeed: 0.5,
+    /** R-CH-03: the pupil dilates by this much over rest while the charge builds to full. */
+    pupilDilate: 0.35,
+    /** R-CH-03: the squeeze of a hard landing's wince, spent inside this window. */
+    winceMs: 220,
+    /** R-CH-03: a bonk after a fall this deep reads as the comic daze, not a small stumble. */
+    dazeMeters: 9,
+    /** R-CH-03: the clear gleam rides the eye for as long as the pride lid does. */
+    gleamMs: 2400,
+  },
+
   safetyLine: { dropMeters: 6 },
 
   /** PRD 10.4: hard cap on concurrent physics bodies; levels are authored well inside it. */

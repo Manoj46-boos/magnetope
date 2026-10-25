@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { SecondOrder, frequencyForLag } from '@/core/dynamics';
+import { TUNING } from '@/config/tuning';
 import { MagnoRig } from '@/render/magno-rig';
 import type { MagnoView } from '@/sim/magno';
 import { POSES } from '../tools/anim-cost';
 
 /**
- * PRD 7.4: the hands follow targets that lag the body by 80 ms ("the entire secret of weight") and
- * the head runs a smaller chain of 30 ms. The lag of a spring is the time it takes, on average,
- * to arrive: the area between a step and the response to it.
+ * PRD 7.4 / R-CH-05: the hands follow targets that lag the body ("the entire
+ * secret of weight") and the head runs a smaller chain of its own. Both
+ * constants live in the tuning table now, so what is measured here is the
+ * tuning the doc quotes — move the number and the measurement follows. The
+ * lag of a spring is the time it takes, on average, to arrive: the area
+ * between a step and the response to it.
  */
 
 const STEP_S = 0.001;
@@ -39,7 +43,7 @@ describe('a spring built from a lag', () => {
 });
 
 describe('MAGNO secondary motion', () => {
-  it('lets the head lag the body by 30 ms', () => {
+  it('lets the head lag the body by its tuned constant', () => {
     const rig = new MagnoRig();
     const head = (rig as unknown as { headPivot: { rotation: { z: number } } }).headPivot;
     const still: MagnoView = { ...POSES.airborne!, velocity: { x: 0, y: 0 } };
@@ -54,11 +58,11 @@ describe('MAGNO secondary motion', () => {
     }
     const to = trace[trace.length - 1]!;
     expect(Math.abs(to - from)).toBeGreaterThan(0.1);
-    expect(meanDelayMs(trace, from, to)).toBeCloseTo(30, -0.5);
+    expect(meanDelayMs(trace, from, to)).toBeCloseTo(TUNING.character.headLagMs, -0.5);
     rig.dispose();
   });
 
-  it('lets a hand follow its target 80 ms behind', () => {
+  it('lets a hand follow its target by its tuned lag', () => {
     const rig = new MagnoRig();
     const hand = (rig as unknown as { arms: Array<{ target: { x: { value: number } } }> }).arms[0]!.target.x;
     const view = (phase: number): MagnoView => ({ ...POSES.recovering!, recoverPhase: phase });
@@ -73,7 +77,7 @@ describe('MAGNO secondary motion', () => {
     }
     const to = trace[trace.length - 1]!;
     expect(Math.abs(to - from)).toBeGreaterThan(0.03);
-    expect(meanDelayMs(trace, from, to)).toBeCloseTo(80, -0.5);
+    expect(meanDelayMs(trace, from, to)).toBeCloseTo(TUNING.character.handLagMs, -0.5);
     rig.dispose();
   });
 
@@ -89,6 +93,29 @@ describe('MAGNO secondary motion', () => {
       peak = Math.max(peak, hand.value);
     }
     expect(peak).toBeGreaterThan(hand.value + 0.001);
+    rig.dispose();
+  });
+
+  it('counter-bounces the head against the body a catch squashes (R-CH-05)', () => {
+    // The volume law: when the body squashes along its axis, the horseshoe head
+    // swells against it, so total volume reads as preserved across the beat.
+    const rig = new MagnoRig();
+    const head = (rig as unknown as { headPivot: { scale: { y: number } } }).headPivot;
+    const body = (rig as unknown as { root: { children: Array<{ scale: { y: number } }> } }).root.children[0]!;
+    const v: MagnoView = { ...POSES.attached!, velocity: { x: 0, y: 0 } };
+    settle(rig, v, 1);
+    rig.onAttach({ x: 0, y: 1 });
+    let headPeak = 1;
+    let bodyLow = 1;
+    for (let i = 0; i < 30; i++) {
+      rig.update(v, v.position, STEP_S, false);
+      headPeak = Math.max(headPeak, head.scale.y);
+      bodyLow = Math.min(bodyLow, body.scale.y);
+    }
+    expect(bodyLow).toBeLessThan(0.9);
+    expect(headPeak).toBeGreaterThan(1.05);
+    settle(rig, v, 1);
+    expect(head.scale.y).toBeCloseTo(1, 2);
     rig.dispose();
   });
 });

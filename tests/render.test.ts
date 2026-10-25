@@ -247,6 +247,234 @@ describe('MAGNO rig', () => {
     expect(peak(true)).toBeLessThan(peak(false) * 0.7);
   });
 
+  // ----------------------------------------------- the face and the performance (W8)
+
+  const pupilOf = (rig: MagnoRig): Mesh => (rig as unknown as { pupil: Mesh }).pupil;
+  const lidValue = (rig: MagnoRig): number => (rig as unknown as { lidOpen: { value: number } }).lidOpen.value;
+
+  it('names the focused face while charging, the pupil dilating with the charge', () => {
+    const rig = new MagnoRig();
+    const v = view({ state: 'charging', charge01: 1, chargeLevel: 3, polarity: 'repel', attachNormal: { x: 0, y: 1 } });
+    run(rig, v, 200);
+    expect(rig.eyeState).toBe('focused');
+    expect(pupilOf(rig).scale.x).toBeGreaterThan(1.25);
+    rig.dispose();
+  });
+
+  it('reads the panic face on a fall deep enough for the windmill', () => {
+    const rig = new MagnoRig();
+    const v = view({ dropMeters: 12, velocity: { x: 0, y: -14 } });
+    run(rig, v, 300);
+    expect(rig.eyeState).toBe('panic');
+    expect(pupilOf(rig).scale.x).toBeLessThan(1);
+    rig.dispose();
+  });
+
+  it('squeezes the eye shut on a landing that hurts, then recovers it', () => {
+    const rig = new MagnoRig();
+    const v = view({ attachNormal: { x: 0, y: 1 }, visualAngle: 0 });
+    run(rig, v, 100);
+    rig.onImpact({ x: 0, y: 1 }, 12);
+    let lowest = 1;
+    let sawWince = false;
+    for (let i = 0; i < Math.round(0.18 / (1 / 120)); i++) {
+      rig.update(v, v.position, 1 / 120, false);
+      sawWince = sawWince || rig.eyeState === 'wince';
+      lowest = Math.min(lowest, lidValue(rig));
+    }
+    expect(sawWince).toBe(true);
+    expect(lowest).toBeLessThan(0.4);
+    run(rig, v, 400);
+    expect(lidValue(rig)).toBeGreaterThan(0.85);
+    expect(rig.eyeState).toBe('idle');
+    rig.dispose();
+  });
+
+  it('swaps the pupil for the comic X after a fall deep enough to earn it', () => {
+    const deep = new MagnoRig();
+    const falling = view({ dropMeters: 14, velocity: { x: 0, y: -16 } });
+    run(deep, falling, 200);
+    const bonked = view({ ...falling, limp: true, velocity: { x: 0, y: 0 } });
+    run(deep, bonked, 200);
+    const daze = (deep as unknown as { daze: Group }).daze;
+    expect(deep.eyeState).toBe('dazed');
+    expect(daze.visible).toBe(true);
+    expect(pupilOf(deep).visible).toBe(false);
+    deep.dispose();
+
+    // A small bonk keeps the seeing-stars pulse: the X is earned, not automatic.
+    const small = new MagnoRig();
+    run(small, view({ limp: true, dropMeters: 3 }), 200);
+    expect((small as unknown as { daze: Group }).daze.visible).toBe(false);
+    expect(pupilOf(small).visible).toBe(true);
+    small.dispose();
+  });
+
+  it('carries the clear gleam through the pride window and out the other side', () => {
+    const rig = new MagnoRig();
+    const v = view({ attachNormal: { x: 0, y: 1 }, visualAngle: 0 });
+    run(rig, v, 100);
+    rig.onClear();
+    run(rig, v, 100);
+    expect(rig.eyeState).toBe('pride');
+    expect((rig as unknown as { gleam: Group }).gleam.visible).toBe(true);
+    run(rig, v, 2500);
+    expect((rig as unknown as { gleam: Group }).gleam.visible).toBe(false);
+    expect(rig.eyeState).toBe('idle');
+    rig.dispose();
+  });
+
+  it('shows the relief face when a panic ends in a catch', () => {
+    const rig = new MagnoRig();
+    const falling = view({ dropMeters: 12, velocity: { x: 0, y: -14 } });
+    run(rig, falling, 200);
+    rig.onAttach({ x: 0, y: 1 });
+    const landed = view({ attachNormal: { x: 0, y: 1 }, visualAngle: 0 });
+    run(rig, landed, 150);
+    expect(rig.eyeState).toBe('relief');
+    run(rig, landed, 1000);
+    expect(rig.eyeState).toBe('idle');
+    rig.dispose();
+  });
+
+  it('squints and darts the pupil at the surface failing under him', () => {
+    const rig = new MagnoRig();
+    const v = view({ state: 'attached', attachNormal: { x: 0, y: 1 }, visualAngle: 0 });
+    run(rig, v, 200);
+    rig.setWary({ x: 4, y: -1 });
+    run(rig, v, 250);
+    expect(rig.eyeState).toBe('wary');
+    expect(lidValue(rig)).toBeLessThan(0.93);
+    expect(pupilOf(rig).position.x).toBeGreaterThan(0.012);
+    run(rig, v, 3000);
+    expect(rig.eyeState).toBe('idle');
+    rig.dispose();
+  });
+
+  it('gazes upward through the ending homecoming', () => {
+    const rig = new MagnoRig();
+    rig.setJoy(1);
+    const v = view({ state: 'attached', attachNormal: { x: 0, y: 1 }, visualAngle: 0 });
+    run(rig, v, 500);
+    expect(rig.eyeState).toBe('home');
+    expect(pupilOf(rig).position.y).toBeGreaterThan(0.01);
+    rig.dispose();
+  });
+
+  it('breathes while settled', () => {
+    const rig = new MagnoRig();
+    const v = view({ state: 'attached', attachNormal: { x: 0, y: 1 }, visualAngle: 0 });
+    run(rig, v, 500);
+    const inner = (rig as unknown as { inner: Group }).inner;
+    let low = inner.scale.y;
+    let high = inner.scale.y;
+    for (let i = 0; i < Math.round(2.5 / (1 / 120)); i++) {
+      rig.update(v, v.position, 1 / 120, false);
+      low = Math.min(low, inner.scale.y);
+      high = Math.max(high, inner.scale.y);
+    }
+    expect(high - low).toBeGreaterThan(0.012);
+    run(rig, view({ velocity: { x: 12, y: 0 } }), 1000);
+    expect(Math.abs(inner.scale.y - 1)).toBeLessThan(0.004);
+    rig.dispose();
+  });
+
+  it('blinks on its own cadence while settled', () => {
+    const rig = new MagnoRig();
+    const v = view({ state: 'attached', attachNormal: { x: 0, y: 1 }, visualAngle: 0 });
+    let blinks = 0;
+    let prev = 1;
+    for (let i = 0; i < Math.round(15 / (1 / 120)); i++) {
+      rig.update(v, v.position, 1 / 120, false);
+      const lid = lidValue(rig);
+      if (lid < 0.5 && prev >= 0.5) blinks++;
+      prev = Math.min(prev, lid);
+      if (lid >= 0.9) prev = lid;
+    }
+    expect(blinks).toBeGreaterThanOrEqual(2);
+    expect(blinks).toBeLessThanOrEqual(4);
+    rig.dispose();
+  });
+
+  it('performs one character beat around every twenty seconds of idling', () => {
+    const rig = new MagnoRig();
+    const v = view({ state: 'attached', attachNormal: { x: 0, y: 1 }, visualAngle: 0 });
+    const beats: number[] = [];
+    let seconds = 0;
+    for (let i = 0; i < Math.round(30 / (1 / 120)); i++) {
+      rig.update(v, v.position, 1 / 120, false);
+      seconds += 1 / 120;
+      if (rig.takeCharacterBeat()) beats.push(seconds);
+    }
+    expect(beats.length).toBe(1);
+    expect(beats[0]).toBeGreaterThan(15);
+    expect(beats[0]).toBeLessThan(25);
+
+    // The world moving silences the performance: no beat while airborne.
+    const flying = view({ velocity: { x: 10, y: 0 } });
+    run(rig, flying, 5000);
+    expect(rig.takeCharacterBeat()).toBeNull();
+    rig.dispose();
+  });
+
+  it('flips in place at full motion and only looks around at reduced motion', () => {
+    const innerRoll = (rig: MagnoRig): number => (rig as unknown as { inner: Group }).inner.rotation.z;
+    const head = (rig: MagnoRig) => (rig as unknown as { headPivot: { rotation: { z: number } } }).headPivot;
+    const v = view({ state: 'attached', attachNormal: { x: 0, y: 1 }, visualAngle: 0 });
+
+    const full = new MagnoRig();
+    const rest = head(full).rotation.z;
+    let beatSeen = false;
+    let peakRoll = 0;
+    let peakSweep = 0;
+    for (let i = 0; i < Math.round(25 / (1 / 120)) && !beatSeen; i++) {
+      full.update(v, v.position, 1 / 120, false);
+      beatSeen = full.takeCharacterBeat() !== null;
+    }
+    expect(beatSeen).toBe(true);
+    for (let i = 0; i < Math.round(1.5 / (1 / 120)); i++) {
+      full.update(v, v.position, 1 / 120, false);
+      peakRoll = Math.max(peakRoll, innerRoll(full));
+      peakSweep = Math.max(peakSweep, Math.abs(head(full).rotation.z - rest));
+    }
+    expect(peakRoll).toBeGreaterThan(Math.PI);
+    expect(peakSweep).toBeGreaterThan((6 * Math.PI) / 180);
+    full.dispose();
+
+    const reduced = new MagnoRig();
+    const headRest = head(reduced).rotation.z;
+    let reducedBeat = false;
+    let reducedRoll = 0;
+    let reducedSweep = 0;
+    for (let i = 0; i < Math.round(25 / (1 / 120)); i++) {
+      reduced.update(v, v.position, 1 / 120, true);
+      if (reduced.takeCharacterBeat()) reducedBeat = true;
+      if (reducedBeat) {
+        reducedRoll = Math.max(reducedRoll, Math.abs(innerRoll(reduced)));
+        reducedSweep = Math.max(reducedSweep, Math.abs(head(reduced).rotation.z - headRest));
+      }
+    }
+    expect(reducedBeat).toBe(true);
+    expect(reducedRoll).toBe(0);
+    expect(reducedSweep).toBeGreaterThan((4 * Math.PI) / 180);
+    reduced.dispose();
+  });
+
+  it('glances at the nearest steel on the blink-look cycle', () => {
+    const rig = new MagnoRig();
+    const v = view({ state: 'attached', attachNormal: { x: 0, y: 1 }, visualAngle: 0 });
+    rig.setCuriosity({ x: 5, y: 4 });
+    run(rig, v, 3500);
+    expect(pupilOf(rig).position.x).toBeLessThan(0.01);
+    let peak = 0;
+    for (let i = 0; i < Math.round(5 / (1 / 120)); i++) {
+      rig.update(v, v.position, 1 / 120, false);
+      peak = Math.max(peak, pupilOf(rig).position.x);
+    }
+    expect(peak).toBeGreaterThan(0.015);
+    rig.dispose();
+  });
+
   it('stays inside the character budget with every accessory skin equipped', () => {
     const rig = new MagnoRig();
     for (const id of ['skin.antenna', 'skin.flag', 'skin.sticker']) {

@@ -43,7 +43,7 @@ import { GeometryBuilder } from './geometry';
 import { GhostView } from './ghost-view';
 import { braceAmount, grabPoint } from './hand-reach';
 import { mountainLayout, pullbackFraming, type Framing } from './mountain';
-import { CLASSIC_SKIN, MagnoRig, type RigSkin } from './magno-rig';
+import { CLASSIC_SKIN, MagnoRig, type CharacterBeat, type RigSkin } from './magno-rig';
 import { PALETTES, fxTheme, toColor } from './palette';
 import { PostStack } from './post-stack';
 import type { PropPlacement } from '@/sim/types';
@@ -110,6 +110,11 @@ interface Tether {
 
 const TETHER_WIDTH = 0.07;
 const GRAB_PROBE_EVERY_FRAMES = 3;
+/** R-CH-02: the curiosity glance re-reads the world this often while settled; five hertz is plenty. */
+const CURIOSITY_PROBE_EVERY_FRAMES = 12;
+/** R-CH-02: steel further than this is scenery — the glance only aims at faces he could reach. */
+const CURIOSITY_REACH_M = 12;
+const NO_EXCLUDE: ReadonlySet<number> = new Set();
 const POP_SECONDS = 0.32;
 const SQUASH_SECONDS = 0.7;
 const CABLE_RUN_M = 70;
@@ -176,6 +181,7 @@ export class SceneRenderer {
     canvas: HTMLCanvasElement,
     tier: QualityTier,
     private readonly onShake: (kind: ShakeKind) => void = () => undefined,
+    private readonly onCharacterBeat: (beat: CharacterBeat) => void = () => undefined,
   ) {
     this.profile = PROFILES[tier];
     this.renderer = new WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', alpha: false });
@@ -336,6 +342,12 @@ export class SceneRenderer {
       }
     });
     sim.events.on('impact', (e) => this.rig.onImpact(e.normal, e.speed));
+    sim.events.on('crumbleWarn', (e) => {
+      // R-CH-03: the failing surface under him earns the wary face — the pupil
+      // darts to the very prop the physics is warning about.
+      const prop = sim.physics.props[e.propIndex];
+      if (prop) this.rig.setWary({ x: prop.placement.x, y: prop.placement.y });
+    });
     sim.events.on('boing', (e) => {
       const visual = this.animatedByProp.get(e.propIndex);
       if (visual) visual.boingAge = 0;
@@ -867,6 +879,7 @@ export class SceneRenderer {
 
       this.reachHands(sim, view);
       this.rig.update(view, pos, ctx.dt, ctx.reducedMotion);
+      this.idlePerformance(sim, view);
       this.vfx.update(ctx.dt, view, this.rig.headWorld(this.headScratch), view.visualAngle);
       if (ending) this.poseEnding(ending, sim);
       // The gameplay flash ident rides the bloom: a halo with the catch burst,
@@ -967,6 +980,27 @@ export class SceneRenderer {
   private reachHands(sim: Simulation, view: MagnoView): void {
     this.rig.setBrace(braceAmount(view, sim.physics));
     if (this.reachFrame++ % GRAB_PROBE_EVERY_FRAMES === 0) this.rig.setGrab(grabPoint(view, sim.physics, this.grabScratch));
+  }
+
+  /** R-CH-02: the settled glance aims at real steel, and the character beat leaves the render layer as one callback. */
+  private idlePerformance(sim: Simulation, view: MagnoView): void {
+    const settled = view.state === 'attached' && !view.limp && hypot2(view.velocity.x, view.velocity.y) < TUNING.character.idleSpeed;
+    if (settled) {
+      if (this.reachFrame % CURIOSITY_PROBE_EVERY_FRAMES === 0) {
+        let best: Vec2 | null = null;
+        let bestDist = CURIOSITY_REACH_M;
+        for (const candidate of sim.physics.snapCandidates(view.position, NO_EXCLUDE)) {
+          if (candidate.distance >= bestDist) continue;
+          bestDist = candidate.distance;
+          best = candidate.point;
+        }
+        this.rig.setCuriosity(best);
+      }
+    } else {
+      this.rig.setCuriosity(null);
+    }
+    const beat = this.rig.takeCharacterBeat();
+    if (beat) this.onCharacterBeat(beat);
   }
 
   private poseAnimated(visual: AnimatedVisual, alpha: number, dt: number, reducedMotion: boolean): void {

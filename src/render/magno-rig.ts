@@ -16,6 +16,7 @@ import {
   type Object3D,
 } from 'three';
 import type { Accessory, SkinLook } from '@/config/cosmetics';
+import { TUNING } from '@/config/tuning';
 import { SecondOrder, SecondOrder2, frequencyForLag, noise1 } from '@/core/dynamics';
 import { angleDelta, clamp, damp, DEG, hypot2, lerp, type Vec2 } from '@/core/mathx';
 import type { MagnoView } from '@/sim/magno';
@@ -72,19 +73,33 @@ const SEGMENT_PULSE_SCALE = 0.22;
 const HOP_MS = 520;
 const HOP_HEIGHT = 0.42;
 
-/** The blink pulse: the lid dips and returns inside a seventh of a second. */
-const BLINK_MS = 140;
+/** The settled breath: a little over two seconds a cycle, on the body's own scale. */
+const BREATH_HZ = 0.45;
+const BREATH_SCALE = 0.012;
+/** R-CH-02: the character beat's look-around — the head sweeps this far either side of rest. */
+const LOOK_SWEEP_DEG = 12;
+const LOOK_SWEEP_MS = 1400;
+/** R-CH-03: the fall deep enough to read as panic — the same bar the arms' windmill answers. */
+const PANIC_DROP_M = 7;
+/** The relief face: a catch inside this window of the panic earns it, held this long. */
+const RELIEF_CATCH_S = 1.2;
+const RELIEF_HOLD_S = 0.9;
+/** The failing surface under him earns a squint this tight, held this long. */
+const WARY_SQUINT = 0.85;
+const WARY_HOLD_S = 2.5;
 
 const ARM_UPPER = 0.15;
 const ARM_LOWER = 0.15;
 const SHOULDER_X = 0.2;
 const SHOULDER_Y = 0.07;
 const BODY_Z = 0.0;
-/** PRD 7.4: hand targets trail the body by 80 ms, the head by 30 ms. */
-const HAND_LAG_S = 0.08;
-const HEAD_LAG_S = 0.03;
+/** PRD 7.4 / R-CH-05: hand targets trail the body by the tuned lag, the head by its own. */
+const HAND_LAG_S = TUNING.character.handLagMs / 1000;
+const HEAD_LAG_S = TUNING.character.headLagMs / 1000;
 const HAND_DAMPING = 0.55;
 const HEAD_DAMPING = 0.6;
+/** The blink pulse: the lid dips and returns inside its tuned window. */
+const BLINK_MS = TUNING.character.blinkMs;
 
 /** Pose envelope: full effect through `hold`, then an elastic recovery with slight overshoot. */
 function envelope(p: Pulse): number {
@@ -148,6 +163,51 @@ class Arm {
 }
 
 /**
+ * R-CH-03/04: the eye's whole vocabulary — one name per emotion the rig can
+ * perform. The emotion table and its doc are generated from this union, and a
+ * face the rig cannot show fails the compile there before any test runs.
+ */
+export type EyeState =
+  | 'idle'
+  | 'curious'
+  | 'focused'
+  | 'whee'
+  | 'panic'
+  | 'wince'
+  | 'dazed'
+  | 'relief'
+  | 'pride'
+  | 'weary'
+  | 'wary'
+  | 'home';
+
+/** The idle performance's one voice moment, collected by the renderer once per beat. */
+export type CharacterBeat = 'curious';
+
+/**
+ * Held so the doc suite can prove the emotion table covers every face the rig
+ * can perform. The Record satisfies the union both ways, so a face the rig
+ * gains or drops fails the compile here.
+ */
+const EYES = {
+  idle: 1,
+  curious: 1,
+  focused: 1,
+  whee: 1,
+  panic: 1,
+  wince: 1,
+  dazed: 1,
+  relief: 1,
+  pride: 1,
+  weary: 1,
+  wary: 1,
+  home: 1,
+} as const satisfies Record<EyeState, number>;
+
+/** Every face the rig can perform, for the doc suite's coverage law. */
+export const EYE_STATES: readonly EyeState[] = Object.keys(EYES) as readonly EyeState[];
+
+/**
  * MAGNO's visual rig. The physics body supplies motion; everything here is
  * reaction and personality: squash and stretch, lagging IK arms, a leading
  * head, and an eye that carries the entire expression system.
@@ -160,6 +220,8 @@ export class MagnoRig {
   private readonly eyeGroup = new Group();
   private readonly pupil: Mesh;
   private readonly lid: Mesh;
+  private readonly daze: Group;
+  private readonly gleam: Group;
   private readonly glow: Mesh;
   private readonly arcs: Mesh[] = [];
   private readonly arcMaterials: MeshBasicMaterial[] = [];
@@ -201,6 +263,30 @@ export class MagnoRig {
   private joy = 0;
   private hopMs = -1;
   private blinkMs = -1;
+
+  /** R-CH-02: the idle performance's clock — settled time, the next blink and the next beat. */
+  private idleMs = 0;
+  private nextBlinkAt = 0;
+  private nextBeatAt = 0;
+  private beatAge = -1;
+  private spinLeft = 0;
+  private spinAngle = 0;
+  private pendingBeat: CharacterBeat | null = null;
+  private curiosity: Vec2 | null = null;
+  private readonly curiosityAt: Vec2 = { x: 0, y: 0 };
+  private glanceUntil = -1;
+  private waryUntil = -1;
+  private readonly waryAt: Vec2 = { x: 0, y: 0 };
+  private winceLeft = 0;
+  private reliefUntil = -1;
+  private lastPanicAt = -10;
+  private prevLimp = false;
+  private dazed = false;
+  private settled = false;
+  private breathWeight = 0;
+  private breathPhase = 0;
+  private idleRolls = 0;
+  private eye: EyeState = 'idle';
 
   constructor(skin: RigSkin = CLASSIC_SKIN) {
     this.bodyMaterial = new MeshStandardMaterial({ color: skin.body, flatShading: true, roughness: 0.55, metalness: 0.45 });
@@ -263,6 +349,31 @@ export class MagnoRig {
     this.lid.scale.set(1, 1, 0.56);
     this.lid.rotation.x = -Math.PI / 2 + 0.2;
     this.eyeGroup.add(this.lid);
+
+    // R-CH-03: the comic daze — a crossed X where the pupil sits, never gory,
+    // swapped in only after a fall deep enough that the bonk earned it.
+    this.daze = new Group();
+    for (const tilt of [-Math.PI / 4, Math.PI / 4]) {
+      const bar = new Mesh(new BoxGeometry(0.098, 0.017, 0.016), black);
+      bar.rotation.z = tilt;
+      this.daze.add(bar);
+    }
+    this.daze.position.z = 0.042;
+    this.daze.visible = false;
+    this.eyeGroup.add(this.daze);
+
+    // R-CH-03: the clear gleam — a four-point sparkle riding the eye's upper
+    // corner for the pride window, the one flourish the clear card gets.
+    this.gleam = new Group();
+    const gleamMaterial = new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, blending: AdditiveBlending, depthWrite: false, fog: false });
+    for (const tilt of [0, Math.PI / 2]) {
+      const ray = new Mesh(new BoxGeometry(0.075, 0.011, 0.006), gleamMaterial);
+      ray.rotation.z = tilt;
+      this.gleam.add(ray);
+    }
+    this.gleam.position.set(0.048, 0.052, 0.05);
+    this.gleam.visible = false;
+    this.eyeGroup.add(this.gleam);
     this.inner.add(this.eyeGroup);
 
     // Horseshoe magnet head. The arch and legs stay as the steel-coloured body
@@ -377,6 +488,9 @@ export class MagnoRig {
     this.pulse = { axis, peak: ATTACH_SQUASH, hold: 0.09, recover: 0.14, age: 0 };
     this.wobbleAge = 0;
     this.wobbleAxis = axis;
+    // R-CH-03: a catch inside the panic's echo reads as relief — the wide-open,
+    // soft face the save earns before the settled face takes back over.
+    if (this.time - this.lastPanicAt < RELIEF_CATCH_S) this.reliefUntil = this.time + RELIEF_HOLD_S;
   }
 
   onRepel(direction: Vec2, power01: number): void {
@@ -396,11 +510,41 @@ export class MagnoRig {
     this.blinkMs = 0;
   }
 
+  /** R-CH-02: the nearest steel face to glance at while settled; null clears it. */
+  setCuriosity(point: Vec2 | null): void {
+    if (point) {
+      this.curiosityAt.x = point.x;
+      this.curiosityAt.y = point.y;
+    }
+    this.curiosity = point ? this.curiosityAt : null;
+  }
+
+  /** R-CH-03: the failing surface under him — the pupil darts to it and the lid squints. */
+  setWary(point: Vec2): void {
+    this.waryAt.x = point.x;
+    this.waryAt.y = point.y;
+    this.waryUntil = this.time + WARY_HOLD_S;
+  }
+
+  /** The idle performance's one voice moment; the renderer collects it once per character beat. */
+  takeCharacterBeat(): CharacterBeat | null {
+    const beat = this.pendingBeat;
+    this.pendingBeat = null;
+    return beat;
+  }
+
+  /** R-CH-03/04: the face the eye is performing this frame. */
+  get eyeState(): EyeState {
+    return this.eye;
+  }
+
   onImpact(normal: Vec2, speed: number): void {
     if (speed < 4) return;
     const axis = Math.atan2(-normal.x, normal.y);
     const peak = lerp(0.9, 0.72, clamp((speed - 4) / 12, 0, 1));
     this.pulse = { axis, peak, hold: 0.07, recover: 0.2, age: 0 };
+    // R-CH-03: the squeeze-shut of a landing that hurt, spent inside its window.
+    this.winceLeft = TUNING.character.winceMs / 1000;
   }
 
   onClear(): void {
@@ -468,7 +612,18 @@ export class MagnoRig {
         this.root.position.y += Math.sin(u * Math.PI) * HOP_HEIGHT;
       }
     }
-    this.inner.rotation.z = this.visualAngle - this.deform.rotation.z;
+    if (this.spinLeft > 0) {
+      // The character beat's flourish: a whole turn in place, eased out so it
+      // reads as a flip and lands without a wobble. Presentation only — it
+      // rides the inner rotation, so the squash axis and the upright charge
+      // arcs never take part.
+      this.spinLeft = Math.max(0, this.spinLeft - dt);
+      const u = 1 - this.spinLeft / (HOP_MS / 1000);
+      this.spinAngle = (1 - (1 - u) ** 2) * Math.PI * 2;
+      if (this.spinLeft === 0) this.spinAngle = 0;
+    }
+    this.performIdle(view, dt, reducedMotion);
+    this.inner.rotation.z = this.visualAngle - this.deform.rotation.z + this.spinAngle;
 
     this.applyDeformation(view, dt, reducedMotion);
     this.animateHead(view, dt);
@@ -496,6 +651,67 @@ export class MagnoRig {
       this.offset.x = 0;
       this.offset.y = 0;
     }
+  }
+
+  /**
+   * R-CH-02: the idle performance. Settled means attached, awake and slower
+   * than the tuned bar — then the rig breathes, blinks on its own cadence
+   * (looking at the nearest steel with some blinks), and throws one character
+   * beat around every twenty seconds: a look-around, and for full motion a
+   * little flip in place. Every move is presentation; the capsule never moves.
+   */
+  private performIdle(view: MagnoView, dt: number, reducedMotion: boolean): void {
+    const speed = hypot2(view.velocity.x, view.velocity.y);
+    const settled = view.state === 'attached' && !view.limp && speed < TUNING.character.idleSpeed;
+    if (settled !== this.settled) {
+      this.settled = settled;
+      if (settled) {
+        // A fresh settle rolls a fresh session: the first blink lands inside
+        // the tuned window, the first beat around its cadence.
+        this.idleMs = 0;
+        this.idleRolls = 0;
+        this.nextBlinkAt = this.roll01() * (TUNING.character.idleBlinkMaxMs - TUNING.character.idleBlinkMinMs) + TUNING.character.idleBlinkMinMs;
+        this.nextBeatAt = TUNING.character.beatMs + (this.roll01() * 2 - 1) * TUNING.character.beatJitterMs;
+      }
+    }
+    this.breathWeight = damp(this.breathWeight, settled ? 1 : 0, 3, dt);
+    this.breathPhase += dt * BREATH_HZ * Math.PI * 2;
+    const breath = this.breathWeight * Math.sin(this.breathPhase);
+    this.inner.scale.set(1 - BREATH_SCALE * 0.5 * breath, 1 + BREATH_SCALE * breath, 1);
+    if (!settled) {
+      this.idleMs = 0;
+      this.beatAge = -1;
+      return;
+    }
+
+    this.idleMs += dt * 1000;
+    if (this.idleMs >= this.nextBlinkAt) {
+      // The blink-look cycle: a blink, and with it a glance at whatever steel
+      // is nearest, held about a second and a half before the gaze comes home.
+      this.blink();
+      if (this.curiosity) this.glanceUntil = this.time + 1.5;
+      this.nextBlinkAt = this.idleMs + this.roll01() * (TUNING.character.idleBlinkMaxMs - TUNING.character.idleBlinkMinMs) + TUNING.character.idleBlinkMinMs;
+    }
+    if (this.beatAge >= 0) {
+      this.beatAge += dt * 1000;
+      if (this.beatAge >= LOOK_SWEEP_MS) this.beatAge = -1;
+    } else if (this.idleMs >= this.nextBeatAt) {
+      // The character beat: the head's look-around always plays; the flip in
+      // place is full motion's half, so reduced motion keeps the performance
+      // and drops the travel.
+      this.beatAge = 0;
+      this.pendingBeat = 'curious';
+      this.nextBeatAt = this.idleMs + TUNING.character.beatMs + (this.roll01() * 2 - 1) * TUNING.character.beatJitterMs;
+      if (!reducedMotion && this.hopMs < 0) {
+        this.attentionHop();
+        this.spinLeft = HOP_MS / 1000;
+      }
+    }
+  }
+
+  /** A deterministic roll in [0, 1] — the idle cadence is presentational, but it stays testable. */
+  private roll01(): number {
+    return (noise1(this.idleRolls++, 23) + 1) * 0.5;
   }
 
   private applyDeformation(view: MagnoView, dt: number, reducedMotion: boolean): void {
@@ -551,10 +767,24 @@ export class MagnoRig {
     const lean = clamp(view.velocity.x * -0.012, -0.22, 0.22);
     const bias = view.snapEngaged || view.snapArmed ? 0.08 : 0;
     this.headLag.update(lean + bias, dt);
-    this.headPivot.rotation.z = -8 * DEG + this.headLag.value;
+    // R-CH-02: settled, the head breathes with the body and carries the beat's
+    // look-around on top of its lean — the magnet nods as it idles.
+    let idleTilt = this.breathWeight * Math.sin(this.breathPhase) * 1.5 * DEG;
+    if (this.beatAge >= 0) idleTilt += Math.sin((this.beatAge / LOOK_SWEEP_MS) * Math.PI * 2) * LOOK_SWEEP_DEG * DEG;
+    this.headPivot.rotation.z = -8 * DEG + this.headLag.value + idleTilt;
   }
 
   private animateEye(view: MagnoView, dt: number, t: number): void {
+    // R-CH-03: the fall deep enough to read as panic is the same bar the arms'
+    // windmill answers, so the face and the flailing never disagree.
+    const panic = !view.attachNormal && !view.limp && view.dropMeters > PANIC_DROP_M && view.velocity.y < -8;
+    if (panic) this.lastPanicAt = t;
+    if (view.limp && !this.prevLimp) this.dazed = view.dropMeters >= TUNING.character.dazeMeters;
+    this.prevLimp = view.limp;
+    const pride = t - this.clearAt < TUNING.character.gleamMs / 1000;
+    const wary = t < this.waryUntil;
+    const relief = t < this.reliefUntil;
+
     let lid = 1;
     let size = 1;
     if (view.state === 'charging') {
@@ -562,13 +792,16 @@ export class MagnoRig {
       size = 0.92;
     } else if (view.limp) {
       lid = 0.15;
-    } else if (!view.attachNormal && view.velocity.y < -8) {
+    } else if (panic) {
       size = 1.22;
       lid = 1;
-    } else if (t - this.clearAt < 2.4) {
+    } else if (pride) {
       lid = 0.55;
     }
     if (view.state === 'recovering') lid = 0.8 + 0.2 * view.recoverPhase;
+    if (relief) lid = 1.05;
+    if (wary) lid = Math.min(lid, WARY_SQUINT);
+    if (this.joy > 0.5) lid = 0.7;
 
     if (this.blinkMs >= 0) {
       this.blinkMs += dt * 1000;
@@ -576,6 +809,8 @@ export class MagnoRig {
       lid = Math.min(lid, 1 - 0.95 * Math.sin(Math.PI * Math.min(1, u)));
       if (u >= 1) this.blinkMs = -1;
     }
+    // R-CH-03: the squeeze-shut of a landing that hurt, held for its tuned window.
+    if (this.winceLeft > 0) lid = Math.min(lid, 0.12);
 
     this.lidOpen.update(lid, dt);
     this.eyeScale.update(size, dt);
@@ -583,11 +818,35 @@ export class MagnoRig {
     this.lid.visible = this.lidOpen.value < 0.97;
     this.lid.position.y = 0.09 * (this.lidOpen.value - 1) * -1;
 
-    const towardX = view.snapTarget ? view.snapTarget.x - view.position.x : view.velocity.x;
-    const towardY = view.snapTarget ? view.snapTarget.y - view.position.y : view.velocity.y;
+    let towardX = view.velocity.x;
+    let towardY = view.velocity.y;
+    let amount = 0.026 * clamp(hypot2(towardX, towardY) / 6, 0, 1);
+    if (view.snapTarget) {
+      towardX = view.snapTarget.x - view.position.x;
+      towardY = view.snapTarget.y - view.position.y;
+      amount = 0.034;
+    } else if (wary) {
+      // The failing surface under him: the pupil goes to it and stays.
+      towardX = this.waryAt.x - view.position.x;
+      towardY = this.waryAt.y - view.position.y;
+      amount = 0.034;
+    } else if (t < this.glanceUntil && this.curiosity) {
+      // R-CH-02: the settled glance at the nearest steel, riding a blink.
+      towardX = this.curiosity.x - view.position.x;
+      towardY = this.curiosity.y - view.position.y;
+      amount = 0.03;
+    } else if (this.beatAge >= 0) {
+      towardX = Math.sin((this.beatAge / LOOK_SWEEP_MS) * Math.PI * 2);
+      towardY = 0;
+      amount = 0.03;
+    } else if (this.joy > 0.5) {
+      // The ending's gaze: up, toward the light the core came from.
+      towardX = 0;
+      towardY = 2;
+      amount = 0.018;
+    }
     const len = hypot2(towardX, towardY) || 1;
     const local = rotateInto(this.local, towardX / len, towardY / len, -this.visualAngle);
-    const amount = view.snapTarget ? 0.034 : 0.026 * clamp(len / 6, 0, 1);
     const intent = !view.attachNormal && !view.limp && hypot2(view.velocity.x, view.velocity.y) > 4;
     if (intent !== this.gazeIntent) {
       // Hand the current gaze across so the spring swap never twitches the pupil.
@@ -599,7 +858,45 @@ export class MagnoRig {
     const spring = this.gazeIntent ? this.gazeQuick : this.gaze;
     spring.update(local.x * amount, local.y * amount, dt);
     this.pupil.position.set(spring.x.value, spring.y.value, 0.032);
-    this.pupil.scale.setScalar(view.limp ? 0.6 + 0.4 * Math.sin(t * 18) : 1);
+
+    // R-CH-03: the comic X swaps in only for the daze a deep fall earned; a
+    // small bonk keeps the seeing-stars pulse instead. The gleam is the pride
+    // window's one flourish, twinkling while it rides.
+    const dazedNow = view.limp && this.dazed;
+    this.pupil.visible = !dazedNow;
+    this.daze.visible = dazedNow;
+    if (dazedNow) this.daze.rotation.z = 0.35 * Math.sin(t * 3.1);
+    this.gleam.visible = pride && !view.limp;
+    if (this.gleam.visible) this.gleam.scale.setScalar(0.8 + 0.25 * Math.sin(t * 9));
+    const dilate = view.state === 'charging' ? 1 + TUNING.character.pupilDilate * view.charge01 : relief ? 1.15 : panic ? 0.85 : 1;
+    this.pupil.scale.setScalar(dazedNow ? 1 : view.limp ? 0.6 + 0.4 * Math.sin(t * 18) : dilate);
+
+    // R-CH-04: the face this frame names — the emotion table and its doc are
+    // held to this vocabulary, and the tests read it straight off the rig.
+    this.eye = this.joy > 0.5
+      ? 'home'
+      : view.limp
+        ? 'dazed'
+        : this.winceLeft > 0
+          ? 'wince'
+          : wary
+            ? 'wary'
+            : view.state === 'charging'
+              ? 'focused'
+              : view.state === 'recovering'
+                ? 'weary'
+                : pride
+                  ? 'pride'
+                  : relief
+                    ? 'relief'
+                    : panic
+                      ? 'panic'
+                      : this.gazeIntent
+                        ? 'whee'
+                        : this.beatAge >= 0
+                          ? 'curious'
+                          : 'idle';
+    if (this.winceLeft > 0) this.winceLeft = Math.max(0, this.winceLeft - dt);
   }
 
   private animateArms(view: MagnoView, dt: number, t: number): void {
