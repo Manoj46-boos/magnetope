@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TUNING } from '@/config/tuning';
-import { humParams, layerMix, stepSeconds, whistleFrequency, windVoice } from '@/audio/mix';
+import { humParams, stemMix, stepSeconds, whistleFrequency, windVoice } from '@/audio/mix';
 import { nextPlayableId, resumeLevelId } from '@/game/map-model';
 import { SlowMoDirector } from '@/game/slowmo';
 import { ALL_LEVELS } from '@/levels';
@@ -164,31 +164,39 @@ describe('progression', () => {
   });
 });
 
-describe('adaptive music rules', () => {
+describe('the score\u2019s stems and tiers (R-AU-02)', () => {
   const base = { running: true, heightFrac: 0.1, chaining: false, timeScale: 1, intensity: 0 };
 
-  it('always plays the ground layer during a run and only a ghost of it otherwise', () => {
-    expect(layerMix(base).ground).toBe(1);
-    expect(layerMix({ ...base, running: false }).ground).toBeLessThan(1);
+  it('rests with the motif line and the air alone, and breathes further back on the cards', () => {
+    expect(stemMix(base).tier).toBe('rest');
+    expect(stemMix(base).bass).toBe(0);
+    expect(stemMix(base).perc).toBe(0);
+    expect(stemMix(base).mel).toBeGreaterThan(0);
+    expect(stemMix({ ...base, running: false }).mel).toBeLessThan(stemMix(base).mel);
   });
 
-  it('rides the melody on the run event density, keeping its floor at altitude', () => {
-    expect(layerMix({ ...base, intensity: 0.29 }).layer1).toBe(0);
-    expect(layerMix({ ...base, intensity: 0.56 }).layer1).toBe(1);
-    expect(layerMix({ ...base, heightFrac: 0.44 }).layer1).toBe(0);
-    expect(layerMix({ ...base, heightFrac: 0.66, intensity: 0 }).layer1).toBe(1);
+  it('walks the bass and taps the junk through play, opening everything for flight', () => {
+    const play = stemMix({ ...base, intensity: 0.3 });
+    expect(play.tier).toBe('play');
+    expect(play.bass).toBeGreaterThan(0);
+    expect(play.perc).toBeGreaterThan(0);
+    const flight = stemMix({ ...base, chaining: true, intensity: 0.9 });
+    expect(flight.tier).toBe('flight');
+    expect(flight.perc).toBe(1);
+    expect(flight.perc).toBeGreaterThan(play.perc);
   });
 
-  it('engages the pad only for the densest stretches of the run', () => {
-    expect(layerMix(base).layer2).toBe(0);
-    expect(layerMix({ ...base, chaining: true }).layer2).toBe(1);
-    expect(layerMix({ ...base, intensity: 0.59 }).layer2).toBe(0);
-    expect(layerMix({ ...base, intensity: 0.86 }).layer2).toBe(1);
+  it('keeps the melody a floor at altitude, whatever the tier', () => {
+    const low = stemMix({ ...base, intensity: 0, heightFrac: 0.44 });
+    expect(low.mel).toBeLessThanOrEqual(0.35);
+    const vista = stemMix({ ...base, intensity: 0, heightFrac: 0.7 });
+    expect(vista.tier).toBe('rest');
+    expect(vista.mel).toBeGreaterThanOrEqual(0.8);
   });
 
   it('darkens and stretches with the time scale in slow motion', () => {
-    const slow = layerMix({ ...base, timeScale: 0.35 });
-    const normal = layerMix(base);
+    const slow = stemMix({ ...base, timeScale: 0.35 });
+    const normal = stemMix(base);
     expect(slow.cutoffHz).toBeLessThan(normal.cutoffHz / 5);
     expect(slow.tempo).toBeCloseTo(0.35, 2);
     expect(stepSeconds(92, slow.tempo)).toBeGreaterThan(stepSeconds(92, 1) * 2.5);

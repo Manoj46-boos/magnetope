@@ -2,7 +2,12 @@
  * under the music bed by law (R-AU-06): MAGNO's voice is felt, never a soloist. */
 export const BUS_DB = { sfx: -12, music: -18, amb: -24, ui: -20, chirp: -24 } as const;
 export const AD_DUCK_DB = -6;
+/** R-AU-05/07 (O'Donnell, Katz): a stinger side-chains the bed three under, so it is felt and never masked. */
+export const STINGER_DUCK_DB = -3;
 const AD_MUSIC_FLOOR_DB = -24;
+/** The bed moves at the ad's pace (0.12 s) and the stinger's quicker side-chain (0.08 s). */
+const AD_DUCK_TAU_S = 0.12;
+const STINGER_DUCK_TAU_S = 0.08;
 const VOICE_TAIL_S = 0.04;
 
 /**
@@ -54,6 +59,28 @@ export const fromDb = (db: number): number => 10 ** (db / 20);
 
 export type BusName = keyof typeof BUS_DB;
 
+export interface MixRow {
+  bus: BusName;
+  targetDb: number;
+  role: string;
+}
+
+/** R-AU-07 (Katz): the published mix hierarchy — one table the graph obeys and
+ * the doc renders, so the levels, the ducking rules and the monitoring gain are
+ * law in one place and cannot drift from the code that plays them. */
+export const MIX_HIERARCHY = {
+  buses: [
+    { bus: 'sfx', targetDb: BUS_DB.sfx, role: 'the world: material voices, launches, the junk struck' },
+    { bus: 'amb', targetDb: BUS_DB.amb, role: 'the room: biome ambience, wind, distant life' },
+    { bus: 'music', targetDb: BUS_DB.music, role: 'the score: four stems on one bed, ducked by ads and stingers' },
+    { bus: 'ui', targetDb: BUS_DB.ui, role: 'the verdicts: stingers, stamps, ticks, the cards' },
+    { bus: 'chirp', targetDb: BUS_DB.chirp, role: 'MAGNO\'s twelve words, six under the bed and quiet under stingers' },
+  ] as readonly MixRow[],
+  adDuck: { db: AD_DUCK_DB, tauS: AD_DUCK_TAU_S, floorDb: AD_MUSIC_FLOOR_DB, law: 'the bed ducks around any ad, and to a floor, so midrolls never fight the game' },
+  stingerDuck: { db: STINGER_DUCK_DB, tauS: STINGER_DUCK_TAU_S, law: 'a stinger side-chains the bed for its whole length, never stacked' },
+  monitoring: { gain: MASTER.gain, ceilingDb: MASTER.ceilingDb, law: 'the master\'s own knob and the true-peak ceiling everything hangs under' },
+} as const;
+
 export interface AudioEngineOptions {
   createContext?: () => AudioContext;
   maxVoices?: number;
@@ -78,6 +105,8 @@ export class AudioEngine {
   private soundOn = true;
   private musicOn = true;
   private ducked = false;
+  private stingerDucked = false;
+  private appliedMusicDb: number | null = null;
   private voiceEnds: number[] = [];
   private readonly maxVoices: number;
   private readonly stage: MasterStage;
@@ -217,12 +246,25 @@ export class AudioEngine {
     this.applyMusicGain();
   }
 
+  /** R-AU-05: a stinger holds the bed three under for as long as it owns the moment. */
+  setStingerDuck(active: boolean): void {
+    this.stingerDucked = active;
+    this.applyMusicGain();
+  }
+
   private applyMusicGain(): void {
     const bus = this.buses.get('music');
     if (!bus || !this.ctx) return;
     let db: number = BUS_DB.music;
     if (this.ducked) db = Math.min(db + AD_DUCK_DB, AD_MUSIC_FLOOR_DB);
-    bus.gain.setTargetAtTime(this.musicOn ? fromDb(db) : 0, this.ctx.currentTime, 0.12);
+    if (this.stingerDucked) db += STINGER_DUCK_DB;
+    this.appliedMusicDb = db;
+    bus.gain.setTargetAtTime(this.musicOn ? fromDb(db) : 0, this.ctx.currentTime, this.ducked ? AD_DUCK_TAU_S : STINGER_DUCK_TAU_S);
+  }
+
+  /** R-AU-09's own probe: the level the mix has decided on for the bed, in dB, whatever the clock is doing. */
+  get musicTargetDb(): number | null {
+    return this.appliedMusicDb;
   }
 
   suspend(): void {

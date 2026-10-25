@@ -1,4 +1,5 @@
 import type { MaterialVoice } from '@/config/materials';
+import { Rng } from '@/core/rng';
 import { clamp } from '@/core/mathx';
 import type { AudioEngine, BusName } from './engine';
 
@@ -14,14 +15,31 @@ interface Graph {
   t: number;
 }
 
-function open(engine: AudioEngine, bus: BusName, duration: number, gain: number, destination?: AudioNode): Graph | null {
+/**
+ * R-AU-10 (Devine): the take jitter. Every repeat-prone voice is a performance,
+ * not a trigger — pitch and decay wander inside ±10%, note offsets inside
+ * ±20 ms — so the same event never machine-guns. The draws are deterministic
+ * per session (a seeded take, like a player with habits), and every voice keeps
+ * its own identity law: a chirp stays inside its quarter second, a melody keeps
+ * its tune, a UI blip keeps its class peak.
+ */
+const take = new Rng(0x5eed);
+const takeRange = (lo: number, hi: number): number => take.range(lo, hi);
+/** Pitch within ±10% of the identity. */
+const takePitch = (hz: number): number => hz * takeRange(0.9, 1.1);
+/** Decay within ±10%, never past the limit the voice's own law sets. */
+const takeDecay = (s: number, limit = Infinity): number => Math.min(s * takeRange(0.9, 1.1), limit);
+/** Micro-timing within ±20 ms, never before the graph opens. */
+const takeTiming = (s: number): number => Math.max(0, s + takeRange(-0.02, 0.02));
+
+function open(engine: AudioEngine, bus: BusName, duration: number, gain: number, destination?: AudioNode, at?: number): Graph | null {
   const ctx = engine.ctx;
   const target = destination ?? engine.bus(bus);
   if (!ctx || !target || !engine.acquireVoice(duration)) return null;
   const out = ctx.createGain();
   out.gain.value = gain;
   out.connect(target);
-  return { ctx, out, t: ctx.currentTime };
+  return { ctx, out, t: at ?? ctx.currentTime };
 }
 
 function tone(g: Graph, type: OscillatorType, from: number, to: number, glide: number, decay: number, peak: number, delay = 0): void {
@@ -98,11 +116,18 @@ function toRoom(g: Graph, engine: AudioEngine, amount: number): void {
   tap.connect(send);
 }
 
-/** Attach thunk. `pitch` shifts the whole recipe down for impacts. */
-export function playAttach(engine: AudioEngine, voice: SurfaceVoice, intensity: number, pitch = 1, bus: BusName = 'sfx'): void {
+/**
+ * Attach thunk — and the score's own drum (R-AU-04): the junk orchestra strikes
+ * this exact recipe, on the music bus, at the score's own times. `pitch` shifts
+ * the whole recipe down for impacts; the `at` schedules it into the score's
+ * clock, and `destination` rides it through a stem. Each take wanders inside
+ * ±10% (R-AU-10) so the same surface never answers twice the same.
+ */
+export function playAttach(engine: AudioEngine, voice: SurfaceVoice, intensity: number, pitch = 1, bus: BusName = 'sfx', at?: number, destination?: AudioNode): void {
   const level = clamp(intensity, 0.15, 1);
-  const g = open(engine, bus, 0.5, 0.55 * level + 0.18);
+  const g = open(engine, bus, 0.5, 0.55 * level + 0.18, destination, at);
   if (!g) return;
+  pitch *= takeRange(0.9, 1.1);
   switch (voice) {
     case 'body':
       tone(g, 'sine', 180 * pitch, 120 * pitch, 0.06, 0.14, 0.9);
@@ -186,14 +211,16 @@ export function playSnapEngage(engine: AudioEngine): void {
   const filter = g.ctx.createBiquadFilter();
   const amp = g.ctx.createGain();
   osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(220, g.t);
-  osc.frequency.exponentialRampToValueAtTime(880, g.t + 0.09);
+  // R-AU-10: the engage's zip is the game's most repeated voice — every take its own.
+  const lo = takePitch(220);
+  osc.frequency.setValueAtTime(lo, g.t);
+  osc.frequency.exponentialRampToValueAtTime(takePitch(880), g.t + 0.09);
   filter.type = 'lowpass';
   filter.frequency.setValueAtTime(600, g.t);
   filter.frequency.exponentialRampToValueAtTime(3200, g.t + 0.09);
   amp.gain.setValueAtTime(0.0001, g.t);
   amp.gain.exponentialRampToValueAtTime(0.7, g.t + 0.02);
-  amp.gain.exponentialRampToValueAtTime(0.0001, g.t + 0.22);
+  amp.gain.exponentialRampToValueAtTime(0.0001, g.t + takeDecay(0.22));
   osc.connect(filter);
   filter.connect(amp);
   amp.connect(g.out);
@@ -207,17 +234,19 @@ export function playSnapWhiff(engine: AudioEngine): void {
   noiseBurst(g, engine, 'bandpass', 1800, 700, 2, 0.1, 0.5);
 }
 
-export function playTick(engine: AudioEngine, pitch = 2000, bus: BusName = 'ui'): void {
-  const g = open(engine, bus, 0.05, 0.6);
+/** The UI class's shared peak: every verdict voice lands in the same window (R-AU-08), measured on the offline renders. */
+export function playTick(engine: AudioEngine, pitch = 2000, bus: BusName = 'ui', gain = 2.5): void {
+  const g = open(engine, bus, 0.05, gain);
   if (!g) return;
-  noiseBurst(g, engine, 'bandpass', pitch, pitch, 4, 0.012, 0.9);
+  const hz = takePitch(pitch);
+  noiseBurst(g, engine, 'bandpass', hz, hz, 4, 0.012, 0.9);
 }
 
 /** Rising blip as the charge meter reaches each of its three levels. */
 export function playChargeLevel(engine: AudioEngine, level: number): void {
-  const g = open(engine, 'ui', 0.14, 0.5);
+  const g = open(engine, 'ui', 0.14, 0.56);
   if (!g) return;
-  const f = [440, 587, 880][clamp(level, 1, 3) - 1]!;
+  const f = takePitch([440, 587, 880][clamp(level, 1, 3) - 1]!);
   tone(g, 'sine', f, f * 1.02, 0.05, 0.09, 0.7);
   if (level === 3) tone(g, 'triangle', f * 2, f * 2, 0.05, 0.12, 0.25);
 }
@@ -301,36 +330,90 @@ export function playGlassBreak(engine: AudioEngine): void {
   for (let i = 0; i < 5; i++) tone(g, 'sine', 2200 + i * 520, 2100 + i * 500, 0.08, 0.16, 0.12, i * 0.03);
 }
 
-/** Beacon motif: a three-note arpeggio over the biome tonic, roughly 1.2 s. */
-export function playFanfare(engine: AudioEngine, tonicHz: number): void {
-  const g = open(engine, 'ui', 1.5, 0.6);
+/**
+ * R-AU-01: the motif quote — five notes and a resolve, the game's name signed
+ * at every payoff. The notes are the biome's own spelling of the shape, so the
+ * clear card, the summit and the ending's credits all sing the same word.
+ */
+export function playFanfare(engine: AudioEngine, motifHz: readonly number[]): void {
+  const g = open(engine, 'ui', 1.5, 0.42);
   if (!g) return;
-  const notes = [1, 1.25, 1.5, 2];
-  notes.slice(0, 3).forEach((ratio, i) => {
-    tone(g, 'triangle', tonicHz * 2 * ratio, tonicHz * 2 * ratio, 0.1, 0.5, 0.6, i * 0.14);
-    tone(g, 'sine', tonicHz * 4 * ratio, tonicHz * 4 * ratio, 0.1, 0.4, 0.2, i * 0.14);
-  });
-  tone(g, 'triangle', tonicHz * 4, tonicHz * 4, 0.1, 0.9, 0.7, 0.42);
-  tone(g, 'sine', tonicHz * 2, tonicHz * 2, 0.1, 1.1, 0.4, 0.42);
-  noiseBurst(g, engine, 'highpass', 6000, 9000, 0.8, 0.5, 0.2, 0.4);
+  for (let i = 0; i < motifHz.length; i++) {
+    const at = takeTiming(i * 0.13);
+    tone(g, 'triangle', motifHz[i]!, motifHz[i]!, 0.1, i === motifHz.length - 1 ? 0.55 : 0.32, 0.6, at);
+    tone(g, 'sine', motifHz[i]! / 2, motifHz[i]! / 2, 0.1, 0.35, 0.2, at);
+  }
+  // The resolve: the fifth note held, a soft sparkle over it.
+  const home = takeTiming(0.62);
+  tone(g, 'triangle', motifHz[4]!, motifHz[4]!, 0.1, 0.7, 0.7, home);
+  tone(g, 'sine', motifHz[4]! * 2, motifHz[4]! * 2, 0.1, 0.5, 0.22, home);
+  noiseBurst(g, engine, 'highpass', 6000, 9000, 0.8, 0.4, 0.18, home);
   toRoom(g, engine, 0.25);
 }
 
-export function playStarStamp(engine: AudioEngine, index: number, tonicHz: number): void {
-  const g = open(engine, 'ui', 0.5, 0.5);
+/** The star stamps sing the motif's own degrees — do, then the third, then the octave — and never outlast the card's rhythm. */
+export function playStarStamp(engine: AudioEngine, index: number, motifHz: readonly number[]): void {
+  const g = open(engine, 'ui', 0.3, 0.62);
   if (!g) return;
-  const f = tonicHz * 2 * [1, 1.25, 1.5][clamp(index, 0, 2)]!;
-  tone(g, 'sine', f * 2, f * 2, 0.05, 0.35, 0.6);
-  noiseBurst(g, engine, 'bandpass', 1200, 400, 1, 0.07, 0.4);
+  const f = motifHz[[0, 2, 4][clamp(index, 0, 2)]!]!;
+  tone(g, 'sine', f, f, 0.05, 0.18, 0.6);
+  noiseBurst(g, engine, 'bandpass', 1200, 400, 1, 0.06, 0.4);
 }
 
-/** Distant metal creak for the Scrapyard ambience. */
+/**
+ * R-AU-05: the biome call — the motif stated once, slowly, in the new biome's
+ * own spelling, with air in the gaps. The re-harmonized identity is the
+ * announcement itself (R-AU-01/R-AU-03).
+ */
+export function playBiomeCall(engine: AudioEngine, motifHz: readonly number[]): void {
+  const g = open(engine, 'ui', 1.5, 0.59);
+  if (!g) return;
+  for (let i = 0; i < motifHz.length; i++) {
+    const at = takeTiming(i * 0.22);
+    tone(g, 'sine', motifHz[i]!, motifHz[i]!, 0.12, 0.4, 0.5, at);
+    tone(g, 'triangle', motifHz[i]! * 2, motifHz[i]! * 2, 0.12, 0.2, 0.14, at);
+  }
+  noiseBurst(g, engine, 'highpass', 5000, 7000, 0.7, 0.3, 0.12, 1.0);
+  toRoom(g, engine, 0.4);
+}
+
+/** R-AU-05: the par coda — two quick notes up the motif's last steps, the verdict's own sparkle. */
+export function playParCall(engine: AudioEngine, motifHz: readonly number[], at?: number): void {
+  const g = open(engine, 'ui', 0.4, 0.56, undefined, at);
+  if (!g) return;
+  tone(g, 'sine', motifHz[3]!, motifHz[3]!, 0.05, 0.12, 0.55);
+  tone(g, 'sine', motifHz[4]!, motifHz[4]!, 0.05, 0.16, 0.6, 0.12);
+  noiseBurst(g, engine, 'bandpass', 5000, 6500, 2, 0.08, 0.25, 0.12);
+}
+
+/** R-AU-05: the ghost-set toast — a two-note stamp and a tape tick, the run put on record. */
+export function playGhostSet(engine: AudioEngine, motifHz: readonly number[], at?: number): void {
+  const g = open(engine, 'ui', 0.6, 0.66, undefined, at);
+  if (!g) return;
+  tone(g, 'triangle', motifHz[2]!, motifHz[2]!, 0.04, 0.16, 0.55);
+  tone(g, 'triangle', motifHz[4]!, motifHz[4]!, 0.04, 0.22, 0.6, 0.14);
+  noiseBurst(g, engine, 'bandpass', 3000, 2600, 6, 0.05, 0.3, 0.32);
+}
+
+/**
+ * R-AU-05: the small-fall topper — one low bwomp, deadpan, over in a quarter
+ * second. The spectacular falls get nothing: the stage clears for MAGNO's own
+ * deadpan, and the silence is the sting (the comedy law, Ch. 20.4).
+ */
+export function playFallTopper(engine: AudioEngine): void {
+  const g = open(engine, 'ui', 0.35, 0.67);
+  if (!g) return;
+  tone(g, 'sine', takePitch(170), takePitch(110), 0.12, 0.22, 0.6);
+  noiseBurst(g, engine, 'lowpass', 500, 180, 0.8, 0.12, 0.4);
+}
+
+/** Distant metal creak for the Scrapyard ambience — the score's drum shares it (R-AU-04). */
 export function playClank(engine: AudioEngine, seed: number): void {
   const g = open(engine, 'amb', 1, 0.5);
   if (!g) return;
-  const base = 170 + (seed % 7) * 38;
-  tone(g, 'sine', base, base * 0.97, 0.3, 0.9, 0.5);
-  tone(g, 'sine', base * 2.41, base * 2.3, 0.3, 0.5, 0.2);
+  const base = takePitch(170 + (seed % 7) * 38);
+  tone(g, 'sine', base, base * 0.97, 0.3, takeDecay(0.9, 0.85), 0.5);
+  tone(g, 'sine', base * 2.41, base * 2.3, 0.3, takeDecay(0.5, 0.45), 0.2);
   noiseBurst(g, engine, 'bandpass', 1500, 500, 3, 0.1, 0.25);
   toRoom(g, engine, 0.6);
 }
@@ -435,6 +518,12 @@ function openChirp(engine: AudioEngine, gain: number): Graph | null {
   return { ctx, out, t: ctx.currentTime };
 }
 
+/** R-AU-10: the word's own take — the syllables wander inside ±10% and the decay never spends past the quarter second. */
+function word(g: Graph, type: OscillatorType, from: number, to: number, glide: number, decay: number, peak: number, delay = 0): void {
+  const pitch = takeRange(0.9, 1.1);
+  tone(g, type, from * pitch, to * pitch, glide, takeDecay(decay, CHIRP_MAX_S - delay - 0.02), peak, delay);
+}
+
 /** One word of the chirp language, on its own bus, inside its band and its quarter second. */
 export function playChirp(engine: AudioEngine, name: ChirpName): void {
   const g = openChirp(engine, 0.5);
@@ -442,63 +531,63 @@ export function playChirp(engine: AudioEngine, name: ChirpName): void {
   switch (name) {
     case 'curious':
       // Two rising notes: a question.
-      tone(g, 'sine', 1650, 1650, 0.05, 0.07, 0.6);
-      tone(g, 'sine', 2200, 2460, 0.06, 0.1, 0.65, 0.09);
+      word(g, 'sine', 1650, 1650, 0.05, 0.07, 0.6);
+      word(g, 'sine', 2200, 2460, 0.06, 0.1, 0.65, 0.09);
       break;
     case 'focused':
       // One tight flat tick with a harmonic over it: attention without doubt.
-      tone(g, 'triangle', 1900, 1900, 0.05, 0.09, 0.55);
-      tone(g, 'sine', 3800, 3800, 0.04, 0.06, 0.2, 0.02);
+      word(g, 'triangle', 1900, 1900, 0.05, 0.09, 0.55);
+      word(g, 'sine', 3800, 3800, 0.04, 0.06, 0.2, 0.02);
       break;
     case 'whee':
       // The launch: a fast, clean slide up and away.
-      tone(g, 'sine', 2100, 3900, 0.12, 0.13, 0.7);
-      tone(g, 'triangle', 2600, 4200, 0.12, 0.08, 0.3, 0.03);
+      word(g, 'sine', 2100, 3900, 0.12, 0.13, 0.7);
+      word(g, 'triangle', 2600, 4200, 0.12, 0.08, 0.3, 0.03);
       break;
     case 'uh-oh':
       // The classic two-step drop, a short step apart.
-      tone(g, 'sine', 2350, 2350, 0.04, 0.08, 0.65);
-      tone(g, 'sine', 1870, 1870, 0.04, 0.12, 0.6, 0.1);
+      word(g, 'sine', 2350, 2350, 0.04, 0.08, 0.65);
+      word(g, 'sine', 1870, 1870, 0.04, 0.12, 0.6, 0.1);
       break;
     case 'ouch':
       // A sharp zap down and out.
-      tone(g, 'square', 3200, 1500, 0.07, 0.1, 0.4);
-      tone(g, 'sine', 3100, 1400, 0.07, 0.11, 0.55, 0.01);
+      word(g, 'square', 3200, 1500, 0.07, 0.1, 0.4);
+      word(g, 'sine', 3100, 1400, 0.07, 0.11, 0.55, 0.01);
       break;
     case 'relief':
       // A soft settle: down a touch, then up, then quiet.
-      tone(g, 'sine', 3100, 2700, 0.08, 0.09, 0.4);
-      tone(g, 'sine', 2700, 3300, 0.08, 0.12, 0.45, 0.08);
+      word(g, 'sine', 3100, 2700, 0.08, 0.09, 0.4);
+      word(g, 'sine', 2700, 3300, 0.08, 0.12, 0.45, 0.08);
       break;
     case 'ta-da':
       // The three-note boast, climbing a major triad.
-      tone(g, 'triangle', 1600, 1600, 0.04, 0.08, 0.6);
-      tone(g, 'triangle', 2000, 2000, 0.04, 0.08, 0.6, 0.07);
-      tone(g, 'triangle', 2400, 2400, 0.04, 0.09, 0.7, 0.14);
+      word(g, 'triangle', 1600, 1600, 0.04, 0.08, 0.6);
+      word(g, 'triangle', 2000, 2000, 0.04, 0.08, 0.6, 0.07);
+      word(g, 'triangle', 2400, 2400, 0.04, 0.09, 0.7, 0.14);
       break;
     case 'deadpan':
       // One flat, low blip: the comedy verdict, offered without comment.
-      tone(g, 'sine', 1400, 1380, 0.11, 0.11, 0.6);
+      word(g, 'sine', 1400, 1380, 0.11, 0.11, 0.6);
       break;
     case 'weary':
       // The droop of a get-up that costs something.
-      tone(g, 'sine', 2000, 1480, 0.12, 0.11, 0.55);
+      word(g, 'sine', 2000, 1480, 0.12, 0.11, 0.55);
       break;
     case 'wary':
       // A nervous trill: two quick alternations of the same two pitches.
-      tone(g, 'sine', 2600, 2600, 0.03, 0.05, 0.5);
-      tone(g, 'sine', 2200, 2200, 0.03, 0.05, 0.5, 0.07);
-      tone(g, 'sine', 2600, 2600, 0.03, 0.05, 0.45, 0.14);
+      word(g, 'sine', 2600, 2600, 0.03, 0.05, 0.5);
+      word(g, 'sine', 2200, 2200, 0.03, 0.05, 0.5, 0.07);
+      word(g, 'sine', 2600, 2600, 0.03, 0.05, 0.45, 0.14);
       break;
     case 'miss':
       // The small embarrassed bwop: a wobble on the way down.
-      tone(g, 'sine', 2000, 1250, 0.13, 0.13, 0.55);
-      tone(g, 'sine', 1900, 1300, 0.13, 0.09, 0.25, 0.02);
+      word(g, 'sine', 2000, 1250, 0.13, 0.13, 0.55);
+      word(g, 'sine', 1900, 1300, 0.13, 0.09, 0.25, 0.02);
       break;
     case 'home':
       // The homecoming: a soft fifth, resolved upward.
-      tone(g, 'sine', 1760, 1760, 0.05, 0.1, 0.4);
-      tone(g, 'sine', 2640, 2640, 0.06, 0.12, 0.45, 0.1);
+      word(g, 'sine', 1760, 1760, 0.05, 0.1, 0.4);
+      word(g, 'sine', 2640, 2640, 0.06, 0.12, 0.45, 0.1);
       break;
   }
 }

@@ -3,9 +3,11 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AudioDirector } from '@/audio/director';
 import { EventEnvelope, EVENT_WEIGHTS } from '@/audio/intensity';
-import { AD_DUCK_DB, AudioEngine, BUS_DB, MASTER, ceilingCurve, fromDb } from '@/audio/engine';
-import { AMBIENCE, axleGroan, layerMix, windVoice } from '@/audio/mix';
-import { playAttach, playBird, playFanfare, playRepel } from '@/audio/recipes';
+import { AD_DUCK_DB, AudioEngine, BUS_DB, MASTER, MIX_HIERARCHY, STINGER_DUCK_DB, ceilingCurve, fromDb } from '@/audio/engine';
+import { AMBIENCE, axleGroan, SCORES, stemMix, windVoice } from '@/audio/mix';
+import { MAGNO_MOTIF, degreeSemitones } from '@/audio/score';
+import { STINGERS } from '@/audio/stingers';
+import { playAttach, playBird, playChirp, playFanfare, playRepel, playSnapEngage } from '@/audio/recipes';
 import { prop } from '@/levels/author';
 import { levelById } from '@/levels';
 import { loadRapier } from '@/sim/rapier';
@@ -186,7 +188,7 @@ describe('mute and ducking', () => {
     const before = count(fake.nodes, 'oscillator');
     playAttach(engine, 'beam', 1);
     playRepel(engine, 1);
-    playFanfare(engine, 55);
+    playFanfare(engine, [110, 130.8, 146.8, 164.8, 220]);
     expect(count(fake.nodes, 'oscillator')).toBe(before);
     expect(engine.audible).toBe(false);
   });
@@ -303,19 +305,22 @@ describe('the score follows the level event sequence (R-LD-08)', () => {
     expect(Math.max(...establish)).toBe(0);
   });
 
-  it('mixes the stems by the envelope: quiet open, full escalation, breathing after', () => {
-    const quiet = layerMix({ running: true, heightFrac: 0.05, chaining: false, timeScale: 1, intensity: 0.05 });
-    expect(quiet.layer1).toBe(0);
-    expect(quiet.layer2).toBe(0);
-    const twisting = layerMix({ running: true, heightFrac: 0.3, chaining: false, timeScale: 1, intensity: 0.42 });
-    expect(twisting.layer1).toBeGreaterThan(0);
-    expect(twisting.layer2).toBe(0);
-    const escalation = layerMix({ running: true, heightFrac: 0.7, chaining: true, timeScale: 1, intensity: 0.9 });
-    expect(escalation.layer1).toBe(1);
-    expect(escalation.layer2).toBe(1);
-    const settling = layerMix({ running: true, heightFrac: 0.7, chaining: false, timeScale: 1, intensity: 0.3 });
-    expect(settling.layer2).toBe(0);
-    expect(settling.layer1).toBeGreaterThan(0);
+  it('mixes the stems by the tier the run has earned: rest, play, flight (R-AU-02)', () => {
+    const quiet = stemMix({ running: true, heightFrac: 0.05, chaining: false, timeScale: 1, intensity: 0.05 });
+    expect(quiet.tier).toBe('rest');
+    expect(quiet.bass).toBe(0);
+    expect(quiet.perc).toBe(0);
+    expect(quiet.mel).toBeGreaterThan(0);
+    const twisting = stemMix({ running: true, heightFrac: 0.3, chaining: false, timeScale: 1, intensity: 0.42 });
+    expect(twisting.tier).toBe('play');
+    expect(twisting.bass).toBeGreaterThan(0);
+    expect(twisting.perc).toBeGreaterThan(0);
+    const escalation = stemMix({ running: true, heightFrac: 0.7, chaining: true, timeScale: 1, intensity: 0.9 });
+    expect(escalation.tier).toBe('flight');
+    expect(escalation.perc).toBe(1);
+    const settling = stemMix({ running: true, heightFrac: 0.7, chaining: false, timeScale: 1, intensity: 0.3 });
+    expect(settling.tier).toBe('play');
+    expect(settling.perc).toBeLessThan(escalation.perc);
   });
 
   it('breathes on a real verified route, not a flat line', async () => {
@@ -569,5 +574,269 @@ describe('wheel axle groan', () => {
     fake.raw.currentTime = 1;
     director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
     expect(sim.physics.axleSpeed()).toBe(0);
+  });
+});
+
+describe('the motif presence map (R-AU-01)', () => {
+  const motifOf = (levelId: string): number[] => {
+    const score = SCORES[levelById(levelId).biome];
+    return MAGNO_MOTIF.map((d) => score.tonicHz * 4 * 2 ** (degreeSemitones(score.scale, d) / 12));
+  };
+  const freqsOf = (nodes: FakeNode[]): number[] => nodes.filter((n) => n.kind === 'oscillator').map((n) => (n.frequency as unknown as ParamStub).value);
+  const sings = (freqs: number[], hz: number): boolean => freqs.some((f) => Math.abs(f - hz) < 0.6);
+
+  async function boot(levelId: string) {
+    const { engine, fake } = setup();
+    engine.unlock();
+    const director = new AudioDirector(engine);
+    const sim = new Simulation(await loadRapier(), levelById(levelId));
+    director.bind(sim);
+    return { engine, fake, director, sim };
+  }
+
+  it('hums the motif from the boot: all five notes inside three seconds of the score starting', async () => {
+    const { fake, director, sim } = await boot('scrapyard-00');
+    const seen: number[] = [];
+    for (let t = 1; t <= 4; t += 0.05) {
+      fake.raw.currentTime = t;
+      director.update({ running: true, timeScale: 1, dt: 0.05, slowMo: false });
+      seen.push(...freqsOf(fake.nodes));
+    }
+    const motif = motifOf('scrapyard-00');
+    for (const hz of motif) {
+      expect(sings(seen, hz), `${hz} Hz of the motif never sounds`).toBe(true);
+    }
+    sim.dispose();
+    director.unbind();
+  });
+
+  it('signs the clear card with the same five notes', async () => {
+    const { fake, director, sim } = await boot('scrapyard-00');
+    fake.raw.currentTime = 1;
+    const before = fake.nodes.length;
+    sim.events.emit('summit', { clearTimeMs: 9000, falls: 0, noFall: true, underPar: false, stars: 3 });
+    const spoken = freqsOf(fake.nodes.slice(before));
+    for (const hz of motifOf('scrapyard-00')) {
+      expect(sings(spoken, hz), `${hz} Hz missing from the clear quote`).toBe(true);
+    }
+    sim.dispose();
+    director.unbind();
+  });
+
+  it('announces a biome with the motif in that biome\u2019s own spelling (R-AU-03)', async () => {
+    const { fake, director, sim } = await boot('suburbia-01');
+    const before = fake.nodes.length;
+    director.biomeCall();
+    const spoken = freqsOf(fake.nodes.slice(before));
+    for (const hz of motifOf('suburbia-01')) {
+      expect(sings(spoken, hz), `${hz} Hz missing from the biome call`).toBe(true);
+    }
+    // The same shape, a different key: the harmonization is the spelling, not a rewrite.
+    expect(motifOf('suburbia-01')).not.toEqual(motifOf('scrapyard-00'));
+    sim.dispose();
+    director.unbind();
+  });
+
+  it('resolves the ending on the motif (the credits sign the name)', async () => {
+    const { fake, director, sim } = await boot('stratosphere-14');
+    const before = fake.nodes.length;
+    director.endingCue('credits');
+    const spoken = freqsOf(fake.nodes.slice(before));
+    for (const hz of motifOf('stratosphere-14')) {
+      expect(sings(spoken, hz), `${hz} Hz missing from the resolve`).toBe(true);
+    }
+    sim.dispose();
+    director.unbind();
+  });
+});
+
+describe('the stinger grammar (R-AU-05)', () => {
+  async function boot() {
+    const { engine, fake } = setup();
+    engine.unlock();
+    const director = new AudioDirector(engine);
+    const sim = new Simulation(await loadRapier(), levelById('scrapyard-00'));
+    director.bind(sim);
+    return { engine, fake, director, sim };
+  }
+
+  it('is the whole verdict map, every word inside its second and a half, every voice a real recipe', () => {
+    expect(new Set(STINGERS.map((s) => s.kind)).size).toBe(STINGERS.length);
+    for (const s of STINGERS) expect(s.maxS).toBeLessThanOrEqual(1.5);
+    expect(STINGERS.map((s) => s.voice).sort()).toEqual([
+      'playBiomeCall',
+      'playFallTopper',
+      'playFanfare',
+      'playGhostSet',
+      'playParCall',
+      'playStarStamp',
+    ]);
+  });
+
+  it('lets one word own the moment: a second stinger is refused, the stage clears, then it speaks', async () => {
+    const { engine, fake, director, sim } = await boot();
+    const music = engine.bus('music')!.gain as unknown as ParamStub;
+    fake.raw.currentTime = 1;
+    const before = fake.nodes.length;
+    sim.events.emit('summit', { clearTimeMs: 9000, falls: 0, noFall: true, underPar: false, stars: 1 });
+    expect(fake.nodes.length).toBeGreaterThan(before);
+    // R-AU-07: the bed side-chains three under for the word's whole length.
+    expect(music.lastTarget!).toBeCloseTo(fromDb(BUS_DB.music + STINGER_DUCK_DB), 5);
+    const spoken = fake.nodes.length;
+    director.biomeCall();
+    expect(fake.nodes.length, 'a second word was spoken over the first').toBe(spoken);
+    // The stage clears and the bed comes back up (R-AU-05/07).
+    fake.raw.currentTime = 2.75;
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    expect(music.lastTarget!).toBeCloseTo(fromDb(BUS_DB.music), 5);
+    director.biomeCall();
+    expect(fake.nodes.length).toBeGreaterThan(spoken);
+    sim.dispose();
+    director.unbind();
+  });
+
+  it('chains the verdict: the par coda and the ghost toast answer the last stamp, and only then', async () => {
+    const { fake, director, sim } = await boot();
+    const par = motifOf('scrapyard-00')[3]!;
+    fake.raw.currentTime = 1;
+    sim.events.emit('summit', { clearTimeMs: 8000, falls: 0, noFall: false, underPar: true, stars: 2 });
+    director.ghostToast();
+    fake.raw.currentTime = 2.75;
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    const afterUpdate = fake.nodes.length;
+    director.starStamp(0, 2);
+    expect(sings(freqsOf(fake.nodes.slice(afterUpdate)), par), 'the par coda spoke a stamp early').toBe(false);
+    director.starStamp(1, 2);
+    expect(sings(freqsOf(fake.nodes.slice(afterUpdate)), par), 'the par coda never spoke').toBe(true);
+    // And without a par or a ghost on record, the last stamp is only a stamp.
+    fake.raw.currentTime = 4.6;
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    sim.events.emit('summit', { clearTimeMs: 9000, falls: 0, noFall: true, underPar: false, stars: 2 });
+    fake.raw.currentTime = 6.3;
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    const beforeLast = fake.nodes.length;
+    director.starStamp(0, 2);
+    director.starStamp(1, 2);
+    expect(sings(freqsOf(fake.nodes.slice(beforeLast)), par), 'a par coda without a par').toBe(false);
+    sim.dispose();
+    director.unbind();
+  });
+
+  it('gives the small falls the deadpan plop and the spectacular ones the stage (the silence is the sting)', async () => {
+    const { fake, director, sim } = await boot();
+    fake.raw.currentTime = 1;
+    const before = fake.nodes.length;
+    director.fallVerdict('A');
+    director.fallVerdict('SSS');
+    expect(fake.nodes.length, 'the spectacular fall was scored over MAGNO\u2019s own word').toBe(before);
+    director.fallVerdict('C');
+    expect(fake.nodes.length).toBeGreaterThan(before);
+    sim.dispose();
+    director.unbind();
+  });
+
+  const motifOf = (levelId: string): number[] => {
+    const score = SCORES[levelById(levelId).biome];
+    return MAGNO_MOTIF.map((d) => score.tonicHz * 4 * 2 ** (degreeSemitones(score.scale, d) / 12));
+  };
+  const sings = (freqs: number[], hz: number): boolean => freqs.some((f) => Math.abs(f - hz) < 0.6);
+  const freqsOf = (nodes: FakeNode[]): number[] => nodes.filter((n) => n.kind === 'oscillator').map((n) => (n.frequency as unknown as ParamStub).value);
+});
+
+describe('the score keeps its own clock (R-AU-02)', () => {
+  async function boot() {
+    const { engine, fake } = setup();
+    engine.unlock();
+    const director = new AudioDirector(engine);
+    const sim = new Simulation(await loadRapier(), levelById('scrapyard-00'));
+    director.bind(sim);
+    return { engine, fake, director, sim };
+  }
+
+  it('crossfades the stems as the run earns its tier, through the whole envelope path', async () => {
+    const { fake, director, sim } = await boot();
+    fake.raw.currentTime = 1;
+    const targets = () =>
+      fake.nodes
+        .filter((n) => n.kind === 'gain')
+        .map((n) => (n.gain as unknown as ParamStub).lastTarget)
+        .filter((v): v is number => v !== null);
+    for (let t = 0; t < 2; t += 0.1) director.update({ running: true, timeScale: 1, dt: 0.1, slowMo: false });
+    const rest = targets();
+    expect(rest).toContain(0.35);
+    expect(rest).toContain(0.45);
+    expect(rest).not.toContain(0.85);
+    for (let i = 0; i < 3; i++) sim.events.emit('attach', { material: 'steel', point: { x: 0, y: 1 }, normal: { x: 0, y: 1 }, speed: 8, weak: false, viaSnap: true });
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    const flight = targets();
+    expect(flight).toContain(1);
+    expect(flight).toContain(0.8);
+    for (let t = 0; t < 14; t += 0.1) director.update({ running: true, timeScale: 1, dt: 0.1, slowMo: false });
+    const settled = targets();
+    expect(settled).toContain(0.35);
+    expect(settled).not.toContain(0.85);
+    sim.dispose();
+    director.unbind();
+  });
+
+  it('rotates its cells through the session — the audit counter advances, every stem', async () => {
+    const { fake, director, sim } = await boot();
+    for (let t = 1; t <= 41; t += 0.05) {
+      fake.raw.currentTime = t;
+      director.update({ running: true, timeScale: 1, dt: 0.05, slowMo: false });
+    }
+    const played = director.music.cellsPlayed;
+    expect(played.mel).toBeGreaterThanOrEqual(6);
+    expect(played.bass).toBeGreaterThanOrEqual(6);
+    expect(played.perc).toBeGreaterThanOrEqual(6);
+    expect(played.air).toBeGreaterThanOrEqual(3);
+    expect(played.mel).toBeGreaterThan(played.air);
+    sim.dispose();
+    director.unbind();
+  });
+});
+
+describe('the performance take (R-AU-10)', () => {
+  const signature = (fake: { nodes: FakeNode[] }, before: number): string =>
+    fake.nodes
+      .slice(before)
+      .filter((n) => n.kind === 'oscillator')
+      .map((n) => (n.frequency as unknown as ParamStub).value)
+      .sort()
+      .join('|');
+
+  it('never machine-guns: five takes of the same voice inside two seconds are five different takes', () => {
+    const { engine, fake } = setup();
+    engine.unlock();
+    const snapTakes = Array.from({ length: 5 }, () => {
+      const before = fake.nodes.length;
+      playSnapEngage(engine);
+      return signature(fake, before);
+    });
+    expect(new Set(snapTakes).size, 'the snap\u2019s zip repeated identically').toBe(5);
+
+    const chirpTakes = Array.from({ length: 5 }, () => {
+      const before = fake.nodes.length;
+      playChirp(engine, 'whee');
+      return signature(fake, before);
+    });
+    expect(new Set(chirpTakes).size, 'the chirp repeated identically').toBe(5);
+
+    const thunkTakes = Array.from({ length: 5 }, () => {
+      const before = fake.nodes.length;
+      playAttach(engine, 'beam', 1);
+      return signature(fake, before);
+    });
+    expect(new Set(thunkTakes).size, 'the junk answered identically').toBe(5);
+  });
+});
+
+describe('the published mix hierarchy (R-AU-07)', () => {
+  it('is the code\u2019s own levels, buses and duck laws, exactly — the table cannot drift', () => {
+    expect(new Set(MIX_HIERARCHY.buses.map((r) => r.bus))).toEqual(new Set(Object.keys(BUS_DB)));
+    for (const row of MIX_HIERARCHY.buses) expect(row.targetDb).toBe(BUS_DB[row.bus]);
+    expect(MIX_HIERARCHY.adDuck.db).toBe(AD_DUCK_DB);
+    expect(MIX_HIERARCHY.stingerDuck.db).toBe(STINGER_DUCK_DB);
+    expect(MIX_HIERARCHY.monitoring.gain).toBe(MASTER.gain);
   });
 });
