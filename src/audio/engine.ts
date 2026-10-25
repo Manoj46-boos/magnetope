@@ -1,5 +1,6 @@
-/** Bus levels from PRD 9.6, in dB relative to the master. */
-export const BUS_DB = { sfx: -12, music: -18, amb: -24, ui: -20 } as const;
+/** Bus levels from PRD 9.6, in dB relative to the master. The chirp bus sits six
+ * under the music bed by law (R-AU-06): MAGNO's voice is felt, never a soloist. */
+export const BUS_DB = { sfx: -12, music: -18, amb: -24, ui: -20, chirp: -24 } as const;
 export const AD_DUCK_DB = -6;
 const AD_MUSIC_FLOOR_DB = -24;
 const VOICE_TAIL_S = 0.04;

@@ -15,6 +15,7 @@ import {
   playBoing,
   playChargeLevel,
   playBloomSwell,
+  playChirp,
   playClank,
   playCoreSeat,
   playCreak,
@@ -33,6 +34,7 @@ import {
   playStarStamp,
   playStress,
   playTick,
+  type ChirpName,
 } from './recipes';
 
 const AMBIENT_VOICES: Readonly<Record<NonNullable<Ambience['event']>, (engine: AudioEngine, seed: number) => void>> = {
@@ -50,6 +52,8 @@ export interface AudioFrame {
 }
 
 const PROXIMITY_INTERVAL = 0.1;
+/** R-AU-06: the same word twice inside this window is machine-gun fire, not speech. */
+const CHIRP_REPEAT_S = 2;
 
 /** Maps simulation events and state onto the audio engine; the only audio entry point for the game. */
 export class AudioDirector {
@@ -67,6 +71,9 @@ export class AudioDirector {
   private proximityClock = 0;
   private ambienceClock = 4;
   private endingGain: GainNode | null = null;
+  /** R-AU-06: the chirp bus holds its tongue while a stinger owns the moment. */
+  private quietUntil = 0;
+  private readonly lastChirpAt = new Map<ChirpName, number>();
 
   constructor(private readonly engine: AudioEngine) {
     this.music = new MusicPlayer(engine);
@@ -93,22 +100,41 @@ export class AudioDirector {
       on('repel', (ev) => {
         playRepel(e, ev.power);
         this.envelope.event(EVENT_WEIGHTS.launch);
+        // R-CH-06: the whee belongs to the full-power release — the same bar that earns the freeze.
+        if (ev.power >= 1) this.chirp('whee');
       }),
       on('snapEngage', () => playSnapEngage(e)),
-      on('snapWhiff', () => playSnapWhiff(e)),
+      on('snapWhiff', () => {
+        playSnapWhiff(e);
+        this.chirp('miss');
+      }),
       on('impact', (ev) => {
         if (ev.speed >= 3) playImpact(e, MATERIALS[ev.material].voice, ev.speed);
       }),
-      on('chargeLevel', (ev) => playChargeLevel(e, ev.level)),
+      on('chargeLevel', (ev) => {
+        playChargeLevel(e, ev.level);
+        // R-CH-06: focus is named at the top of the meter, not on every step of the climb.
+        if (ev.level === 3) this.chirp('focused');
+      }),
+      on('limp', () => this.chirp('ouch')),
+      on('recoverBegin', () => this.chirp('weary')),
       on('recoverEnd', () => playGetUp(e)),
       on('weakCrumble', () => playCrumble(e)),
       on('glassBreak', () => playGlassBreak(e)),
       on('boing', (ev) => playBoing(e, ev.outSpeed)),
-      on('crumbleWarn', (ev) => playStress(e, this.isIcy(ev.propIndex))),
+      on('crumbleWarn', (ev) => {
+        playStress(e, this.isIcy(ev.propIndex));
+        this.chirp('wary');
+      }),
       on('crumble', (ev) => (this.isIcy(ev.propIndex) ? playIceBreak(e) : playCrumble(e))),
       on('restore', () => playTick(e, 1500, 'sfx')),
       on('followerMove', (ev) => playSlide(e, ev.direction)),
-      on('summit', () => playFanfare(e, this.music.tonicHz)),
+      on('slowMo', () => this.chirp('uh-oh')),
+      on('saved', () => this.chirp('relief')),
+      on('summit', () => {
+        playFanfare(e, this.music.tonicHz);
+        this.quietFor(1.6);
+      }),
     );
   }
 
@@ -124,8 +150,26 @@ export class AudioDirector {
     this.axle.update(46, 260, 0);
   }
 
-  starStamp(index: number): void {
+  starStamp(index: number, stars?: number): void {
     playStarStamp(this.engine, index, this.music.tonicHz);
+    // R-CH-06: the ta-da is the full verdict's — the last stamp of a three-star clear.
+    if (stars === 3 && index === 2) this.chirp('ta-da');
+  }
+
+  /** R-CH-06: one word of MAGNO's language, held to its bus, its repeat guard and the stinger gate. */
+  chirp(name: ChirpName): void {
+    const now = this.engine.ctx?.currentTime ?? -1;
+    if (now < 0 || now < this.quietUntil) return;
+    if (now - (this.lastChirpAt.get(name) ?? -Infinity) < CHIRP_REPEAT_S) return;
+    this.lastChirpAt.set(name, now);
+    playChirp(this.engine, name);
+  }
+
+  /** R-AU-06: holds the chirp bus silent while a stinger owns the moment. */
+  private quietFor(seconds: number): void {
+    const now = this.engine.ctx?.currentTime;
+    if (now === undefined) return;
+    this.quietUntil = Math.max(this.quietUntil, now + seconds);
   }
 
   /** The score's event-density envelope, 0..1 (R-LD-08): how thick the beats are right now. */
@@ -140,10 +184,19 @@ export class AudioDirector {
   /** Score cues of the ending film. The adaptive music stays underneath as the room tone. */
   endingCue(cue: 'seat' | 'bloom' | 'pullback' | 'credits'): void {
     const tonic = this.music.tonicHz;
-    if (cue === 'seat') playCoreSeat(this.engine);
-    else if (cue === 'bloom') playBloomSwell(this.engine, tonic, this.endingBus() ?? undefined);
-    else if (cue === 'pullback') playPullbackPad(this.engine, tonic, this.endingBus() ?? undefined);
-    else playFanfare(this.engine, tonic);
+    if (cue === 'seat') {
+      playCoreSeat(this.engine);
+      this.quietFor(1.9);
+    } else if (cue === 'bloom') {
+      playBloomSwell(this.engine, tonic, this.endingBus() ?? undefined);
+    } else if (cue === 'pullback') {
+      playPullbackPad(this.engine, tonic, this.endingBus() ?? undefined);
+      // R-CH-06: the homecoming word rides the wide quiet shot, before the credits fanfare.
+      this.chirp('home');
+    } else {
+      playFanfare(this.engine, tonic);
+      this.quietFor(1.6);
+    }
   }
 
   /** Fades the long pads out, e.g. when the player skips the film. */

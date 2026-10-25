@@ -135,14 +135,16 @@ describe('AudioEngine lifecycle', () => {
     expect(() => playAttach(engine, 'body', 1)).not.toThrow();
   });
 
-  it('builds the four buses at the mix levels of the design', () => {
+  it('builds the buses at the mix levels of the design', () => {
     const { engine } = setup();
     engine.unlock();
-    for (const name of ['sfx', 'music', 'amb', 'ui'] as const) {
+    for (const name of ['sfx', 'music', 'amb', 'ui', 'chirp'] as const) {
       const gain = engine.bus(name)!.gain as unknown as ParamStub;
       expect(gain.value).toBeCloseTo(fromDb(BUS_DB[name]), 5);
     }
-    expect(BUS_DB).toEqual({ sfx: -12, music: -18, amb: -24, ui: -20 });
+    expect(BUS_DB).toEqual({ sfx: -12, music: -18, amb: -24, ui: -20, chirp: -24 });
+    // R-AU-06: MAGNO's voice sits at least six under the music bed by law.
+    expect(BUS_DB.chirp).toBeLessThanOrEqual(BUS_DB.music - 6);
   });
 
   it('routes through a compressor and an oversampled ceiling into the destination', () => {

@@ -166,7 +166,7 @@ export class Game {
       openExchange: () => this.openExchange(),
       shareDuel: () => void this.shareDuel(),
       tick: () => this.audio.tick(),
-      stamp: (i) => this.audio.starStamp(i),
+      stamp: (i) => this.audio.starStamp(i, this.lastClear?.summary.stars),
       map: {
         select: (id) => this.playFromMap(id),
         back: () => this.ui.map.hide(),
@@ -235,7 +235,7 @@ export class Game {
     this.touchMode = new TouchMode(readPointerEnvironment(window), (on) => this.ui.setTouchControls(on));
 
     const tier = this.pickTier();
-    this.renderer = new SceneRenderer(this.canvas, tier, (kind) => this.renderer.cameraRig.shake(kind, this.inputCritical()));
+    this.renderer = new SceneRenderer(this.canvas, tier, (kind) => this.renderer.cameraRig.shake(kind, this.inputCritical()), (beat) => this.audio.chirp(beat));
     this.ui.root.classList.toggle('tier-low', tier === 'low');
     this.contextGuard = new ContextGuard(this.canvas);
     this.contextGuard.events.on('lost', () => this.onContextLost());
@@ -494,6 +494,9 @@ export class Game {
         offerSecondWind: report.heightMeters >= 8 && !sim.run.cleared,
         shareable: report.heightMeters >= SHAREABLE_FALL_METERS,
       });
+      // R-CH-06: only a spectacular fail earns MAGNO's own verdict — the deadpan
+      // blip lands with the grade badge the card is about to show.
+      if (gradeRank(report.grade) >= gradeRank('A')) this.audio.chirp('deadpan');
     }
   }
 

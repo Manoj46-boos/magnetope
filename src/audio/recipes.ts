@@ -390,3 +390,115 @@ export function playPullbackPad(engine: AudioEngine, tonicHz: number, destinatio
   swell(g, tonicHz * 18, 10, 9, 9, 0.05, 4);
   toRoom(g, engine, 0.8);
 }
+
+/**
+ * R-CH-06 / R-AU-06: the twelve words of MAGNO's language. Each is a tiny
+ * synthesized figure — no samples, no human speech, ever — mapped one to one
+ * onto the emotion table in `src/game/magno-table.ts`, and every contour is
+ * the shape of its feeling: questions rise, zaps fall, boasts climb a triad.
+ */
+export type ChirpName =
+  | 'curious'
+  | 'focused'
+  | 'whee'
+  | 'uh-oh'
+  | 'ouch'
+  | 'relief'
+  | 'ta-da'
+  | 'deadpan'
+  | 'weary'
+  | 'wary'
+  | 'miss'
+  | 'home';
+
+/** R-AU-06: the voice's own band — bright enough to sit over the score, never the air above it. Published for the doc spine. */
+export const CHIRP_BAND_HZ: [number, number] = [1000, 8000];
+/** R-AU-06: no chirp outlasts a quarter second, voice and tail included. */
+const CHIRP_MAX_S = 0.25;
+
+/** Opens the chirp graph: the band limit rides the chain itself, ahead of the bus, so no figure can speak outside the range. */
+function openChirp(engine: AudioEngine, gain: number): Graph | null {
+  const ctx = engine.ctx;
+  const bus = engine.bus('chirp');
+  if (!ctx || !bus || !engine.acquireVoice(CHIRP_MAX_S)) return null;
+  const out = ctx.createGain();
+  out.gain.value = gain;
+  const lowCut = ctx.createBiquadFilter();
+  lowCut.type = 'highpass';
+  lowCut.frequency.value = CHIRP_BAND_HZ[0];
+  const highCut = ctx.createBiquadFilter();
+  highCut.type = 'lowpass';
+  highCut.frequency.value = CHIRP_BAND_HZ[1];
+  out.connect(lowCut);
+  lowCut.connect(highCut);
+  highCut.connect(bus);
+  return { ctx, out, t: ctx.currentTime };
+}
+
+/** One word of the chirp language, on its own bus, inside its band and its quarter second. */
+export function playChirp(engine: AudioEngine, name: ChirpName): void {
+  const g = openChirp(engine, 0.5);
+  if (!g) return;
+  switch (name) {
+    case 'curious':
+      // Two rising notes: a question.
+      tone(g, 'sine', 1650, 1650, 0.05, 0.07, 0.6);
+      tone(g, 'sine', 2200, 2460, 0.06, 0.1, 0.65, 0.09);
+      break;
+    case 'focused':
+      // One tight flat tick with a harmonic over it: attention without doubt.
+      tone(g, 'triangle', 1900, 1900, 0.05, 0.09, 0.55);
+      tone(g, 'sine', 3800, 3800, 0.04, 0.06, 0.2, 0.02);
+      break;
+    case 'whee':
+      // The launch: a fast, clean slide up and away.
+      tone(g, 'sine', 2100, 3900, 0.12, 0.13, 0.7);
+      tone(g, 'triangle', 2600, 4200, 0.12, 0.08, 0.3, 0.03);
+      break;
+    case 'uh-oh':
+      // The classic two-step drop, a short step apart.
+      tone(g, 'sine', 2350, 2350, 0.04, 0.08, 0.65);
+      tone(g, 'sine', 1870, 1870, 0.04, 0.12, 0.6, 0.1);
+      break;
+    case 'ouch':
+      // A sharp zap down and out.
+      tone(g, 'square', 3200, 1500, 0.07, 0.1, 0.4);
+      tone(g, 'sine', 3100, 1400, 0.07, 0.11, 0.55, 0.01);
+      break;
+    case 'relief':
+      // A soft settle: down a touch, then up, then quiet.
+      tone(g, 'sine', 3100, 2700, 0.08, 0.09, 0.4);
+      tone(g, 'sine', 2700, 3300, 0.08, 0.12, 0.45, 0.08);
+      break;
+    case 'ta-da':
+      // The three-note boast, climbing a major triad.
+      tone(g, 'triangle', 1600, 1600, 0.04, 0.08, 0.6);
+      tone(g, 'triangle', 2000, 2000, 0.04, 0.08, 0.6, 0.07);
+      tone(g, 'triangle', 2400, 2400, 0.04, 0.09, 0.7, 0.14);
+      break;
+    case 'deadpan':
+      // One flat, low blip: the comedy verdict, offered without comment.
+      tone(g, 'sine', 1400, 1380, 0.11, 0.11, 0.6);
+      break;
+    case 'weary':
+      // The droop of a get-up that costs something.
+      tone(g, 'sine', 2000, 1480, 0.12, 0.11, 0.55);
+      break;
+    case 'wary':
+      // A nervous trill: two quick alternations of the same two pitches.
+      tone(g, 'sine', 2600, 2600, 0.03, 0.05, 0.5);
+      tone(g, 'sine', 2200, 2200, 0.03, 0.05, 0.5, 0.07);
+      tone(g, 'sine', 2600, 2600, 0.03, 0.05, 0.45, 0.14);
+      break;
+    case 'miss':
+      // The small embarrassed bwop: a wobble on the way down.
+      tone(g, 'sine', 2000, 1250, 0.13, 0.13, 0.55);
+      tone(g, 'sine', 1900, 1300, 0.13, 0.09, 0.25, 0.02);
+      break;
+    case 'home':
+      // The homecoming: a soft fifth, resolved upward.
+      tone(g, 'sine', 1760, 1760, 0.05, 0.1, 0.4);
+      tone(g, 'sine', 2640, 2640, 0.06, 0.12, 0.45, 0.1);
+      break;
+  }
+}
