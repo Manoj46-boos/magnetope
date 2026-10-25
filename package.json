@@ -31,7 +31,8 @@
     "loudness": "tsx tools/loudness.ts",
     "perf": "tsx tools/perf.ts",
     "anim-cost": "node --expose-gc --import tsx tools/anim-cost.ts",
-    "restart-time": "tsx tools/restart-time.ts"
+    "restart-time": "tsx tools/restart-time.ts",
+    "docs": "tsx tools/doc-spine.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.21.0",

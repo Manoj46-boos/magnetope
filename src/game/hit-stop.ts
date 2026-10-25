@@ -7,10 +7,12 @@
  * stacked on itself, never twice inside a second (R-GF-06).
  */
 
-/** Inside the 40–80 ms band: long enough to land as impact, short enough to never read as stutter. */
-const HOLD_MS = 60;
+/** The law the freeze keeps: inside this band it reads as impact, outside it reads as a fault (R-GF-01). */
+export const HIT_STOP_BAND_MS: readonly [number, number] = [40, 80];
+/** Inside the band: long enough to land as impact, short enough to never read as stutter. */
+export const HOLD_MS = 60;
 /** Two freezes inside one second read as frame drops, not drama. */
-const MIN_GAP_MS = 1000;
+export const MIN_GAP_MS = 1000;
 
 export class HitStop {
   private heldMs = -1;

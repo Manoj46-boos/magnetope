@@ -24,6 +24,9 @@ export interface TelemetryOptions {
 export const CELL_SIZE = 2;
 export const cellOf = (p: Vec2): string => `${Math.floor(p.x / CELL_SIZE)}:${Math.floor(p.y / CELL_SIZE)}`;
 
+/** The queue's own cap: the oldest records drop first, never the newest. */
+export const MAX_QUEUE = 200;
+
 export class Telemetry {
   private queue: TelemetryRecord[] = [];
   private readonly now: () => number;
@@ -32,7 +35,7 @@ export class Telemetry {
 
   constructor(private readonly options: TelemetryOptions) {
     this.now = options.now ?? Date.now;
-    this.maxQueue = options.maxQueue ?? 200;
+    this.maxQueue = options.maxQueue ?? MAX_QUEUE;
     this.startedAt = this.now();
   }
 
