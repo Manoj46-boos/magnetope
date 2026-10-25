@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import * as recipes from '@/audio/recipes';
 import * as continuous from '@/audio/continuous';
 import { AudioEngine, BUS_DB } from '@/audio/engine';
-import { renderColorScript, renderEconomy, renderEvents, renderFeel, renderMagno, renderSpectacle } from '../tools/doc-spine';
+import { renderAudio, renderColorScript, renderEconomy, renderEvents, renderFeel, renderMagno, renderSpectacle } from '../tools/doc-spine';
 import { FEEL_GAME_BEATS, FEEL_ROWS, SIM_EVENT_NAMES } from '@/game/feel-table';
 import { SPECTACLE_BEATS } from '@/game/spectacle-table';
 import { CHIRP_WORDS, MAGNO_EMOTIONS } from '@/game/magno-table';
@@ -12,6 +12,9 @@ import { EYE_STATES } from '@/render/magno-rig';
 import { TUNING } from '@/config/tuning';
 import { SPECTACLE_SPACING_MS } from '@/game/spectacle';
 import { HIT_STOP_BAND_MS, HOLD_MS } from '@/game/hit-stop';
+import { MAGNO_MOTIF, THIN_AIR_LEVEL } from '@/audio/score';
+import { STINGERS } from '@/audio/stingers';
+import { MIX_HIERARCHY } from '@/audio/engine';
 import { MAX_QUEUE, AttemptRecorder, Telemetry } from '@/platform/telemetry';
 import { ALL_LEVELS } from '@/levels';
 import { loadRapier } from '@/sim/rapier';
@@ -19,7 +22,7 @@ import { Simulation } from '@/sim/simulation';
 import { ReplayPlayer, decodeRecording } from '@/sim/replay';
 
 /**
- * The doc-drift spine (premium PRD W7): the five spine docs are generated from
+ * The doc-drift spine (premium PRD W7): the seven spine docs are generated from
  * the code, and this suite holds them there. Each doc re-renders byte for
  * byte, every feel row names an event the simulation really emits and every
  * listener in the render, game and audio layers has a row, the audio map names
@@ -197,5 +200,27 @@ describe('the MAGNO bible (R-CH-04)', () => {
     expect(text).toContain(`by ${TUNING.character.headLagMs} ms and the hands by ${TUNING.character.handLagMs} ms`);
     expect(text).toContain(`every ${(TUNING.character.beatMs / 1000).toFixed(0)}`);
     expect(text).toContain(`deeper than ${TUNING.character.dazeMeters} m`);
+  });
+});
+
+describe('the audio bible (R-AU-07)', () => {
+  it('is the generated file, byte for byte', () => {
+    expect(doc('AUDIO.md')).toBe(renderAudio());
+  });
+
+  it('carries the whole stinger grammar, and every voice it names is a real recipe', () => {
+    for (const s of STINGERS) {
+      expect(recipes, `${s.kind} names ${s.voice}`).toHaveProperty(s.voice);
+      expect(s.maxS, `${s.kind} outlasts its second and a half`).toBeLessThanOrEqual(1.5);
+    }
+  });
+
+  it('quotes the code\u2019s own numbers', () => {
+    const text = doc('AUDIO.md');
+    expect(text).toContain(`\`${MAGNO_MOTIF.map((d) => `\u2022${d}`).join(' ')}\``);
+    expect(text).toContain(`\`${THIN_AIR_LEVEL}\``);
+    expect(text).toContain(`the bed ducks ${MIX_HIERARCHY.adDuck.db} dB (to a floor of ${MIX_HIERARCHY.adDuck.floorDb} dB)`);
+    expect(text).toContain(`side-chain the bed ${MIX_HIERARCHY.stingerDuck.db} dB`);
+    expect(text).toContain(`the true-peak ceiling ${MIX_HIERARCHY.monitoring.ceilingDb} dBTP`);
   });
 });
