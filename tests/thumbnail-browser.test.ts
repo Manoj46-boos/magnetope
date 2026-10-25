@@ -232,7 +232,10 @@ describe('the store-card composition scene', () => {
     await advance(page!, 123 / 60);
     const settled = await probe(page!);
     expect(await flashLevel(page!)).toBe(0);
-    expect(settled.arc).toBeGreaterThan(300);
+    // The settle breathes now (R-CH-02): the aura rides the rig, so its area
+    // dips a percent or two with the idle breath. The bar keeps a margin under
+    // that — the arc's presence at settle still reads by an order.
+    expect(settled.arc).toBeGreaterThan(280);
   });
 
   runnable('stages the other two variants on their own poses', async () => {

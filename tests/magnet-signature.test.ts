@@ -154,6 +154,80 @@ async function probeCanvas(target: Page): Promise<PixelProbe> {
   }, png);
 }
 
+interface CardProbe {
+  redCount: number;
+  blueCount: number;
+  /** The eye's dark socket and its white sclera — the face's carriers at card size. */
+  darkCount: number;
+  whiteCount: number;
+  /** The desaturated steel-blue of the capsule body. */
+  bodyCount: number;
+}
+
+/**
+ * R-CH-01, the plush test's machine half: MAGNO rendered into a small tile the
+ * way a store row or a keychain would show him — a square crop centred on his
+ * poles, resampled to the tile's resolution. What must survive is the pair
+ * (red north, blue south), the capsule body, and at card size the eye that
+ * carries the whole face. The 5/5 recognition itself is the panel's leg; this
+ * holds the line the panel judges against.
+ */
+async function probeCard(target: Page, size: number): Promise<CardProbe | null> {
+  const png = (await target.screenshot()).toString('base64');
+  return target.evaluate(([data, size]) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${data}`;
+    return image.decode().then(() => {
+      const full = document.createElement('canvas');
+      full.width = image.width;
+      full.height = image.height;
+      const fctx = full.getContext('2d')!;
+      fctx.drawImage(image, 0, 0);
+      const pixels = fctx.getImageData(0, 0, full.width, full.height).data;
+      let redCount = 0;
+      let redX = 0;
+      let redY = 0;
+      for (let i = 0; i < pixels.length; i += 4) {
+        const r = pixels[i]!;
+        const g = pixels[i + 1]!;
+        const b = pixels[i + 2]!;
+        if (r > 180 && g < 90 && b < 90) {
+          redCount++;
+          redX += (i / 4) % full.width;
+          redY += Math.floor((i / 4) / full.width);
+        }
+      }
+      if (redCount === 0) return null;
+      const cx = Math.round(redX / redCount);
+      const cy = Math.round(redY / redCount);
+      const crop = Math.round(full.width / 8);
+      const x = Math.max(0, Math.min(full.width - crop, cx - crop / 2));
+      const y = Math.max(0, Math.min(full.height - crop, cy - crop / 2));
+      const card = document.createElement('canvas');
+      card.width = size;
+      card.height = size;
+      const cctx = card.getContext('2d')!;
+      cctx.drawImage(full, x, y, crop, crop, 0, 0, size, size);
+      const tile = cctx.getImageData(0, 0, size, size).data;
+      const out = { redCount: 0, blueCount: 0, darkCount: 0, whiteCount: 0, bodyCount: 0 };
+      for (let i = 0; i < tile.length; i += 4) {
+        const r = tile[i]!;
+        const g = tile[i + 1]!;
+        const b = tile[i + 2]!;
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+        if (r > 180 && g < 90 && b < 90) out.redCount++;
+        else if (b > 180 && r < 90 && g > 60 && g < 180) out.blueCount++;
+        else if (luma < 80) out.darkCount++;
+        else if (luma > 200) out.whiteCount++;
+        else if (max - min < 45 && b > r && luma > 95) out.bodyCount++;
+      }
+      return out;
+    });
+  }, [png, size] as const);
+}
+
 describe('the magnet signature is visible in the production build', () => {
   runnable('boots without console errors and draws a saturated frame', async () => {
     expect(await page!.locator('.loading').count()).toBe(0);
@@ -211,5 +285,34 @@ describe('the magnet signature is visible in the production build', () => {
     expect(probe.redCount).toBeGreaterThan(25);
     expect(probe.blueCount).toBeGreaterThan(25);
     expect(errors).toEqual([]);
+  });
+
+  runnable('reads as the plush silhouette at 64 px: the pair and the capsule survive the tile (R-CH-01)', async () => {
+    // Three samples a blink apart: the settled rig blinks on its own cadence now,
+    // and the tile's judgement should not hinge on one lid-closed frame.
+    let best: CardProbe | null = null;
+    for (let i = 0; i < 3; i++) {
+      const probe = await probeCard(page!, 64);
+      if (probe && (!best || probe.redCount + probe.blueCount > best.redCount + best.blueCount)) best = probe;
+      await page!.waitForTimeout(250);
+    }
+    expect(best, 'MAGNO must be locatable by his red pole for the crop').not.toBeNull();
+    expect(best!.redCount).toBeGreaterThanOrEqual(2);
+    expect(best!.blueCount).toBeGreaterThanOrEqual(2);
+    expect(best!.bodyCount).toBeGreaterThanOrEqual(8);
+  });
+
+  runnable('carries the eye, the face\u2019s whole carrier, at 128 px card size (R-CH-01)', async () => {
+    let best: CardProbe | null = null;
+    for (let i = 0; i < 3; i++) {
+      const probe = await probeCard(page!, 128);
+      if (probe && (!best || probe.whiteCount + probe.darkCount > best!.whiteCount + best!.darkCount)) best = probe;
+      await page!.waitForTimeout(250);
+    }
+    expect(best).not.toBeNull();
+    expect(best!.whiteCount).toBeGreaterThanOrEqual(4);
+    expect(best!.darkCount).toBeGreaterThanOrEqual(4);
+    expect(best!.redCount).toBeGreaterThanOrEqual(4);
+    expect(best!.blueCount).toBeGreaterThanOrEqual(4);
   });
 });
