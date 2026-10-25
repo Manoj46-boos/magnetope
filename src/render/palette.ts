@@ -10,6 +10,8 @@ export interface Hsl {
 }
 
 export interface BiomePalette {
+  /** The biome this palette dresses, so biome-aware passes can read it off the palette. */
+  biome: BiomeId;
   /** Dominant family used for ground-level props. */
   dominant: Hsl;
   accent: Hsl;
@@ -33,6 +35,7 @@ export const PALETTES: Readonly<Record<BiomeId, BiomePalette>> = {
   // sky reads as a committed dusk. Cold blue steel is the complement on every magnetic
   // surface so MAGNO's red+blue poles stay the only red-and-blue pair on screen.
   scrapyard: {
+    biome: 'scrapyard',
     dominant: hsl(18, 78, 46),
     accent: hsl(140, 55, 36),
     skyTop: hsl(14, 70, 38),
@@ -50,6 +53,7 @@ export const PALETTES: Readonly<Record<BiomeId, BiomePalette>> = {
   // green is the dominant; terracotta roofs are the warm accent. The contrast with the
   // Scrapyard's burnt orange is total, so the player feels the biome shift in their bones.
   suburbia: {
+    biome: 'suburbia',
     dominant: hsl(105, 48, 48),
     accent: hsl(14, 70, 50),
     skyTop: hsl(200, 65, 62),
@@ -68,6 +72,7 @@ export const PALETTES: Readonly<Record<BiomeId, BiomePalette>> = {
   // saturated accent, on signs, lit windows, and wet-asphalt reflections. No red — MAGNO's
   // red north pole stays the only red on screen.
   metropolis: {
+    biome: 'metropolis',
     dominant: hsl(256, 60, 28),
     accent: hsl(42, 100, 55),
     skyTop: hsl(244, 55, 14),
@@ -86,6 +91,7 @@ export const PALETTES: Readonly<Record<BiomeId, BiomePalette>> = {
   // This is the most saturated biome; the climb has earned the colour by the time the
   // player arrives here.
   playground: {
+    biome: 'playground',
     dominant: hsl(35, 8, 58),
     accent: hsl(320, 85, 56),
     skyTop: hsl(200, 60, 62),
@@ -104,6 +110,7 @@ export const PALETTES: Readonly<Record<BiomeId, BiomePalette>> = {
   // the player reaches the summit, the world has quieted to almost one colour, and MAGNO's
   // red+blue poles are the brightest things in the frame.
   stratosphere: {
+    biome: 'stratosphere',
     dominant: hsl(202, 70, 42),
     accent: hsl(42, 90, 62),
     skyTop: hsl(210, 75, 18),

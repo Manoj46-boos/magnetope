@@ -15,6 +15,8 @@ export interface PropParts {
   rim: GeometryBuilder;
   /** Self-lit geometry: neon tubes and lit windows. Drawn unshaded so it reads at night. */
   glow: GeometryBuilder;
+  /** How many provenance markers the build stamped (R-AR-07): wear, patches, stickers. */
+  wear: number;
 }
 
 export const newParts = (): PropParts => ({
@@ -22,6 +24,7 @@ export const newParts = (): PropParts => ({
   glass: new GeometryBuilder(),
   rim: new GeometryBuilder(),
   glow: new GeometryBuilder(),
+  wear: 0,
 });
 
 /** Everything a kit builder needs to dress one prop. Builders draw in local space, centred on the body origin. */

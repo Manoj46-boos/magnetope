@@ -108,3 +108,41 @@ describe('prop art kit', () => {
     expect(Math.abs(playground - PALETTES.playground.accent.h)).toBeLessThan(3);
   });
 });
+
+describe('provenance wear (R-AR-07)', () => {
+  it('dresses every family a level ships with at least one wear marker', async () => {
+    const sim = await createSim(makeLevel(DEFAULT_PLACEMENTS));
+    for (const biome of ['scrapyard', 'suburbia', 'metropolis', 'playground', 'stratosphere'] as const) {
+      for (const prop of sim.physics.props) {
+        const parts = buildPropParts(prop, PALETTES[biome], 4);
+        expect(parts.wear, `${prop.kind.id} in ${biome}`).toBeGreaterThanOrEqual(1);
+      }
+    }
+    sim.dispose();
+  });
+
+  it('keeps the named family signatures: steel rusts, appliances dent, sheet metal patches', async () => {
+    const sim = await createSim(makeLevel(DEFAULT_PLACEMENTS));
+    const byKind = new Map(sim.physics.props.map((prop) => [prop.kind.id, prop]));
+    const wearOf = (id: string): number => buildPropParts(byKind.get(id)!, PALETTES.scrapyard, 4).wear;
+    expect(wearOf('girder')).toBeGreaterThanOrEqual(2);
+    expect(wearOf('fridge')).toBeGreaterThanOrEqual(2);
+    expect(wearOf('sheet')).toBeGreaterThanOrEqual(2);
+    expect(wearOf('car')).toBeGreaterThanOrEqual(2);
+    sim.dispose();
+  });
+
+  it('stamps its marker from the biome vocabulary, not a default blot', async () => {
+    const sim = await createSim(makeLevel(DEFAULT_PLACEMENTS));
+    const fridge = sim.physics.props.find((p) => p.kind.id === 'fridge')!;
+    // Appliance tints ignore the palette, so any colour difference between
+    // biomes is the stamp's own vocabulary speaking.
+    const scrapyard = buildPropParts(fridge, PALETTES.scrapyard, 4).body.colors.join(',');
+    const suburbia = buildPropParts(fridge, PALETTES.suburbia, 4).body.colors.join(',');
+    const playground = buildPropParts(fridge, PALETTES.playground, 4).body.colors.join(',');
+    expect(suburbia).not.toEqual(scrapyard);
+    expect(playground).not.toEqual(scrapyard);
+    expect(playground).not.toEqual(suburbia);
+    sim.dispose();
+  });
+});

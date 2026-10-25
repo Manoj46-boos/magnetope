@@ -83,6 +83,12 @@ export function materialColor(id: MaterialId, palette: BiomePalette, rng: Rng): 
 
 /** Local-space parts for one prop, centred on its body origin. */
 export function buildPropParts(prop: BuiltProp, palette: BiomePalette, seed: number): PropParts {
+  const parts = buildPropBody(prop, palette, seed);
+  stampProvenance(parts, prop, palette, seed);
+  return parts;
+}
+
+function buildPropBody(prop: BuiltProp, palette: BiomePalette, seed: number): PropParts {
   const rng = new Rng(seed * 7919 + prop.index * 104729 + 17);
   const base = materialColor(prop.material.id, palette, rng);
   const parts = newParts();
@@ -153,6 +159,46 @@ function rimDisc(rim: GeometryBuilder, r: number, color: readonly [number, numbe
   rim.ring(0, 0, HALF_D + 0.012, r, r - 0.07, 0.02, 20, color);
 }
 
+/**
+ * The provenance stamp (R-AR-07): one small marker on every interactive prop,
+ * drawn from its biome's vocabulary — a bolted patch plate in the Scrapyard, a
+ * pale price sticker in Suburbia, a torn flyer in Metropolis, a crayon sticker
+ * in the Playground, a foil patch in the Stratosphere. The world tells its
+ * stories through wear, never through faces.
+ */
+function stampProvenance(parts: PropParts, prop: BuiltProp, palette: BiomePalette, seed: number): void {
+  const rng = new Rng(seed * 7919 + prop.index * 104729 + 101);
+  const b = parts.body;
+  const w = prop.radius ? prop.radius * 2 : prop.width;
+  const h = prop.radius ? prop.radius * 2 : prop.height;
+  const size = Math.min(0.18, Math.max(0.07, Math.min(w, h) * 0.16));
+  const x = rng.range(-w * 0.28, w * 0.28);
+  const y = rng.range(-h * 0.28, h * 0.28);
+  const z = HALF_D + 0.014;
+  switch (palette.biome) {
+    case 'scrapyard':
+      b.box(x, y, z, size, size * 0.78, 0.012, rgb(hsl(28, 0.24, 0.3)));
+      for (const dx of [-size * 0.3, size * 0.3]) b.disc(x + dx, y - size * 0.28, z + 0.004, size * 0.12, 0.012, 6, rgb(hsl(18, 0.32, 0.22)));
+      break;
+    case 'suburbia':
+      b.box(x, y, z, size * 0.9, size * 0.68, 0.01, rgb(hsl(48, 0.3, 0.86)));
+      b.box(x - size * 0.18, y + size * 0.1, z + 0.004, size * 0.4, size * 0.16, 0.01, rgb(hsl(330, 0.4, 0.72)));
+      break;
+    case 'metropolis':
+      b.box(x, y, z, size * 0.95, size * 0.75, 0.01, rgb(hsl(210, 0.14, 0.78)));
+      b.box(x + size * 0.3, y - size * 0.3, z + 0.004, size * 0.34, size * 0.2, 0.01, rgb(hsl(256, 0.3, 0.32)));
+      break;
+    case 'playground':
+      b.box(x, y, z, size, size * 0.72, 0.01, rgb(hsl(52, 0.72, 0.6)));
+      b.box(x + size * 0.12, y - size * 0.18, z + 0.004, size * 0.44, size * 0.3, 0.01, rgb(hsl(190, 0.68, 0.56)));
+      break;
+    default:
+      b.box(x, y, z, size * 1.1, size * 0.8, 0.01, rgb(hsl(210, 0.08, 0.72)));
+      b.box(x, y + size * 0.32, z + 0.004, size * 1.1, size * 0.07, 0.01, rgb(hsl(210, 0.1, 0.5)));
+  }
+  parts.wear++;
+}
+
 function buildIBeam(parts: PropParts, w: number, h: number, base: Color, rng: Rng): void {
   const b = parts.body;
   const flange = rgb(lighter(base, 0.06));
@@ -178,6 +224,7 @@ function buildIBeam(parts: PropParts, w: number, h: number, base: Color, rng: Rn
     const pw = rng.range(0.3, 0.9);
     b.box(px, h > w ? rng.range(-h / 2, h / 2) : h / 2 - 0.02, HALF_D + 0.005, pw, 0.04, 0.01, rgb(darker(base, 0.5)));
   }
+  parts.wear++;
 }
 
 function buildAppliance(parts: PropParts, kind: string, w: number, h: number, base: Color, rng: Rng): void {
@@ -210,6 +257,7 @@ function buildAppliance(parts: PropParts, kind: string, w: number, h: number, ba
   // A dent or two so no appliance looks factory fresh.
   const dx = rng.range(-w * 0.3, w * 0.3);
   b.displace((x, y, zz) => (zz > 0 && Math.hypot(x - dx, y - h * 0.3) < 0.18 ? [0, 0, -0.04] : [0, 0, 0]));
+  parts.wear++;
 }
 
 function buildCar(parts: PropParts, w: number, h: number, base: Color, rng: Rng): void {
@@ -231,6 +279,7 @@ function buildCar(parts: PropParts, w: number, h: number, base: Color, rng: Rng)
   // Crush the roof and one corner.
   const crushX = rng.range(-w * 0.2, w * 0.25);
   b.displace((x, y) => (y > h * 0.12 && Math.abs(x - crushX) < 0.7 ? [0, -0.1 * (1 - Math.abs(x - crushX) / 0.7), 0] : [0, 0, 0]));
+  parts.wear++;
 }
 
 function buildSheet(parts: PropParts, w: number, h: number, base: Color, rng: Rng): void {
@@ -246,6 +295,7 @@ function buildSheet(parts: PropParts, w: number, h: number, base: Color, rng: Rn
   for (let i = 0; i < 3; i++) {
     b.disc(-w / 2 + (w * (i + 0.5)) / 3, 0, HALF_D * 0.86 + 0.02, 0.05, 0.04, 6, rgb(darker(base, 0.5)));
   }
+  parts.wear++;
 }
 
 function buildLocker(parts: PropParts, w: number, h: number, base: Color): void {
@@ -298,12 +348,14 @@ function buildSlab(parts: PropParts, kind: string, w: number, h: number, base: C
     const n = Math.max(3, Math.round(w / 0.8));
     for (let i = 0; i < n; i += 2) b.box(-w / 2 + (w * (i + 0.5)) / n, 0, HALF_D * 0.95 + 0.01, w / n, h * 0.96, 0.02, stripe);
     for (let i = 0; i < Math.round(w / 0.9); i++) b.disc(-w / 2 + 0.45 + i * 0.9, 0, HALF_D * 0.95 + 0.03, 0.06, 0.05, 6, rgb(darker(base, 0.55)));
+    parts.wear++;
     return;
   }
   b.box(0, 0, 0, w, h, PROP_DEPTH, rgb(base));
   const seamTone = rgb(darker(base, 0.78));
   for (let x = -w / 2 + 2; x < w / 2; x += rng.range(2.2, 3.4)) b.box(x, 0, HALF_D + 0.008, 0.04, h, 0.02, seamTone);
   b.box(0, h / 2 - 0.05, 0, w, 0.1, PROP_DEPTH * 1.01, rgb(lighter(base, 0.08)));
+  parts.wear++;
 }
 
 function buildDisc(parts: PropParts, prop: BuiltProp, base: Color, rng: Rng): void {
