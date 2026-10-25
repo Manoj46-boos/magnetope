@@ -1,4 +1,7 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { ALL_LEVELS } from '@/levels';
+import { decodeGhost } from '@/sim/ghost';
 import { loadRapier } from '@/sim/rapier';
 import { ReplayPlayer } from '@/sim/replay';
 import { Simulation } from '@/sim/simulation';
@@ -11,14 +14,46 @@ import { solveLevel } from './planner';
  * planner can still reach the summit without them.
  *
  *   npm run design -- scrapyard-07 --kinds=loose-girder
+ *
+ * The par audit (R-LD-17) reads the shipped ghosts instead: par must carry at
+ * least the author demo plus its 20% buffer, and the author demo must never
+ * run past the pacing target.
+ *
+ *   npm run design -- --par
  */
 
 const ids = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const kinds = (process.argv.find((a) => a.startsWith('--kinds='))?.split('=')[1] ?? '').split(',').filter(Boolean);
 const budget = Number(process.argv.find((a) => a.startsWith('--budget='))?.split('=')[1] ?? 40);
-const rapier = await loadRapier();
 
-async function grabs(level: LevelDef, recording: NonNullable<Awaited<ReturnType<typeof solveLevel>>['recording']>): Promise<Map<string, number>> {
+if (process.argv.includes('--par')) {
+  const ghostsDir = resolve(import.meta.dirname, '../src/levels/ghosts');
+  let honest = 0;
+  for (const level of ALL_LEVELS) {
+    const file = resolve(ghostsDir, `${level.id}.json`);
+    const ghost = existsSync(file) ? decodeGhost(readFileSync(file, 'utf8'), level.id) : null;
+    if (!ghost) {
+      console.log(`${level.id}: NO AUTHOR DEMO`);
+      continue;
+    }
+    const author = ghost.durationMs / 1000;
+    const overshoot = author <= level.parSeconds / 1.2 + 0.6;
+    const buffer = level.parSeconds >= author * 1.2;
+    const inside = author <= level.parSeconds;
+    if (overshoot && buffer && inside) honest++;
+    const verdict = overshoot && buffer && inside ? 'honest' : 'DISHONEST';
+    console.log(
+      `${level.id}: par ${level.parSeconds}s author ${author.toFixed(1)}s -> ${verdict}` +
+        (!overshoot ? ' (demo past the pacing target)' : '') +
+        (!buffer ? ' (par under the +20% buffer)' : '') +
+        (!inside ? ' (demo outside par)' : ''),
+    );
+  }
+  console.log(`${honest}/${ALL_LEVELS.length} pars honest`);
+} else {
+  const rapier = await loadRapier();
+
+  async function grabs(level: LevelDef, recording: NonNullable<Awaited<ReturnType<typeof solveLevel>>['recording']>): Promise<Map<string, number>> {
   const sim = new Simulation(rapier, level);
   const player = new ReplayPlayer(recording);
   const counts = new Map<string, number>();
@@ -56,4 +91,5 @@ for (const level of ALL_LEVELS.filter((l) => ids.includes(l.id))) {
   }
   const summary = [...counts].sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k}x${n}`).join(' ');
   console.log(`${level.id}: signature grabs ${used}${verdict}  | ${summary}`);
+  }
 }

@@ -18,6 +18,10 @@ import type { InputFrame, LevelDef } from '@/sim/types';
  * motionless hang, and re-simulating a longer route is fragile because the
  * planner's routes thread tight timing windows. Levels with scripted hazards
  * keep the planner's own pace so the ghost stays in step with the platforms.
+ *
+ * The pacing target is the par-honesty formula (R-LD-17): par equals the author
+ * route plus a 20% buffer, so the author demo runs to par/1.2 less the margin —
+ * a player who beats par has run within 20% of the author's own pace.
  */
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -89,7 +93,8 @@ async function capture(level: LevelDef, recording: Recording): Promise<Capture> 
 const runsOnHazardClock = (level: LevelDef): boolean => Boolean(level.wind) || level.props.some((p) => p.motion || p.cycle || p.hinge || p.follow);
 
 function pace(level: LevelDef, run: Capture): GhostTrack {
-  const spare = level.parSeconds * 1000 - MARGIN_MS - run.clearMs;
+  const targetMs = (level.parSeconds * 1000) / 1.2 - MARGIN_MS;
+  const spare = targetMs - run.clearMs;
   const perRest = run.rests.length && !runsOnHazardClock(level) ? Math.max(0, Math.min(MAX_REST_TICKS, Math.floor(spare / TICK_MS / run.rests.length))) : 0;
   const recorder = new GhostRecorder();
   const at = new Set(run.rests);

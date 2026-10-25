@@ -6,6 +6,7 @@ import { TUNING } from '@/config/tuning';
 import { PROPS, propKind } from '@/config/props';
 import { BIOME_ORDER } from '@/game/progress';
 import { ALL_LEVELS } from '@/levels';
+import { decodeGhost } from '@/sim/ghost';
 import { cycleState, poseAt } from '@/sim/motion';
 import { loadRapier } from '@/sim/rapier';
 import { ReplayPlayer, decodeRecording, type Recording } from '@/sim/replay';
@@ -240,6 +241,19 @@ function boundsOf(placement: PropPlacement, x: number, y: number, rot: number): 
 
 const overlaps = (a: Box, b: Box): boolean =>
   a.x0 < b.x1 - AABB_MARGIN && a.x1 > b.x0 + AABB_MARGIN && a.y0 < b.y1 - AABB_MARGIN && a.y1 > b.y0 + AABB_MARGIN;
+
+describe('par honesty (R-LD-17)', () => {
+  it('paces the author demo to the +20% buffer on every level', () => {
+    for (const level of ALL_LEVELS) {
+      const ghost = decodeGhost(readFileSync(resolve(routesDir, '..', 'ghosts', `${level.id}.json`), 'utf8'), level.id);
+      expect(ghost, `${level.id}: par ghost`).not.toBeNull();
+      const author = ghost!.durationMs / 1000;
+      expect(author, `${level.id}: the demo stays inside par`).toBeLessThanOrEqual(level.parSeconds);
+      expect(level.parSeconds, `${level.id}: par carries at least the author + 20% buffer`).toBeGreaterThanOrEqual(author * 1.2);
+      expect(author, `${level.id}: the demo never runs past the pacing target`).toBeLessThanOrEqual(level.parSeconds / 1.2 + 0.6);
+    }
+  });
+});
 
 describe('scripted hazards', () => {
   const hazardous = ALL_LEVELS.filter((l) => l.props.some((p) => p.motion));
