@@ -17,7 +17,7 @@ import { SaveStore } from '@/platform/storage';
 import { AttemptRecorder, Telemetry } from '@/platform/telemetry';
 import { CLASSIC_SKIN, skinFromLook } from '@/render/magno-rig';
 import { ContextGuard } from '@/render/context-guard';
-import { detectTier, stepDown, type QualityTier } from '@/render/quality';
+import { detectTier, type QualityTier } from '@/render/quality';
 import { SceneRenderer } from '@/render/scene-renderer';
 import { thumbnailLevel, thumbnailVariant } from '@/render/thumbnail-scene';
 import type { FallReport } from '@/sim/fall';
@@ -41,6 +41,7 @@ import { biomeAnnouncement, scrapForClear, totalStars } from './progress';
 import { deliverShareCard, renderDuelCard, renderShareCard, type DuelCardSpec, type ShareCardSpec } from './share-card';
 import { EndingDirector } from './ending';
 import { SlowMoDirector } from './slowmo';
+import { FrameWatchdog } from './watchdog';
 import { HitStop } from './hit-stop';
 import { SessionLog } from './session-log';
 import { SpectacleLedger } from './spectacle';
@@ -54,7 +55,6 @@ type Phase = 'play' | 'paused' | 'cleared' | 'ending' | 'busy';
 
 const CLEAR_CARD_DELAY_MS = 1250;
 const RETRY_AD_FALLS = 3;
-const QUALITY_PATIENCE_S = 4;
 /** A lost graphics context that has not come back by then is not coming back. */
 const CONTEXT_GRACE_MS = 6000;
 /** After the last summit the film waits this long for MAGNO to settle onto something. */
@@ -132,7 +132,7 @@ export class Game {
   private hudShown = false;
   /** R-AN-06: the visit has had its first play input; the record is made once. */
   private inputRecorded = false;
-  private slowFrameSeconds = 0;
+  private watchdog: FrameWatchdog | null = null;
   private simUnsubscribe: Array<() => void> = [];
   private touchMode: TouchMode | null = null;
   private scripted: ReplayPlayer | null = null;
@@ -238,7 +238,6 @@ export class Game {
 
   private async boot(): Promise<void> {
     this.ui.setLoading(0.1);
-    await this.sdk.init();
     this.ui.setLoading(0.3);
 
     this.applyLanguage();
@@ -247,6 +246,14 @@ export class Game {
     const tier = this.pickTier();
     this.renderer = new SceneRenderer(this.canvas, tier, (kind) => this.renderer.cameraRig.shake(kind, this.inputCritical()), (beat) => this.audio.chirp(beat));
     this.ui.root.classList.toggle('tier-low', tier === 'low');
+    this.watchdog = new FrameWatchdog({
+      tier: () => this.renderer.tier,
+      onDowngrade: (from, to, fps) => {
+        this.renderer.setQuality(to);
+        this.ui.root.classList.toggle('tier-low', to === 'low');
+        this.telemetry.record('watchdog', `${from}-${to}`, String(fps));
+      },
+    });
     this.contextGuard = new ContextGuard(this.canvas);
     this.contextGuard.events.on('lost', () => this.onContextLost());
     this.contextGuard.events.on('restored', () => this.onContextRestored());
@@ -280,7 +287,6 @@ export class Game {
 
     this.startLevel(resumeLevelId(ALL_LEVELS, this.save.data));
     this.ui.setLoading(1);
-    this.sdk.loadingFinished();
     this.ui.hideLoading();
     performance.mark('magnetope:playable');
     this.ui.setTouchControls(this.touchUi);
@@ -290,6 +296,17 @@ export class Game {
 
     this.lastStamp = performance.now();
     this.rafId = requestAnimationFrame((now) => this.loop(now));
+
+    // R-PE-14: the SDK rides behind the boot decision, not merely unfetched in
+    // front of it. Its script is the host's own tag in the Poki build; the ad
+    // stack it pulls only starts fetching once the game's critical bytes are
+    // home and the first level is playable, so they never share the wire with
+    // them. Ads ask for nothing until a natural stop, by which time this is
+    // long done, and a blocked SDK never blocks first input either way.
+    void this.sdk.init().then(() => {
+      this.sdk.loadingFinished();
+      if (this.settings.language === 'auto') this.applyLanguage();
+    });
   }
 
   private bindInput(): void {
@@ -359,6 +376,7 @@ export class Game {
     return detectTier({
       hardwareConcurrency: navigator.hardwareConcurrency ?? 4,
       deviceMemory: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
+      devicePixelRatio: window.devicePixelRatio || 1,
       coarsePointer: this.touchUi,
       maxTextureSize: maxTexture,
       rendererName,
@@ -604,7 +622,7 @@ export class Game {
       dangle,
     });
     this.claimRewards();
-    this.telemetry.flush();
+    this.flushTelemetry();
   }
 
   // ------------------------------------------------------------------ ending
@@ -696,7 +714,7 @@ export class Game {
     this.ui.syncSettings(this.settings);
     this.ui.openPause();
     this.audioEngine.suspend();
-    this.telemetry.flush();
+    this.flushTelemetry();
   }
 
   private async resume(): Promise<void> {
@@ -783,10 +801,19 @@ export class Game {
     };
   }
 
+  /**
+   * The queue travels at natural stops, and the session's own frame rate rides
+   * with it (R-PE-11): one number per visit, the watchdog's smoothed average.
+   */
+  private flushTelemetry(): void {
+    if (this.inputRecorded && this.watchdog) this.telemetry.record('perf', 'fps', String(Math.round(this.watchdog.fps)));
+    this.telemetry.flush();
+  }
+
   private openMap(): void {
     if (this.phase !== 'paused' && this.phase !== 'cleared') return;
     this.ui.map.show(this.mapView());
-    this.telemetry.flush();
+    this.flushTelemetry();
   }
 
   private openLocker(): void {
@@ -1126,17 +1153,13 @@ export class Game {
     return this.input.device === 'mouse' ? 'mouse' : 'keyboard';
   }
 
-  /** Steps the tier down if the resolution floor still cannot hold a playable frame rate. */
+  /** R-PE-08: the watchdog may only step the tier down at a state boundary, and
+   * perched is the only boundary in play — attached means no charge is held,
+   * no flight is live, and the resolution change lands on a quiet frame. */
   private watchPerformance(realDt: number): void {
-    if (this.phase !== 'play') return;
-    if (realDt * 1000 > 34) this.slowFrameSeconds += realDt;
-    else this.slowFrameSeconds = Math.max(0, this.slowFrameSeconds - realDt * 2);
-    if (this.slowFrameSeconds > QUALITY_PATIENCE_S && this.renderer.tier !== 'low') {
-      this.slowFrameSeconds = 0;
-      const lowered = stepDown(this.renderer.tier);
-      this.renderer.setQuality(lowered);
-      this.ui.root.classList.toggle('tier-low', lowered === 'low');
-    }
+    if (!this.watchdog) return;
+    const perched = this.phase === 'play' && this.sim?.magno.view.state === 'attached';
+    this.watchdog.frame(realDt * 1000, perched);
   }
 
   // ----------------------------------------------------------------- testing

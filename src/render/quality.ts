@@ -32,18 +32,24 @@ export const PROFILES: Readonly<Record<QualityTier, QualityProfile>> = {
 export interface DeviceHints {
   hardwareConcurrency: number;
   deviceMemory?: number;
+  /** The display's own pixel ratio, the fill-rate bill a tier has to pay (R-PE-08). */
+  devicePixelRatio: number;
   coarsePointer: boolean;
   maxTextureSize: number;
   rendererName: string;
 }
 
-const LOW_GPU = /mali-4|mali-t|adreno \(tm\) [2-4]\d\d|powervr|swiftshader|llvmpipe|software/i;
+const LOW_GPU = /mali-4|mali-t|mali-g5|mali-g68|adreno \(tm\) [2-4]\d\d|powervr|swiftshader|llvmpipe|software/i;
 
 /** Picks a starting tier; the runtime can still step down if frame time suffers. */
 export function detectTier(hints: DeviceHints): QualityTier {
   if (LOW_GPU.test(hints.rendererName)) return 'low';
   const memory = hints.deviceMemory ?? (hints.coarsePointer ? 4 : 8);
   if (hints.hardwareConcurrency <= 2 || memory <= 2 || hints.maxTextureSize < 4096) return 'low';
+  // A modern flagship holds the high tier's 60 fps (R-PE-03) even as a phone:
+  // eight cores, a full memory hint and a sharp display together say so.
+  const flagship = hints.coarsePointer && hints.hardwareConcurrency >= 8 && memory >= 8 && hints.devicePixelRatio >= 3;
+  if (flagship) return 'high';
   if (hints.coarsePointer || hints.hardwareConcurrency <= 6 || memory <= 4) return 'mid';
   return 'high';
 }

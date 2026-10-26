@@ -278,12 +278,20 @@ describe('quality tiers', () => {
     expect(PROFILES.low.dustScale).toBe(0.35);
   });
 
+  // R-PE-08: the first-frame probe matrix, the same rows the roadmap publishes.
   it('classifies devices into tiers', () => {
-    const desktop = { hardwareConcurrency: 12, deviceMemory: 8, coarsePointer: false, maxTextureSize: 16384, rendererName: 'NVIDIA RTX' };
+    const desktop = { hardwareConcurrency: 12, deviceMemory: 8, devicePixelRatio: 1, coarsePointer: false, maxTextureSize: 16384, rendererName: 'NVIDIA RTX' };
     expect(detectTier(desktop)).toBe('high');
     expect(detectTier({ ...desktop, coarsePointer: true, hardwareConcurrency: 8 })).toBe('mid');
     expect(detectTier({ ...desktop, hardwareConcurrency: 2 })).toBe('low');
     expect(detectTier({ ...desktop, rendererName: 'Mali-T720' })).toBe('low');
+    // The 2021 budget Android the PRD makes tier-low's floor (Mali-G52 class)...
+    expect(detectTier({ ...desktop, rendererName: 'Mali-G52 MC1' })).toBe('low');
+    expect(detectTier({ ...desktop, rendererName: 'Mali-G57 MC2' })).toBe('low');
+    // ...and the flagship phone tier-high is promised to hold.
+    expect(detectTier({ hardwareConcurrency: 8, deviceMemory: 8, devicePixelRatio: 3, coarsePointer: true, maxTextureSize: 8192, rendererName: 'Adreno (TM) 740' })).toBe('high');
+    // A sharp display on a middling phone is not a flagship: fill rate still caps it.
+    expect(detectTier({ ...desktop, hardwareConcurrency: 6, deviceMemory: 4, devicePixelRatio: 3, coarsePointer: true, maxTextureSize: 8192, rendererName: 'Adreno (TM) 640' })).toBe('mid');
   });
 
   it('steps down one tier at a time and stops at low', () => {
