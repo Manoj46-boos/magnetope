@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { Browser, BrowserContext, Page } from 'playwright';
 import type { ViteDevServer } from 'vite';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -11,9 +13,14 @@ import { isHeadlessAudioNoise, launchBrowser, startServer } from './browser/harn
 
 interface GameWindow {
   __game: {
+    startLevel(id: string): void;
     debug: {
       phase: string;
       sim: { run: { timeMs: number } };
+      save: { data: { stars: Record<string, number>; scrap: number } };
+      holdClock(held: boolean): void;
+      advance(seconds: number): void;
+      autoplay(recording: unknown): void;
       renderer: { frame: (...args: unknown[]) => void; renderer: { getContext(): WebGL2RenderingContext } };
     };
   };
@@ -62,8 +69,8 @@ async function openPage(init?: string): Promise<Session> {
   return { page, errors };
 }
 
-async function openGame(): Promise<Session> {
-  const session = await openPage();
+async function openGame(init?: string): Promise<Session> {
+  const session = await openPage(init);
   await session.page.waitForFunction(() => Boolean((window as unknown as Partial<GameWindow>).__game), null, { timeout: 30000 });
   await session.page.waitForTimeout(600);
   return session;
@@ -171,5 +178,43 @@ describe('when WebGL is not available', () => {
     const { page } = await openPage(init);
     await page.locator('.fatal button').waitFor({ state: 'visible', timeout: 20000 });
     expect(await page.locator('.loading').count()).toBe(0);
+  });
+});
+
+describe('when the measure channel is blocked (R-AN-08)', () => {
+  runnable('plays and saves exactly the same with an SDK that rejects and throws on every call', async () => {
+    const init = `
+      window.PokiSDK = {
+        init: async () => { throw new Error('blocked'); },
+        gameLoadingFinished() {},
+        gameplayStart() {},
+        gameplayStop() {},
+        commercialBreak: async () => {},
+        rewardedBreak: async () => true,
+        getLanguage: () => 'en',
+        measure() { throw new Error('blocked'); },
+      };`;
+    const { page, errors } = await openGame(init);
+    const route = JSON.parse(readFileSync(resolve(__dirname, '../src/levels/routes/scrapyard-00.json'), 'utf8'));
+    const outcome = await page.evaluate(
+      ({ route }) => {
+        const game = (window as unknown as GameWindow).__game;
+        game.startLevel('scrapyard-00');
+        game.debug.holdClock(true);
+        game.debug.autoplay(route);
+        let ticks = 0;
+        while (game.debug.phase !== 'cleared' && ticks < 3000) {
+          game.debug.advance(1 / 60);
+          ticks++;
+        }
+        return { phase: game.debug.phase, stars: game.debug.save.data.stars['scrapyard-00'] ?? 0, scrap: game.debug.save.data.scrap };
+      },
+      { route },
+    );
+    // analytics absence changes nothing: the clear, the stars and the Scrap all land anyway
+    expect(outcome.phase).toBe('cleared');
+    expect(outcome.stars).toBeGreaterThanOrEqual(1);
+    expect(outcome.scrap).toBeGreaterThan(0);
+    expect(errors).toEqual([]);
   });
 });

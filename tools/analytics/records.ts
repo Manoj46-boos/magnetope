@@ -1,26 +1,31 @@
-import { CELL_SIZE, type TelemetryRecord } from '@/platform/telemetry';
-import type { Vec2 } from '@/core/mathx';
+import type { TelemetryRecord } from '@/platform/telemetry';
+
+/**
+ * Reads the stream the game flushes. The channel's own law — letters, digits,
+ * `_ : . + |` and spaces, at most two runs of digits across a record — means
+ * every payload is an enumerated word or one bare number, never a key=value
+ * pair and never a coordinate. Records arrive in the order they happened, so
+ * the stars, time and fall-count records belong to the attempt record that
+ * opened their level. Anything unrecognised is skipped: the dashboard also
+ * carries the SDK's own events.
+ */
 
 export type Outcome = 'clear' | 'restart' | 'leave';
 
+/** One fall, the way the channel can carry it: a whole-metre height and its grade. */
 export interface FallEvent {
   levelId: string;
   heightM: number;
-  at: Vec2;
   grade: string;
 }
 
 export interface AttemptEvent {
   levelId: string;
   outcome: Outcome;
-  runMs: number;
+  /** The clear time in seconds, when the attempt cleared; null otherwise. */
+  runSeconds: number | null;
   stars: number;
-  sticks: number;
-  flips: number;
-  snaps: number;
   falls: number;
-  /** The last fall before this attempt ended, which is where a quitting player was last seen failing. */
-  lastFall: FallEvent | null;
 }
 
 export interface ParsedTelemetry {
@@ -31,37 +36,16 @@ export interface ParsedTelemetry {
   sessionSeconds: number[];
 }
 
-/** The middle of a 2 m telemetry cell, or null for a malformed cell. */
-export function cellCenter(cell: string): Vec2 | null {
-  const parts = cell.split(':');
-  if (parts.length !== 2) return null;
-  const [cx, cy] = parts.map(Number);
-  if (!Number.isInteger(cx) || !Number.isInteger(cy)) return null;
-  return { x: (cx! + 0.5) * CELL_SIZE, y: (cy! + 0.5) * CELL_SIZE };
-}
-
-function fields(action: string): Map<string, string> {
-  return new Map(
-    action.split(';').flatMap((part) => {
-      const at = part.indexOf('=');
-      return at > 0 ? [[part.slice(0, at), part.slice(at + 1)] as const] : [];
-    }),
-  );
-}
-
 const number = (value: string | undefined): number => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-/**
- * Reads the stream the game flushes. Records arrive in the order they happened, so
- * a fall belongs to the attempt record that follows it. Anything unrecognised is skipped:
- * the dashboard also carries the SDK's own events.
- */
+const isOutcome = (action: string): action is Outcome => action === 'clear' || action === 'restart' || action === 'leave';
+
 export function parseTelemetry(records: readonly TelemetryRecord[]): ParsedTelemetry {
   const parsed: ParsedTelemetry = { falls: [], attempts: [], entries: new Map(), retryLatenciesMs: new Map(), sessionSeconds: [] };
-  const lastFall = new Map<string, FallEvent>();
+  let open: AttemptEvent | null = null;
 
   for (const { category, what, action } of records) {
     if (category === 'level' && action === 'enter') {
@@ -73,29 +57,17 @@ export function parseTelemetry(records: readonly TelemetryRecord[]): ParsedTelem
     } else if (category === 'session' && what === 'length') {
       parsed.sessionSeconds.push(number(action));
     } else if (category === 'fall') {
-      const f = fields(action);
-      const at = cellCenter(f.get('c') ?? '');
-      if (!at) continue;
-      const fall: FallEvent = { levelId: what, heightM: number(f.get('h')), at, grade: f.get('g') ?? '' };
-      parsed.falls.push(fall);
-      lastFall.set(what, fall);
+      const height = /^h-(\d+) g-([A-Z]+)$/.exec(action);
+      if (!height) continue;
+      parsed.falls.push({ levelId: what, heightM: Number(height[1]), grade: height[2]! });
     } else if (category === 'attempt') {
-      const f = fields(action);
-      const outcome = f.get('o');
-      if (outcome !== 'clear' && outcome !== 'restart' && outcome !== 'leave') continue;
-      const falls = number(f.get('fall'));
-      parsed.attempts.push({
-        levelId: what,
-        outcome,
-        runMs: number(f.get('ms')),
-        stars: number(f.get('st')),
-        sticks: number(f.get('stick')),
-        flips: number(f.get('flip')),
-        snaps: number(f.get('snap')),
-        falls,
-        lastFall: falls > 0 ? (lastFall.get(what) ?? null) : null,
-      });
-      lastFall.delete(what);
+      if (!isOutcome(action)) continue;
+      open = { levelId: what, outcome: action, runSeconds: null, stars: 0, falls: 0 };
+      parsed.attempts.push(open);
+    } else if (open && open.levelId === what) {
+      if (category === 'stars') open.stars = number(action);
+      else if (category === 'time') open.runSeconds = number(action);
+      else if (category === 'fallcount') open.falls = number(action);
     }
   }
   return parsed;

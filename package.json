@@ -25,6 +25,7 @@
     "thumbnails": "tsx tools/thumbnails.ts",
     "capture": "tsx tools/capture.ts",
     "heatmap": "tsx tools/heatmap.ts",
+    "friday": "tsx tools/friday.ts",
     "sweep": "tsx tools/sweep.ts",
     "crawl-audit": "tsx tools/crawl-audit.ts",
     "loadtime": "tsx tools/loadtime.ts",

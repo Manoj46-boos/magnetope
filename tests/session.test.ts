@@ -18,6 +18,7 @@ interface GameWindow {
     debug: {
       phase: string;
       sim: { run: { timeMs: number; started: boolean }; level: { id: string } };
+      sdk: { measured: Array<{ category: string; what: string; action: string }> };
       save: {
         data: {
           stars: Record<string, number>;
@@ -162,6 +163,29 @@ describe('a first session in a real browser', () => {
     expect(after).toBeGreaterThan(before);
   });
 
+  runnable('speaks the visit into the SDK channel: the boot label first, then the funnel the player climbed (R-AN-02, R-AN-06)', async () => {
+    const measured = await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.sdk.measured);
+    // the boot record leads the visit, labels this player first-time, and carries the segment (R-AN-09)
+    const boot = measured.find((r) => r.category === 'boot')!;
+    expect(measured[0]).toBe(boot);
+    expect(boot.what).toBe('fresh');
+    expect(boot.action).toMatch(/^[a-z][a-z]\|(touch|desktop)\|(high|mid|low)$/);
+    // the input record landed with the Space the pause case pressed
+    expect(measured.some((r) => r.category === 'input' && r.what === 'first' && /^\d+$/.test(r.action))).toBe(true);
+    // the clears, their stars and seconds, the payments and the card's dangle all reached the channel
+    expect(measured.some((r) => r.category === 'attempt' && r.action === 'clear')).toBe(true);
+    expect(measured.some((r) => r.category === 'stars' && /^\d+$/.test(r.action))).toBe(true);
+    expect(measured.some((r) => r.category === 'time' && /^\d+$/.test(r.action))).toBe(true);
+    expect(measured.some((r) => r.category === 'scrap' && r.what === 'earn' && /^\d+$/.test(r.action))).toBe(true);
+    expect(measured.some((r) => r.category === 'dangle' && r.action === 'shown')).toBe(true);
+    // a stored ghost means the run went on record, and the channel says so too
+    const ghosts = await page!.evaluate(() => Object.keys((window as unknown as GameWindow).__game.debug.save.data.ghosts));
+    expect(measured.some((r) => r.category === 'ghost' && r.action === 'set')).toBe(ghosts.length > 0);
+    // nothing the game said falls outside the published vocabulary (R-AN-01)
+    const vocabulary = ['level', 'retry', 'fall', 'attempt', 'stars', 'time', 'fallcount', 'session', 'ending', 'boot', 'input', 'ghost', 'cosmetic', 'scrap', 'dangle'];
+    for (const record of measured) expect(vocabulary, `${record.category}/${record.what} is not in the table`).toContain(record.category);
+  });
+
   runnable('remembers the stars after a reload', async () => {
     const saved = await page!.evaluate(() => JSON.parse(localStorage.getItem('magnetope.save') ?? '{}').stars as Record<string, number>);
     for (const id of FIRST_LEVELS) expect(saved[id], id).toBeGreaterThanOrEqual(1);
@@ -293,6 +317,16 @@ describe('a first session in a real browser', () => {
     }));
     expect(after.scrap).toBe(scrapBefore);
     expect(after.owned).toBeGreaterThan(0);
+  });
+
+  runnable('labels the next visit a return, and the free claim reaches the channel as an unlock (R-AN-06, R-AN-04)', async () => {
+    // one more clear, so the queue flushes at the card the way the game always does
+    await play('scrapyard-00');
+    const measured = await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.sdk.measured);
+    const boot = measured.find((r) => r.category === 'boot')!;
+    expect(boot.what).toBe('return');
+    expect(measured.some((r) => r.category === 'cosmetic' && r.action === 'unlock')).toBe(true);
+    expect(measured.some((r) => r.category === 'boot' && r.what === 'fresh')).toBe(false);
   });
 
   runnable('made no request outside its own origin and raised no error', async () => {

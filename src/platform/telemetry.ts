@@ -5,6 +5,12 @@ import type { Vec2 } from '@/core/mathx';
  * of Poki's `measure(category, what, action)` channel, so nothing identifying and
  * nothing outside the first-party SDK is involved. They are batched in memory and
  * flushed only at natural stops: never mid-run, never during an ad.
+ *
+ * The channel carries its own law, read straight off the platform's validator:
+ * the three arguments may use letters, digits, `_ : . + |` and the space, and
+ * together may hold at most two runs of digits. So the grammar below speaks in
+ * enumerated words and single numbers — no key=value pairs, no coordinate pairs,
+ * one fact per record.
  */
 export interface TelemetryRecord {
   category: string;
@@ -19,10 +25,6 @@ export interface TelemetryOptions {
   now?: () => number;
   maxQueue?: number;
 }
-
-/** Positions are bucketed into 2 m cells so heatmaps stay coarse and the payload small. */
-export const CELL_SIZE = 2;
-export const cellOf = (p: Vec2): string => `${Math.floor(p.x / CELL_SIZE)}:${Math.floor(p.y / CELL_SIZE)}`;
 
 /** The queue's own cap: the oldest records drop first, never the newest. */
 export const MAX_QUEUE = 200;
@@ -41,6 +43,11 @@ export class Telemetry {
 
   get pending(): number {
     return this.queue.length;
+  }
+
+  /** The queue's own age: the boot-to-first-touch distance the funnel reads (R-AN-06). */
+  get ageMs(): number {
+    return this.now() - this.startedAt;
   }
 
   record(category: string, what: string, action: string): void {
@@ -64,25 +71,16 @@ export class Telemetry {
 
 export type AttemptOutcome = 'clear' | 'restart' | 'leave';
 
-interface Hotspot {
-  cell: string;
-  count: number;
-}
-
-const topCells = (cells: Map<string, number>, limit: number): Hotspot[] =>
-  [...cells.entries()]
-    .map(([cell, count]) => ({ cell, count }))
-    .sort((a, b) => b.count - a.count || a.cell.localeCompare(b.cell))
-    .slice(0, limit);
-
-/** Counts what the player did during one attempt at a level and reports it as a few compact records. */
+/**
+ * Counts what the player did during one attempt at a level and reports it as a
+ * few compact records, each one inside the channel's alphabet and its two-number
+ * budget: the outcome as a word, the stars and the clear time and the fall count
+ * as bare numbers on their own records, each fall as a whole-metre height with
+ * its grade.
+ */
 export class AttemptRecorder {
   private levelId = '';
-  private sticks = 0;
-  private flips = 0;
-  private snaps = 0;
   private falls = 0;
-  private flipCells = new Map<string, number>();
   private open = false;
   private lastFallAt = -1;
   private retryLatencyMs = -1;
@@ -94,8 +92,7 @@ export class AttemptRecorder {
 
   begin(levelId: string): void {
     this.levelId = levelId;
-    this.sticks = this.flips = this.snaps = this.falls = 0;
-    this.flipCells = new Map();
+    this.falls = 0;
     this.open = true;
     this.retryLatencyMs = this.lastFallAt >= 0 ? this.now() - this.lastFallAt : -1;
     this.lastFallAt = -1;
@@ -103,36 +100,20 @@ export class AttemptRecorder {
     if (this.retryLatencyMs >= 0) this.telemetry.record('retry', levelId, String(Math.round(this.retryLatencyMs)));
   }
 
-  stick(): void {
-    this.sticks++;
-  }
-
-  flip(at: Vec2): void {
-    this.flips++;
-    const cell = cellOf(at);
-    this.flipCells.set(cell, (this.flipCells.get(cell) ?? 0) + 1);
-  }
-
-  snap(): void {
-    this.snaps++;
-  }
-
-  fall(heightMeters: number, at: Vec2, grade: string): void {
+  fall(heightMeters: number, _at: Vec2, grade: string): void {
     this.falls++;
     this.lastFallAt = this.now();
-    this.telemetry.record('fall', this.levelId, `h=${heightMeters.toFixed(1)};c=${cellOf(at)};g=${grade}`);
+    this.telemetry.record('fall', this.levelId, `h-${Math.max(0, Math.round(heightMeters))} g-${grade}`);
   }
 
   finish(outcome: AttemptOutcome, runTimeMs: number, stars = 0): void {
     if (!this.open) return;
     this.open = false;
-    const hot = topCells(this.flipCells, 3)
-      .map((h) => `${h.cell}x${h.count}`)
-      .join(',');
-    this.telemetry.record(
-      'attempt',
-      this.levelId,
-      `o=${outcome};ms=${Math.round(runTimeMs)};st=${stars};stick=${this.sticks};flip=${this.flips};snap=${this.snaps};fall=${this.falls};hot=${hot}`,
-    );
+    this.telemetry.record('attempt', this.levelId, outcome);
+    if (outcome === 'clear') {
+      this.telemetry.record('stars', this.levelId, String(stars));
+      this.telemetry.record('time', this.levelId, String(Math.round(runTimeMs / 1000)));
+    }
+    if (this.falls > 0) this.telemetry.record('fallcount', this.levelId, String(this.falls));
   }
 }

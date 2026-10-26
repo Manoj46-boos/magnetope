@@ -7,7 +7,7 @@ import { BackGuard } from '@/input/back-button';
 import { InputManager } from '@/input/input';
 import { ALL_LEVELS, levelById } from '@/levels';
 import { loadParGhost } from '@/levels/par-ghosts';
-import { resolveLocale, setLocale, t, tf } from '@/locale';
+import { getLocale, resolveLocale, setLocale, t, tf } from '@/locale';
 import { createPlatformSdk, type PlatformSdk } from '@/platform/sdk';
 import { TouchMode, readPointerEnvironment } from '@/platform/device';
 import { FaultGuard } from '@/platform/fault-guard';
@@ -130,6 +130,8 @@ export class Game {
   private currentLevelId = '';
   private lastBiome: BiomeId | null = null;
   private hudShown = false;
+  /** R-AN-06: the visit has had its first play input; the record is made once. */
+  private inputRecorded = false;
   private slowFrameSeconds = 0;
   private simUnsubscribe: Array<() => void> = [];
   private touchMode: TouchMode | null = null;
@@ -265,6 +267,15 @@ export class Game {
     window.addEventListener('resize', () => this.resize());
     window.visualViewport?.addEventListener('resize', () => this.resize());
 
+    // R-AN-09: the visit's own label — first-time or returning, with the locale,
+    // device class and tier it booted on — so every number can be read per segment.
+    // The pipe-separated words are the channel's own alphabet: no key=value pairs.
+    this.telemetry.record(
+      'boot',
+      Object.keys(this.save.data.stars).length === 0 ? 'fresh' : 'return',
+      `${getLocale()}|${this.touchMode?.touch ? 'touch' : 'desktop'}|${tier}`,
+    );
+
     this.startLevel(resumeLevelId(ALL_LEVELS, this.save.data));
     this.ui.setLoading(1);
     this.sdk.loadingFinished();
@@ -285,6 +296,10 @@ export class Game {
       this.audioEngine.unlock();
       if (this.phase === 'play' && !this.ui.modalOpen) {
         this.bus.onPlayerInput();
+        if (!this.inputRecorded) {
+          this.inputRecorded = true;
+          this.telemetry.record('input', 'first', String(Math.round(this.telemetry.ageMs / 1000)));
+        }
         this.opener.noteInput();
         if (!this.hudShown) {
           this.hudShown = true;
@@ -449,13 +464,11 @@ export class Game {
       on('attach', () => {
         this.coach.onAttach();
         this.opener.onCatch();
-        this.attempts.stick();
         if (this.ui.fallCardOpen) this.ui.hideFall();
       }),
       on('repel', (e) => {
         this.coach.onRepel();
         this.opener.onLaunch();
-        this.attempts.flip(e.point);
         // R-RT-07: the flip is the landmark the clear card's ghost delta reads.
         this.lastFlip = { point: e.point, timeMs: sim.run.timeMs };
         // R-GF-01/06: only a full-power release earns the freeze, never during
@@ -463,7 +476,6 @@ export class Game {
         if (e.power >= 1 && !this.inputCritical() && !this.slowMo.active) this.hitStop.request();
       }),
       on('snapEngage', () => {
-        this.attempts.snap();
         this.opener.mark('snap');
       }),
       on('summit', (summary) => {
@@ -542,7 +554,11 @@ export class Game {
       s.clearTally[id] = { day, clears: sameDayClears + 1 };
     });
     // R-AU-05: the run went on record — the toast rides the clear card's own verdict chain.
-    if (ghost) this.audio.ghostToast();
+    if (ghost) {
+      this.audio.ghostToast();
+      this.telemetry.record('ghost', id, 'set');
+    }
+    if (award.amount > 0) this.telemetry.record('scrap', 'earn', String(award.amount));
     this.lastClear = { summary, levelId: id, scrap: award.amount, doubled: false, friend, deltaAtFlip };
     this.consecutiveFalls = 0;
     this.attempts.finish('clear', summary.clearTimeMs, summary.stars);
@@ -561,6 +577,9 @@ export class Game {
     const clear = this.lastClear;
     if (!clear) return;
     const level = levelById(clear.levelId);
+    // R-EC-04: the next unlock, rotating; the dangle reader's own numerator (R-AN-04).
+    const dangle = nextDangle(this.save.data, this.clock(), this.sessionLog.clearCount);
+    if (dangle) this.telemetry.record('dangle', dangle.id, 'shown');
     this.phase = 'cleared';
     this.ui.hideFall();
     this.ui.showClear({
@@ -580,7 +599,7 @@ export class Game {
       },
       // R-RT-07: the player's own ghost, at the flip; R-EC-04: the next unlock, rotating.
       ghostDelta: clear.deltaAtFlip !== null ? { aheadMs: Math.round(clear.deltaAtFlip) } : null,
-      dangle: nextDangle(this.save.data, this.clock(), this.sessionLog.clearCount),
+      dangle,
     });
     this.claimRewards();
     this.telemetry.flush();
@@ -743,6 +762,7 @@ export class Game {
     this.save.update((s) => {
       s.scrap += clear.scrap;
     });
+    if (clear.scrap > 0) this.telemetry.record('scrap', 'earn', String(clear.scrap));
     this.lastClear = { ...clear, scrap: clear.scrap * 2, doubled: true };
     this.presentClear();
   }
@@ -809,6 +829,8 @@ export class Game {
       if (result.reason === 'funds') this.ui.toast(t('noFunds'), 2200);
       return;
     }
+    this.telemetry.record('scrap', 'spend', String(result.spent));
+    this.telemetry.record('cosmetic', id, 'unlock');
     if (willComplete) this.ui.toast(`${item!.name} — ${t('setComplete')}`, 2600);
     this.audio.starStamp(2);
     this.equipCosmetic(id);
@@ -820,6 +842,7 @@ export class Game {
     if (!(await this.bus.rewardedBreak())) return;
     const result = unlockByReward(this.save, id, this.clock());
     if (!result.ok) return;
+    this.telemetry.record('cosmetic', id, 'unlock');
     if (willComplete) this.ui.toast(`${item!.name} — ${t('setComplete')}`, 2600);
     this.audio.starStamp(2);
     this.equipCosmetic(id);
@@ -831,6 +854,7 @@ export class Game {
     const willComplete = item !== undefined && completesSet(this.save.data, item);
     const result = claimSpotlight(this.save, id, this.clock());
     if (!result.ok) return;
+    this.telemetry.record('cosmetic', id, 'unlock');
     if (willComplete) this.ui.toast(`${item!.name} — ${t('setComplete')}`, 2600);
     this.audio.starStamp(2);
     this.equipCosmetic(id);
@@ -840,6 +864,7 @@ export class Game {
   private claimRewards(): void {
     const gained = claimEarned(this.save);
     if (gained.length === 0) return;
+    for (const item of gained) this.telemetry.record('cosmetic', item.id, 'unlock');
     this.ui.toast(`${t('newUnlock')}: ${gained.map((g) => g.name).join(', ')}`);
     if (this.ui.locker.isOpen) this.refreshLocker();
   }
@@ -1119,6 +1144,7 @@ export class Game {
       sim: this.sim,
       phase: this.phase,
       bus: this.bus,
+      sdk: this.sdk,
       save: this.save,
       telemetry: this.telemetry,
       openerLog: this.opener.log,

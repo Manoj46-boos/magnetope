@@ -4,7 +4,7 @@ import { HighlightStrip } from '@/game/highlights';
 import { FLAG, HudReveal } from '@/game/hud-reveal';
 import { buildMap, isPlayable, nextPlayableId, resumeLevelId } from '@/game/map-model';
 import { ALL_LEVELS } from '@/levels';
-import { AttemptRecorder, Telemetry, cellOf, type TelemetryRecord } from '@/platform/telemetry';
+import { AttemptRecorder, Telemetry, type TelemetryRecord } from '@/platform/telemetry';
 
 const save = (stars: Record<string, number> = {}) => ({ stars, bestMs: {}, bestGrade: {} as Record<string, never> });
 const fall = (score: number) => ({ levelId: 'l', levelName: 'L', biome: 'scrapyard' as const, heightMeters: score, bounces: 0, junk: 0, grade: 'C', score });
@@ -201,28 +201,24 @@ describe('telemetry', () => {
     expect(() => t.flush()).not.toThrow();
   });
 
-  it('summarises an attempt with counts, falls on a coarse grid and retry latency', () => {
+  it('summarises an attempt with its outcome, its stars, its falls and the retry latency', () => {
     const { telemetry, sent, tick } = rig();
     let now = 0;
     const attempts = new AttemptRecorder(telemetry, () => now);
     attempts.begin('scrapyard-01');
-    attempts.stick();
-    attempts.flip({ x: 3.1, y: 5.2 });
-    attempts.flip({ x: 3.4, y: 5.9 });
-    attempts.snap();
     attempts.fall(14.26, { x: 1, y: 9 }, 'A');
     now = 900;
-    attempts.finish('restart', 12_345);
+    attempts.finish('clear', 41_307, 3);
     attempts.begin('scrapyard-01');
     tick(1000);
     telemetry.flush();
 
     const records = sent[0]!;
-    const attempt = records.find((r) => r.category === 'attempt')!;
-    expect(attempt.action).toContain('o=restart');
-    expect(attempt.action).toContain('flip=2');
-    expect(attempt.action).toContain('hot=1:2x2');
-    expect(records.find((r) => r.category === 'fall')!.action).toBe(`h=14.3;c=${cellOf({ x: 1, y: 9 })};g=A`);
+    expect(records.find((r) => r.category === 'attempt')!.action).toBe('clear');
+    expect(records.find((r) => r.category === 'stars')!.action).toBe('3');
+    expect(records.find((r) => r.category === 'time')!.action).toBe('41');
+    expect(records.find((r) => r.category === 'fall')!.action).toBe('h-14 g-A');
+    expect(records.find((r) => r.category === 'fallcount')!.action).toBe('1');
     expect(records.find((r) => r.category === 'retry')!.action).toBe('900');
   });
 });
