@@ -1,17 +1,19 @@
-import { createReadStream, readFileSync, statSync } from 'node:fs';
+import { createReadStream, readdirSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
-import { gzipSync } from 'node:zlib';
+import { brotliCompressSync, constants as zlibConstants, gzipSync } from 'node:zlib';
 import { chromium, type Browser } from 'playwright';
 
 /**
  * Cold-load time of a production build on a throttled device (PRD 10.3, 14.3): from navigation start
  * until the loading screen has gone and the first level is built, which the game marks as
- * `magnetope:playable`. The build is served gzipped, the way a CDN would, with caching off, and the
- * browser is slowed through the DevTools protocol.
+ * `magnetope:playable`. The build is served the way the host's CDN serves it — brotli where the
+ * browser accepts it, gzip otherwise, both compressed once at server start so no measurement ever
+ * pays for the compressor — with caching off, and the browser is slowed through the DevTools protocol.
  *
  * Software rendering (SwiftShader) stands in for the GPU, so shader compilation is slower than on a
- * phone; download, decode and start-up are a fair stand-in.
+ * phone; download, decode and start-up are a fair stand-in. The published payload budget in
+ * check-budget.mjs stays gzipped on purpose: gzip is the conservative number a host could serve.
  */
 
 export interface DeviceProfile {
@@ -38,8 +40,28 @@ export interface ColdLoad {
 const MIME: Record<string, string> = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.wasm': 'application/wasm', '.woff2': 'font/woff2' };
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.wasm']);
 
-/** Serves `dist` with gzip on the text and wasm files; returns the origin and a way to stop. */
+/** Everything in `dist` that can be compressed, compressed once, before any request can be timed. */
+function precompress(dist: string): Map<string, { br: Buffer; gz: Buffer }> {
+  const bodies = new Map<string, { br: Buffer; gz: Buffer }>();
+  const walk = (dir: string): string[] =>
+    readdirSync(dir).flatMap((name) => {
+      const full = join(dir, name);
+      return statSync(full).isDirectory() ? walk(full) : [full];
+    });
+  for (const file of walk(dist)) {
+    if (!COMPRESSIBLE.has(extname(file))) continue;
+    const raw = readFileSync(file);
+    bodies.set(file, {
+      br: brotliCompressSync(raw, { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 9 } }),
+      gz: gzipSync(raw),
+    });
+  }
+  return bodies;
+}
+
+/** Serves `dist` the way a CDN would: brotli where the browser takes it, gzip otherwise. */
 export async function serveGzipped(dist: string): Promise<{ origin: string; close: () => Promise<void> }> {
+  const bodies = precompress(dist);
   const server = createServer((req, res) => {
     const path = normalize(decodeURIComponent((req.url ?? '/').split('?')[0]!));
     const file = join(dist, path.length < 2 ? 'index.html' : path);
@@ -48,8 +70,12 @@ export async function serveGzipped(dist: string): Promise<{ origin: string; clos
       return;
     }
     const type = MIME[extname(file)] ?? 'application/octet-stream';
-    if (COMPRESSIBLE.has(extname(file))) {
-      res.writeHead(200, { 'content-type': type, 'content-encoding': 'gzip', 'cache-control': 'no-store' }).end(gzipSync(readFileSync(file)));
+    const body = bodies.get(file);
+    if (body) {
+      const brotli = String(req.headers['accept-encoding'] ?? '').includes('br');
+      res
+        .writeHead(200, { 'content-type': type, 'content-encoding': brotli ? 'br' : 'gzip', 'cache-control': 'no-store' })
+        .end(brotli ? body.br : body.gz);
     } else {
       res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' });
       createReadStream(file).pipe(res);
@@ -60,8 +86,15 @@ export async function serveGzipped(dist: string): Promise<{ origin: string; clos
   return { origin: `http://127.0.0.1:${port}/`, close: () => new Promise<void>((done) => server.close(() => done())) };
 }
 
-export const launchThrottleBrowser = (): Promise<Browser> =>
-  chromium.launch({ channel: 'chrome', headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
+/** Real Chrome where the machine has it, the bundled Chromium where it does not. */
+export async function launchThrottleBrowser(): Promise<Browser> {
+  const args = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'];
+  try {
+    return await chromium.launch({ channel: 'chrome', headless: true, args });
+  } catch {
+    return await chromium.launch({ headless: true, args });
+  }
+}
 
 /** Loads the build `runs` times from a cold cache on the given device. */
 export async function measureColdLoad(browser: Browser, origin: string, device: DeviceProfile, runs: number): Promise<ColdLoad> {

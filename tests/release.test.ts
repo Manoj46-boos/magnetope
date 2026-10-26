@@ -122,6 +122,27 @@ describe('the production bundle under a strict content security policy', () => {
     expect(await distinctColours(page!)).toBeGreaterThan(40);
   });
 
+  // R-PE-05: the critical path is counted. Everything the boot fetched until
+  // the first level was playable, and nothing else: the non-English strings, the
+  // ghosts and the cosmetics are scheduled behind it, never fetched before it.
+  runnable('fetches only the critical set on the way to playable', async () => {
+    const fetched = await page!.evaluate(() => {
+      const seen = performance.getEntriesByType('resource').map((r) => new URL(r.name, location.href).pathname.replace(/^\/\//, ''));
+      const playable = performance.getEntriesByName('magnetope:playable')[0];
+      return { seen, playableAt: playable ? playable.startTime : -1 };
+    });
+    expect(fetched.playableAt).toBeGreaterThan(0);
+    const critical = fetched.seen.filter((path: string) => !path.endsWith('/'));
+    expect(
+      critical.filter((p: string) => !p.endsWith('.js') && !p.endsWith('.wasm') && !p.endsWith('.woff2') && !p.endsWith('.css') && p !== 'index.html'),
+      'non-critical file types on the boot path',
+    ).toEqual([]);
+    // One level's own ghost chunk rides with the boot; the other sixty-nine stay behind it.
+    const ghostChunks = critical.filter((p: string) => /(?:playground|scrapyard|suburbia|metropolis|stratosphere)-\d+-/.test(p));
+    expect(ghostChunks.length).toBeLessThanOrEqual(2);
+    expect(critical.filter((p: string) => p.endsWith('.wasm')).length).toBe(1);
+  });
+
   runnable('serves its own rounded font, so the text looks the same on every device', async () => {
     const loaded = await page!.evaluate(async () => {
       await document.fonts.load("600 16px Fredoka");
