@@ -1,3 +1,5 @@
+import type { BiomeId } from '@/sim/types';
+
 /**
  * The launch locker (PRD 5.8, 13.2): 24 cosmetics plus the two classic defaults.
  * Twelve are bought with Scrap, eight are earned by playing, four are seasonal.
@@ -125,6 +127,40 @@ export const COSMETICS: readonly Cosmetic[] = [
 export const COSMETIC_IDS: ReadonlySet<string> = new Set(COSMETICS.map((c) => c.id));
 
 export const cosmeticById = (id: string): Cosmetic | undefined => COSMETICS.find((c) => c.id === id);
+
+export interface CosmeticSet {
+  /** The biome the set dresses; the locker reads its name from the locale. */
+  biome: BiomeId;
+  pieces: readonly Cosmetic[];
+}
+
+const SET_MEMBERS: Readonly<Record<BiomeId, readonly string[]>> = {
+  scrapyard: ['skin.rust', 'skin.teal', 'skin.antenna', 'field.rose', 'field.ember'],
+  suburbia: ['skin.mint', 'skin.cherry', 'skin.flag', 'field.lime', 'skin.sticker'],
+  metropolis: ['skin.cobalt', 'skin.violet', 'skin.midnight', 'skin.chrome', 'field.beacon'],
+  playground: ['skin.sunny', 'skin.gold', 'field.sparks', 'field.ice', 'skin.sunburn'],
+  stratosphere: ['field.aurora', 'skin.frost', 'skin.bloom', 'field.leaf'],
+};
+
+/** The collection sets (R-EC-05): four to five looks a biome calls its own, so the shelf reads as five stories rather than one pile. */
+export const SETS: readonly CosmeticSet[] = Object.entries(SET_MEMBERS).map(([biome, ids]) => ({
+  biome: biome as BiomeId,
+  pieces: ids.map((id) => cosmeticById(id)!),
+}));
+
+const SET_OF_ID = new Map<string, CosmeticSet>(SETS.flatMap((set) => set.pieces.map((piece) => [piece.id, set] as const)));
+
+/** The set a look belongs to, or null for the timeless classics (R-EC-05). */
+export const setOf = (item: Cosmetic): CosmeticSet | null => SET_OF_ID.get(item.id) ?? null;
+
+const SPOTLIGHT_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const SPOTLIGHT_POOL: readonly Cosmetic[] = COSMETICS.filter((c) => c.acquire.how === 'seasonal');
+
+/** The look the spotlight features this week: free for its week, then the next seasonal in the rotation (R-RT-05, R-EC-03). */
+export function spotlightOf(date: Date): Cosmetic {
+  const week = Math.floor(date.getTime() / SPOTLIGHT_WEEK_MS);
+  return SPOTLIGHT_POOL[week % SPOTLIGHT_POOL.length]!;
+}
 
 export const cosmeticsOfKind = <K extends CosmeticKind>(kind: K): Array<Extract<Cosmetic, { kind: K }>> =>
   COSMETICS.filter((c): c is Extract<Cosmetic, { kind: K }> => c.kind === kind);

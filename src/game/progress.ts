@@ -53,11 +53,14 @@ export interface ScrapAward {
 /**
  * Scrap is the single meta currency. A first clear pays 10-50 by performance,
  * a replay 2-8; Scrap only ever buys cosmetics, so it never gates content.
- * Playing without snap assist earns a 5% bonus (PRD 12.4).
+ * Playing without snap assist earns a 5% bonus (PRD 12.4). Replays of the
+ * same level decay to half pay once three clears of it are already on today's
+ * clock, so the honest path stays the attractive one (R-EC-10).
  */
-export function scrapForClear(stars: number, firstClear: boolean, assistOff: boolean): ScrapAward {
+export function scrapForClear(stars: number, firstClear: boolean, assistOff: boolean, sameDayClears = 0): ScrapAward {
   const s = Math.max(1, Math.min(3, stars));
-  const base = firstClear ? 10 + 13 * s : 2 + 2 * s;
+  let base = firstClear ? 10 + 13 * s : 2 + 2 * s;
+  if (!firstClear && sameDayClears >= 3) base *= 0.5;
   const amount = Math.round(base * (assistOff ? 1.05 : 1));
   return { amount, firstClear };
 }

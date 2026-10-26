@@ -1,9 +1,13 @@
 import {
   COSMETICS,
+  SETS,
   cosmeticById,
   gradeRank,
   seasonOf,
+  setOf,
+  spotlightOf,
   type Cosmetic,
+  type CosmeticSet,
   type Requirement,
   type Season,
 } from '@/config/cosmetics';
@@ -23,7 +27,30 @@ export type ItemStatus =
   | { state: 'owned' }
   | { state: 'buyable'; price: number; affordable: boolean }
   | { state: 'earnable'; progress: RequirementProgress }
+  | { state: 'spotlight' }
   | { state: 'offseason'; season: Season };
+
+export interface SetProgress {
+  set: CosmeticSet;
+  have: number;
+  need: number;
+  complete: boolean;
+}
+
+/** How much of each collection set the save owns (R-EC-05), the half-filled lines the map and locker read. */
+export function setProgress(save: Pick<SaveData, 'owned'>): SetProgress[] {
+  const owned = new Set(save.owned);
+  return SETS.map((set) => {
+    const have = set.pieces.filter((piece) => owned.has(piece.id)).length;
+    return { set, have, need: set.pieces.length, complete: have === set.pieces.length };
+  });
+}
+
+/** True when owning `item` would complete its set — the flourish trigger (R-EC-05). */
+export function completesSet(save: Pick<SaveData, 'owned'>, item: Cosmetic): boolean {
+  const set = setOf(item);
+  return set !== null && set.pieces.every((piece) => piece.id === item.id || save.owned.includes(piece.id));
+}
 
 export type PurchaseResult =
   | { ok: true; id: string; spent: number }
@@ -74,6 +101,7 @@ export function cosmeticStatus(save: SaveData, item: Cosmetic, today: Date): Ite
     case 'scrap':
       return { state: 'buyable', price: acquire.price, affordable: save.scrap >= acquire.price };
     case 'seasonal': {
+      if (spotlightOf(today).id === item.id) return { state: 'spotlight' };
       const season = seasonOf(today);
       if (season !== acquire.season) return { state: 'offseason', season: acquire.season };
       return { state: 'buyable', price: acquire.price, affordable: save.scrap >= acquire.price };
@@ -129,8 +157,51 @@ export function unlockByReward(store: SaveStore, id: string, today: Date): Purch
   return { ok: true, id, spent: 0 };
 }
 
+/** The week's spotlight look, claimed free (R-RT-05): one a week, one time, never again. */
+export function claimSpotlight(store: SaveStore, id: string, today: Date): PurchaseResult {
+  const item = cosmeticById(id);
+  if (!item || spotlightOf(today).id !== id) return { ok: false, reason: 'unavailable' };
+  if (store.data.owned.includes(id)) return { ok: false, reason: 'owned' };
+  store.update((s) => {
+    s.owned.push(id);
+  });
+  return { ok: true, id, spent: 0 };
+}
+
 export const canWatchToUnlock = (save: SaveData, item: Cosmetic, today: Date): boolean =>
   priceOf(item) > 0 && cosmeticStatus(save, item, today).state === 'buyable';
+
+export interface Dangle {
+  id: string;
+  name: string;
+  /** Scrap still between the player and the look; zero when the locker already covers it. */
+  scrapToGo: number;
+}
+
+const DANGLE_POOL = 3;
+
+/**
+ * R-EC-04's own line on the clear card: the next visible unlock, nearest first,
+ * rotating inside the nearest few so the card never repeats itself (R-RT-10's
+ * dangle rotation). Earned looks carry their own meter in the locker, so the
+ * dangle speaks only in Scrap.
+ */
+export function nextDangle(save: SaveData, today: Date, seed: number): Dangle | null {
+  const spotlight = spotlightOf(today);
+  const candidates: Dangle[] = [];
+  for (const item of COSMETICS) {
+    if (save.owned.includes(item.id)) continue;
+    const { acquire } = item;
+    if (acquire.how === 'scrap') candidates.push({ id: item.id, name: item.name, scrapToGo: Math.max(0, acquire.price - save.scrap) });
+    else if (acquire.how === 'seasonal') {
+      if (spotlight.id === item.id) candidates.push({ id: item.id, name: item.name, scrapToGo: 0 });
+      else if (seasonOf(today) === acquire.season) candidates.push({ id: item.id, name: item.name, scrapToGo: Math.max(0, acquire.price - save.scrap) });
+    }
+  }
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => a.scrapToGo - b.scrapToGo);
+  return candidates[seed % Math.min(DANGLE_POOL, candidates.length)]!;
+}
 
 export function equip(store: SaveStore, id: string): boolean {
   const item = cosmeticById(id);

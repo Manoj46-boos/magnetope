@@ -8,12 +8,20 @@ import { DEFAULT_SETTINGS, type Settings } from './settings';
 export const SAVE_VERSION = 2;
 const MAX_GHOST_CHARS = 60_000;
 const MAX_GHOSTS = 90;
+const MAX_TALLIES = 128;
 const MAX_FLAGS = 32;
 const STORAGE_KEY = 'magnetope.save';
 
 export interface BestFall {
   heightMeters: number;
   grade: string;
+}
+
+/** Same-day clear tally per level, for the replay decay (R-EC-10). */
+export interface ClearTally {
+  /** The calendar day the tally counts, local time. */
+  day: string;
+  clears: number;
 }
 
 export interface FriendGhost {
@@ -34,6 +42,8 @@ export interface SaveData {
   bestGrade: Record<string, GradeName>;
   /** Encoded personal ghosts, one per level. */
   ghosts: Record<string, string>;
+  /** The same-day clear tally per level the replay decay reads (R-EC-10). */
+  clearTally: Record<string, ClearTally>;
   /** The ghost a friend shared for each level, with the name it arrived under. */
   friends: Record<string, FriendGhost>;
   /** The name that travels with the player's own ghost codes. */
@@ -96,6 +106,7 @@ export const freshSave = (): SaveData => ({
   bestFall: null,
   bestGrade: {},
   ghosts: {},
+  clearTally: {},
   friends: {},
   alias: '',
   seen: [],
@@ -163,6 +174,13 @@ export function sanitizeSave(raw: unknown): SaveData {
   if (isRecord(raw.ghosts)) {
     const entries = Object.entries(raw.ghosts).filter(([, v]) => typeof v === 'string' && v.length <= MAX_GHOST_CHARS);
     for (const [level, encoded] of entries.slice(0, MAX_GHOSTS)) base.ghosts[level.slice(0, 40)] = encoded as string;
+  }
+  if (isRecord(raw.clearTally)) {
+    const entries = Object.entries(raw.clearTally).slice(0, MAX_TALLIES);
+    for (const [level, entry] of entries) {
+      if (!isRecord(entry) || typeof entry.day !== 'string' || typeof entry.clears !== 'number') continue;
+      base.clearTally[level.slice(0, 40)] = { day: entry.day.slice(0, 10), clears: clamp(Math.round(entry.clears), 0, 999) };
+    }
   }
   if (isRecord(raw.friends)) {
     const entries = Object.entries(raw.friends).slice(0, MAX_GHOSTS);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { COSMETICS, DEFAULT_FIELD_ID, DEFAULT_SKIN_ID, seasonOf, type FieldCosmetic } from '@/config/cosmetics';
-import { canWatchToUnlock, claimEarned, cosmeticStatus, equip, purchase, unlockByReward } from '@/game/locker';
-import { MemoryBackend, SaveStore, sanitizeSave } from '@/platform/storage';
+import { COSMETICS, DEFAULT_FIELD_ID, DEFAULT_SKIN_ID, seasonOf, spotlightOf, type FieldCosmetic } from '@/config/cosmetics';
+import { canWatchToUnlock, claimEarned, claimSpotlight, completesSet, cosmeticStatus, equip, purchase, setProgress, unlockByReward } from '@/game/locker';
+import { MemoryBackend, SaveStore, freshSave, sanitizeSave } from '@/platform/storage';
 import { cosmeticById } from '@/config/cosmetics';
 
 const store = (mutate?: (s: ReturnType<typeof sanitizeSave>) => void) => {
@@ -79,10 +79,20 @@ describe('spending Scrap', () => {
     expect(s.data.scrap).toBe(850);
   });
 
-  it('keeps seasonal items off the shelf out of season and sells them in season', () => {
+  it('keeps seasonal items off the shelf out of season, sells them in season, and gives the spotlight’s week away free', () => {
     const { s } = store((d) => void (d.scrap = 1000));
+    // Out of season the shelf stays shut, whatever the calendar is doing.
     expect(purchase(s, 'skin.frost', SUMMER)).toEqual({ ok: false, reason: 'unavailable' });
-    expect(purchase(s, 'skin.frost', WINTER).ok).toBe(true);
+    // In season, on a week that is not its spotlight, the shelf sells it.
+    const january = new Date(Date.UTC(2026, 0, 8));
+    const inSeason = [...Array(6)].map((_, week) => new Date(january.getTime() + week * 7 * 86_400_000)).find((date) => seasonOf(date) === 'winter' && spotlightOf(date).id !== 'skin.frost')!;
+    expect(purchase(s, 'skin.frost', inSeason).ok).toBe(true);
+    // In its own spotlight week nobody pays for a free thing: the claim is the only door.
+    const spotlightWeek = [...Array(8)].map((_, week) => new Date(january.getTime() + week * 7 * 86_400_000)).find((date) => spotlightOf(date).id === 'skin.frost')!;
+    const fresh = store((d) => void (d.scrap = 1000)).s;
+    expect(purchase(fresh, 'skin.frost', spotlightWeek)).toEqual({ ok: false, reason: 'unavailable' });
+    expect(claimSpotlight(fresh, 'skin.frost', spotlightWeek).ok).toBe(true);
+    expect(fresh.data.scrap).toBe(1000);
   });
 
   it('survives a reload: ownership and balance persist', () => {
@@ -165,5 +175,67 @@ describe('equipping', () => {
     expect(repaired.owned).toContain('skin.rust');
     expect(repaired.owned).not.toContain('skin.fake');
     expect(repaired.equipped.skin).toBe(DEFAULT_SKIN_ID);
+  });
+});
+
+describe('the collection sets (R-EC-05)', () => {
+  it('reads a real save’s set progress piece by piece', () => {
+    const { s } = store();
+    expect(setProgress(s.data).every((row) => row.have === 0)).toBe(true);
+    s.update((d) => void d.owned.push('skin.sunny'));
+    const playground = setProgress(s.data).find((row) => row.set.biome === 'playground')!;
+    expect(playground.have).toBe(1);
+    expect(playground.complete).toBe(false);
+    s.update((d) => void d.owned.push(...playground.set.pieces.filter((p) => p.id !== 'skin.sunny').map((p) => p.id)));
+    const complete = setProgress(s.data).find((row) => row.set.biome === 'playground')!;
+    expect(complete.have).toBe(complete.need);
+    expect(complete.complete).toBe(true);
+  });
+
+  it('names the completion the moment the last piece lands', () => {
+    const { s } = store();
+    const pieces = setProgress(s.data).find((row) => row.set.biome === 'metropolis')!.set.pieces;
+    const last = pieces[pieces.length - 1]!;
+    s.update((d) => void d.owned.push(...pieces.filter((p) => p.id !== last.id).map((p) => p.id)));
+    expect(completesSet(s.data, last)).toBe(true);
+    expect(completesSet(s.data, pieces[0]!)).toBe(false);
+  });
+});
+
+describe('the weekly spotlight (R-RT-05)', () => {
+  it('marks the week’s look on the locker’s own status, in season or out', () => {
+    const { s } = store((d) => void (d.scrap = 10_000));
+    const spotlight = spotlightOf(SUMMER);
+    expect(cosmeticStatus(s.data, spotlight, SUMMER).state).toBe('spotlight');
+  });
+
+  it('claims the week’s look free, once, and refuses any other id', () => {
+    const { s } = store((d) => void (d.scrap = 500));
+    const week = spotlightOf(SUMMER);
+    const other = COSMETICS.find((c) => c.acquire.how === 'seasonal' && c.id !== week.id)!;
+    expect(claimSpotlight(s, other.id, SUMMER).ok).toBe(false);
+    const result = claimSpotlight(s, week.id, SUMMER);
+    expect(result).toMatchObject({ ok: true, id: week.id, spent: 0 });
+    expect(s.data.scrap).toBe(500);
+    expect(s.data.owned).toContain(week.id);
+    expect(claimSpotlight(s, week.id, SUMMER).ok).toBe(false);
+  });
+
+  it('keeps the spotlight free of ads: the watch button stays off it', () => {
+    const read = { ...freshSave(), scrap: 10_000 };
+    expect(canWatchToUnlock(read, spotlightOf(SUMMER), SUMMER)).toBe(false);
+  });
+
+  it('sanitises the clear tally on a tampered save', () => {
+    const repaired = sanitizeSave({
+      clearTally: {
+        'scrapyard-00': { day: '2026-10-26', clears: 4 },
+        'scrapyard-01': { day: 'way too long to count', clears: -3 },
+        'scrapyard-02': 'junk',
+      } as unknown as Parameters<typeof sanitizeSave>[0],
+    });
+    expect(repaired.clearTally['scrapyard-00']).toEqual({ day: '2026-10-26', clears: 4 });
+    expect(repaired.clearTally['scrapyard-01']).toEqual({ day: 'way too lo', clears: 0 });
+    expect(repaired.clearTally['scrapyard-02']).toBeUndefined();
   });
 });
