@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { HEAVY_LEVELS, timeRestarts, type RestartTiming } from '../tools/restart-time';
+import { RESTART_BUDGET_MS } from '../tools/perf-laws';
 import { launchBrowser } from './browser/harness';
 
 /**
- * PRD pillar 2 and 4.5: a retry rebuilds the level in under 400 ms with no
- * loading screen. Timed in a real browser on the heaviest levels; the rebuild is
- * the part that costs CPU on any device, and it sits an order of magnitude inside
- * the promise, so the gate leaves room for a slow machine and still catches a
- * rebuild that has started loading things.
+ * PRD pillar 2, 4.5 and 23.3 (R-PE-13): a retry rebuilds the level inside the
+ * 50 ms budget with no loading screen — the promise to players stays the same
+ * 400 ms, but the gate the budget owns is the tighter line, because the rebuild
+ * is the part that costs CPU on any device and it sits well inside even that.
  */
 
 const PROMISE_MS = 400;
-const GATE_MS = 150;
+const GATE_MS = RESTART_BUDGET_MS;
 
 describe('restarting a level', () => {
   let rows: RestartTiming[] | null = null;

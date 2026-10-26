@@ -150,7 +150,20 @@ describe.each(VIEWPORTS)('screens at $name ($width x $height)', ({ name, width, 
   beforeAll(async () => {
     if (!browser) return;
     context = await browser.newContext({ viewport: { width, height } });
-    await context.addInitScript('window.__name = (f) => f;');
+    await context.addInitScript(`
+      window.__name = (f) => f;
+      let layoutReads = 0;
+      for (const prop of ['offsetWidth', 'offsetHeight', 'clientWidth', 'clientHeight', 'scrollWidth', 'scrollHeight']) {
+        const desc = Object.getOwnPropertyDescriptor(Element.prototype, prop);
+        if (!desc || !desc.get) continue;
+        Object.defineProperty(Element.prototype, prop, { get() { layoutReads++; return desc.get.call(this); } });
+      }
+      const rawRect = Element.prototype.getBoundingClientRect;
+      Element.prototype.getBoundingClientRect = function (...args) { layoutReads++; return rawRect.apply(this, args); };
+      const rawStyles = window.getComputedStyle.bind(window);
+      window.getComputedStyle = function (...args) { layoutReads++; return rawStyles(...args); };
+      Object.defineProperty(window, '__layoutReads', { get: () => layoutReads });
+    `);
     page = await context.newPage();
     page.on('pageerror', (e) => failures.push(`pageerror: ${e.message}`));
     page.on('console', (m) => {
@@ -280,6 +293,31 @@ describe.each(VIEWPORTS)('screens at $name ($width x $height)', ({ name, width, 
       await callUi('openPause');
     }
     expect(found).toEqual([]);
+  });
+
+  // R-PE-04: a state change may force the synchronous layout only a few times
+  // — the interface measures what it needs in one batch, then writes. Every
+  // surface measures zero today, so the ceiling allows three reads for a
+  // future focus scroll, not a write-read-write thrash. The counter is the
+  // browser's own layout-reading APIs, patched in the page.
+  runnable('forces only a handful of layout reads per state change', async () => {
+    const count = async (label: string, action: () => Promise<void>): Promise<void> => {
+      const before = await page!.evaluate(() => (window as unknown as { __layoutReads: number }).__layoutReads);
+      await action();
+      const reads = (await page!.evaluate(() => (window as unknown as { __layoutReads: number }).__layoutReads)) - before;
+      expect(reads, `${label} forced ${reads} layout reads`).toBeLessThanOrEqual(3);
+    };
+
+    await count('opening the map from pause', () => openFromPause('map', '.screen.open'));
+    await back();
+    await count('opening the controls from pause', () => openFromPause('controls', '.panel.controls'));
+    await back();
+    await count('opening the locker from pause', () => openFromPause('locker', '.screen.open'));
+    await back();
+    await count('showing the clear card', async () => {
+      await callUi('showClear', TYPICAL_CLEAR);
+      await page!.locator('.clear-card').waitFor({ state: 'visible' });
+    });
   });
 
   runnable('raised no console errors or page errors', async () => {
