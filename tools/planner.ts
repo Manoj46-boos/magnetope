@@ -46,6 +46,8 @@ export interface PlannerOptions extends MacroSpace {
   robustTrials?: number;
   /** Fraction of those trials that must succeed. */
   robustShare?: number;
+  /** Plays every macro the button layout's single thumb must (R-AC-03): no steering on any tick the flip button is touched. */
+  oneThumb?: boolean;
 }
 
 export async function solveLevel(level: LevelDef, options: PlannerOptions): Promise<SolveResult> {
@@ -64,7 +66,7 @@ export async function solveLevel(level: LevelDef, options: PlannerOptions): Prom
       sim.restore(node.snapshot);
       const pilot = new Pilot(sim, []);
       pilot.resume(false);
-      if (execute(pilot, macro, noise)) passed++;
+      if (execute(pilot, macro, noise, options.oneThumb)) passed++;
       if (passed >= needed) return true;
       if (i + 1 - passed > trials - needed) return false;
     }
@@ -112,7 +114,7 @@ export async function solveLevel(level: LevelDef, options: PlannerOptions): Prom
       sim.restore(node.snapshot);
       const pilot = new Pilot(sim, node.frames.slice());
       pilot.resume(false);
-      const ok = execute(pilot, macro);
+      const ok = execute(pilot, macro, undefined, options.oneThumb);
       if (!ok) continue;
 
       if (trials > 0) {
@@ -120,7 +122,7 @@ export async function solveLevel(level: LevelDef, options: PlannerOptions): Prom
         sim.restore(node.snapshot);
         pilot.frames.length = node.frames.length;
         pilot.resume(false);
-        execute(pilot, macro);
+        execute(pilot, macro, undefined, options.oneThumb);
       }
 
       if (sim.run.cleared) {

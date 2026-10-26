@@ -135,8 +135,13 @@ const wobble = (noise: Noise | undefined, v: Vec): Vec =>
 const slip = (noise: Noise | undefined): number =>
   noise ? Math.round(noise.rng.range(-noise.timingTicks, noise.timingTicks)) : 0;
 
-/** Runs one macro from the current state. Returns true when MAGNO ends up attached and safe. */
-export function execute(pilot: Pilot, macro: Macro, noise?: Noise): boolean {
+/** Runs one macro from the current state. Returns true when MAGNO ends up attached and safe.
+ *
+ * `oneThumb` plays the macro the button layout's single thumb must: the stick
+ * is empty on every tick the flip button is held or edged — the aim lands one
+ * tick after the release, and the snap press carries no steering, the assist
+ * making the catch on its own (R-AC-03). */
+export function execute(pilot: Pilot, macro: Macro, noise?: Noise, oneThumb = false): boolean {
   const { sim } = pilot;
   const startFalls = sim.run.fallCount;
   const failed = (): boolean => sim.run.fallCount > startFalls || sim.magno.view.limp;
@@ -152,15 +157,28 @@ export function execute(pilot: Pilot, macro: Macro, noise?: Noise): boolean {
     pilot.tilt = [0, 0];
     pilot.press();
     pilot.step(Math.max(3, ticksOf(macro.holdMs) + slip(noise)));
-    pilot.tilt = wobble(noise, macro.tilt);
-    pilot.release();
-    pilot.step(1);
+    if (oneThumb) {
+      pilot.release();
+      pilot.step(1);
+      pilot.tilt = wobble(noise, macro.tilt);
+    } else {
+      pilot.tilt = wobble(noise, macro.tilt);
+      pilot.release();
+      pilot.step(1);
+    }
     if (macro.snap) {
       pilot.step(Math.max(1, ticksOf(macro.snap.delayMs) + slip(noise)));
-      pilot.tilt = wobble(noise, macro.snap.aim);
-      pilot.press();
-      pilot.step(4);
-      pilot.release();
+      if (oneThumb) {
+        pilot.tilt = [0, 0];
+        pilot.press();
+        pilot.step(4);
+        pilot.release();
+      } else {
+        pilot.tilt = wobble(noise, macro.snap.aim);
+        pilot.press();
+        pilot.step(4);
+        pilot.release();
+      }
     }
   }
 
