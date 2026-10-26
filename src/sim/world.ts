@@ -72,6 +72,8 @@ export class PhysicsWorld {
   /** Every surface the level was built with, so a restored snapshot can bring back what has since broken. */
   private readonly catalog = new Map<number, Surface>();
   readonly props: BuiltProp[] = [];
+  /** The dynamic share of `props`, fixed the moment the level is built. */
+  private readonly dynamicList: BuiltProp[] = [];
   /** Props whose pose or solidity is a function of time. */
   private readonly scripted: BuiltProp[] = [];
   private readonly motionByBody = new Map<number, PropPlacement>();
@@ -96,6 +98,7 @@ export class PhysicsWorld {
     this.snapRadius = TUNING.snap.radius * (level.onRamp?.catchWindow ?? 1);
     this.snapShape = new rapier.Ball(this.snapRadius);
     this.buildLevel();
+    for (const prop of this.props) if (prop.dynamic) this.dynamicList.push(prop);
     this.buildMagno();
   }
 
@@ -117,24 +120,42 @@ export class PhysicsWorld {
     return fastest;
   }
 
-  get dynamicProps(): BuiltProp[] {
-    return this.props.filter((p) => p.dynamic);
+  get dynamicProps(): readonly BuiltProp[] {
+    return this.dynamicList;
   }
 
   step(): void {
-    this.world.step();
+    // The compat wrapper rebuilds its handle maps after every step: four fresh
+    // arrays holding every body and collider, around 15 KB a tick on the busiest
+    // level. Nothing is created or removed during a step of a rigid-body world,
+    // and the create and remove calls this class makes keep those maps themselves,
+    // so the tick goes straight to the pipeline (R-PE-09: no allocation in the step).
+    this.world.physicsPipeline.step(
+      this.world.gravity,
+      this.world.integrationParameters,
+      this.world.islands,
+      this.world.broadPhase,
+      this.world.narrowPhase,
+      this.world.bodies,
+      this.world.colliders,
+      this.world.softBodies,
+      this.world.impulseJoints,
+      this.world.multibodyJoints,
+      this.world.ccdSolver,
+    );
   }
 
   /** Rapier forces persist until reset, so every tick starts from a clean slate. */
   clearForces(): void {
-    const clear = (body: RAPIER.RigidBody) => {
-      body.resetForces(false);
-      body.resetTorques(false);
-    };
-    clear(this.magnoBody);
+    this.clear(this.magnoBody);
     for (const prop of this.props) {
-      if (prop.dynamic) clear(this.world.getRigidBody(prop.bodyHandle));
+      if (prop.dynamic) this.clear(this.world.getRigidBody(prop.bodyHandle));
     }
+  }
+
+  private clear(body: RAPIER.RigidBody): void {
+    body.resetForces(false);
+    body.resetTorques(false);
   }
 
   snapshot(): Uint8Array {
@@ -408,7 +429,7 @@ export class PhysicsWorld {
 
   /**
    * Nearest contact per surface for a sphere of MAGNO's radius centred at `center`.
-   * Contacts closer than the probe reach are returned, ordered nearest first.
+   * Contacts closer than the probe reach, unordered: the caller sorts.
    */
   probe(center: Vec2): SurfaceContact[] {
     const R = TUNING.body.radius;
@@ -451,7 +472,9 @@ export class PhysicsWorld {
       undefined,
       this.magnoCollider,
     );
-    return contacts.sort((a, b) => a.gap - b.gap);
+    // Left unsorted on purpose: the one caller merges the three capsule
+    // centres and sorts once, so sorting each pass would be work thrown away.
+    return contacts;
   }
 
   /** Magnetic surfaces inside the snap radius that have a clear line from `center`. */

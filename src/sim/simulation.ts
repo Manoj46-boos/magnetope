@@ -3,7 +3,7 @@ import { TUNING } from '@/config/tuning';
 import { Emitter } from '@/core/emitter';
 import { len2, norm2, type Vec2 } from '@/core/mathx';
 import { FallTracker, type FallEvents, type FallReport } from './fall';
-import { MagnoController, type MagnoData, type MagnoEvents } from './magno';
+import { MagnoController, type MagnoData, type MagnoEvents, type MagnoView } from './magno';
 import { ReactiveSystem, type ReactiveData, type ReactiveEvents } from './reactive';
 import type { InputFrame, LevelDef } from './types';
 import { windAcceleration } from './wind';
@@ -125,18 +125,24 @@ export class Simulation {
     const clockMs = run.timeMs;
     if (run.started && !run.cleared) run.timeMs += 1000 / TUNING.sim.hz;
 
-    const wind = windAcceleration(this.level, clockMs, this.magno.view.position.y);
+    // One view per half tick (R-PE-09): the getter builds its objects, so the
+    // readers before MAGNO's update share the first reading, and the two after
+    // it — the fall tracker and the rules — read what the update left behind,
+    // the way their own fresh readings used to.
+    const before = this.magno.view;
+    const wind = windAcceleration(this.level, clockMs, before.position.y);
     this.physics.clearForces();
     this.physics.drive(clockMs);
-    this.reactive.step(this.magno.contactHandles(), this.magno.view.position);
-    this.applyFieldForces();
+    this.reactive.step(this.magno.contactHandles(), before.position);
+    this.applyFieldForces(before);
     this.applyWindToProps(clockMs);
     this.magno.update(input, wind);
     this.physics.step();
     this.tick++;
 
-    this.falls.update(run.timeMs);
-    this.checkRules();
+    const after = this.magno.view;
+    this.falls.update(run.timeMs, after);
+    this.checkRules(after);
   }
 
   /** Hung props catch the wind at their own height, so a gust sets a swing plate rocking before MAGNO arrives. */
@@ -151,8 +157,7 @@ export class Simulation {
     }
   }
 
-  private applyFieldForces(): void {
-    const view = this.magno.view;
+  private applyFieldForces(view: MagnoView): void {
     if (view.state !== 'airborne' && view.state !== 'attached' && view.state !== 'charging') return;
     const body = this.physics.magnoBody;
     for (const prop of this.physics.props) {
@@ -182,9 +187,8 @@ export class Simulation {
     }
   }
 
-  private checkRules(): void {
+  private checkRules(view: MagnoView): void {
     const run = this.run;
-    const view = this.magno.view;
     run.maxAltitude = Math.max(run.maxAltitude, view.position.y);
 
     const { checkpoints, summit, killY } = this.level;

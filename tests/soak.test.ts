@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Rng } from '@/core/rng';
 import { ALL_LEVELS, levelById } from '@/levels';
+import { STEP_ALLOC_CEILING_BYTES, stepAllocation } from '../tools/alloc-probe';
 import { Driver, createSim } from './helpers/harness';
 
 const MB = 1024 * 1024;
@@ -24,8 +25,11 @@ describe('soak (PRD 14.3 performance protocol, scaled to a unit run)', () => {
     };
     await loadAll();
     const afterWarmUp = retainedHeap();
-    for (let round = 0; round < 4; round++) await loadAll();
-    expect((retainedHeap() - afterWarmUp) / MB).toBeLessThan(25);
+    // R-PE-10: three full load/unload walks of the campaign, and whatever they
+    // leave behind must stay inside two percent of the heap the game holds.
+    for (let round = 0; round < 3; round++) await loadAll();
+    const delta = retainedHeap() - afterWarmUp;
+    expect(delta / afterWarmUp, `${(delta / MB).toFixed(2)} MB left behind of ${(afterWarmUp / MB).toFixed(0)} MB`).toBeLessThan(0.02);
   }, 240_000);
 
   it('plays ten minutes on the busiest level without growing, drifting or producing a NaN', async () => {
@@ -56,4 +60,16 @@ describe('soak (PRD 14.3 performance protocol, scaled to a unit run)', () => {
     expect((sample[9]! - sample[2]!) / MB).toBeLessThan(15);
     sim.dispose();
   }, 300_000);
+
+  // R-PE-09: the step's allocation ceiling, in flight and at rest, on the three
+  // busiest levels. The ceiling exists to catch the compat wrapper's per-step
+  // handle-map rebuild coming back — about 20 KB a tick on an awake world —
+  // not to bless the contact probe's own floor.
+  for (const id of ['playground-08', 'stratosphere-14', 'scrapyard-13'] as const) {
+    it(`keeps ${id}'s step under the allocation ceiling, in flight and at rest`, async () => {
+      const row = await stepAllocation(id);
+      expect(row.play, `${id} in flight`).toBeLessThan(STEP_ALLOC_CEILING_BYTES);
+      expect(row.rest, `${id} at rest`).toBeLessThan(STEP_ALLOC_CEILING_BYTES);
+    }, 240_000);
+  }
 });

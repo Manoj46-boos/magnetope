@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { timeLevel } from '../tools/perf';
+import { BUDGET_MS, timeLevel } from '../tools/perf';
 
 /**
  * PRD 10.4 / 14.3: the physics step is bounded at 3.5 ms (p99) on the high tier, so
  * 60 fps keeps the rest of the frame for rendering. The levels timed are the ones
- * with the most bodies and the busiest machinery.
+ * with the most bodies and the busiest machinery, and the budget is the one
+ * number `docs/PERF_BUDGET.md` publishes.
  */
 
-const BUDGET_P99_MS = 3.5;
+const BUDGET_P99_MS = BUDGET_MS;
 const BUSIEST = ['playground-14', 'playground-08', 'playground-13', 'scrapyard-13', 'stratosphere-14', 'stratosphere-07', 'metropolis-14'];
 
 describe('the physics step', () => {

@@ -1,6 +1,6 @@
 import { TUNING } from '@/config/tuning';
 import { Emitter } from '@/core/emitter';
-import type { MagnoController, MagnoEvents } from './magno';
+import type { MagnoController, MagnoEvents, MagnoView } from './magno';
 import type { PhysicsWorld } from './world';
 
 export type FallGrade = 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS';
@@ -80,8 +80,7 @@ export class FallTracker {
     this.unsubscribe.forEach((off) => off());
   }
 
-  update(timeMs: number): void {
-    const view = this.magno.view;
+  update(timeMs: number, view: MagnoView): void {
     const d = this.data;
     const airborneish = view.state === 'airborne' || view.state === 'repelled' || view.state === 'recovering';
     if (!airborneish) return;
