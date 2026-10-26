@@ -14,6 +14,8 @@ export interface MapNode {
   grade: string | null;
   /** The level the player should play next. */
   frontier: boolean;
+  /** A personal ghost waits on this level to be beaten (R-RT-02). */
+  hasGhost: boolean;
 }
 
 export interface MapBiome {
@@ -27,7 +29,7 @@ export interface MapBiome {
   planned: number;
 }
 
-type MapSave = Pick<SaveData, 'stars' | 'bestMs' | 'bestGrade'>;
+type MapSave = Pick<SaveData, 'stars' | 'bestMs' | 'bestGrade'> & { ghosts?: Record<string, string> };
 
 /**
  * The level-select mountain, base first (PRD 12.2). A biome opens on its star
@@ -59,6 +61,7 @@ export function buildMap(levels: readonly LevelDef[], save: MapSave): MapBiome[]
         bestMs: save.bestMs[level.id] ?? null,
         grade: save.bestGrade[level.id] ?? null,
         frontier,
+        hasGhost: Boolean(save.ghosts?.[level.id]),
       };
     });
 

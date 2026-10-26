@@ -1,5 +1,5 @@
 import type { Vec2 } from '@/core/mathx';
-import { GhostRecorder, decodeGhost, encodeGhost, sampleGhost, type GhostTrack } from '@/sim/ghost';
+import { GhostRecorder, decodeGhost, encodeGhost, sampleGhost, timeAtPoint, type GhostTrack } from '@/sim/ghost';
 import type { FriendGhost } from '@/platform/storage';
 import type { Simulation } from '@/sim/simulation';
 
@@ -15,6 +15,12 @@ export interface GhostPoses {
 export interface FriendRace {
   name: string;
   durationMs: number;
+}
+
+/** Where and when the run's own flip happened, the landmark the delta card reads (R-RT-07). */
+export interface FlipMoment {
+  point: Vec2;
+  timeMs: number;
 }
 
 export type ParLoader = (levelId: string) => Promise<GhostTrack | null>;
@@ -67,6 +73,17 @@ export class GhostDirector {
   /** Call once after every simulation tick. */
   capture(sim: Simulation): void {
     if (sim.run.started && !sim.run.cleared) this.recorder.push(sim.magno.view.position);
+  }
+
+  /**
+   * How many milliseconds the live run was ahead of the personal ghost at
+   * `flip` — positive means the player got there first. Null when there is no
+   * personal ghost to race or the ghost's route never passed the flip (R-RT-07).
+   */
+  deltaAtFlip(flip: FlipMoment): number | null {
+    if (!this.personal) return null;
+    const ghostMs = timeAtPoint(this.personal, flip.point);
+    return ghostMs === null ? null : ghostMs - flip.timeMs;
   }
 
   /** Encodes the finished run so it can be stored as the personal ghost. */

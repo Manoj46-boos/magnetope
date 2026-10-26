@@ -121,3 +121,13 @@ export function guideDirection(track: GhostTrack, from: Vec2, minDistance = 2.5)
   }
   return null;
 }
+
+/** Milliseconds into the run the ghost first stood within `radius` of `point`, or null if it never came by (R-RT-07). */
+export function timeAtPoint(track: GhostTrack, point: Vec2, radius = 2): number | null {
+  for (let i = 0; i < track.x.length; i++) {
+    const dx = track.x[i]! / UNITS_PER_METER - point.x;
+    const dy = track.y[i]! / UNITS_PER_METER - point.y;
+    if (Math.hypot(dx, dy) <= radius) return i * SAMPLE_MS;
+  }
+  return null;
+}

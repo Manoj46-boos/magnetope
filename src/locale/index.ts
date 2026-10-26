@@ -24,3 +24,9 @@ export const t = (key: StringKey): string => TABLES[active][key] ?? TABLES.en[ke
 /** Translates a string and fills its `{name}` placeholders. */
 export const tf = (key: StringKey, params: Record<string, string | number>): string =>
   t(key).replace(/\{(\w+)\}/g, (match, name: string) => (name in params ? String(params[name]) : match));
+
+/**
+ * A count in the active locale's own grouping (R-EC-12). Scrap is a fictional
+ * unit, so it carries no currency sign anywhere — only its own digits.
+ */
+export const tn = (value: number): string => new Intl.NumberFormat(active).format(value);
