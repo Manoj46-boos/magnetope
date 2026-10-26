@@ -141,10 +141,12 @@ const en = {
   setMetropolis: 'Metropolis set',
   setPlayground: 'Giants set',
   setStratosphere: 'Stratosphere set',
+  accessibility: 'Accessibility',
+  uiScale: 'UI size',
 } as const;
 
 export type StringKey = keyof typeof en;
-type Table = Record<StringKey, string>;
+export type Table = Record<StringKey, string>;
 
 const de: Table = {
   loading: 'Laden',
@@ -286,6 +288,8 @@ const de: Table = {
   setMetropolis: 'Metropolis-Set',
   setPlayground: 'Riesenland-Set',
   setStratosphere: 'Stratosphären-Set',
+  accessibility: 'Barrierefreiheit',
+  uiScale: 'UI-Größe',
 };
 
 const es: Table = {
@@ -428,6 +432,8 @@ const es: Table = {
   setMetropolis: 'Set de la metrópoli',
   setPlayground: 'Set de los gigantes',
   setStratosphere: 'Set de la estratosfera',
+  accessibility: 'Accesibilidad',
+  uiScale: 'Tamaño de la interfaz',
 };
 
 const fr: Table = {
@@ -570,6 +576,8 @@ const fr: Table = {
   setMetropolis: 'Set de la métropole',
   setPlayground: 'Set des géants',
   setStratosphere: 'Set de la stratosphère',
+  accessibility: 'Accessibilité',
+  uiScale: 'Taille de l’interface',
 };
 
 const it: Table = {
@@ -712,6 +720,8 @@ const it: Table = {
   setMetropolis: 'Set della metropoli',
   setPlayground: 'Set dei giganti',
   setStratosphere: 'Set della stratosfera',
+  accessibility: 'Accessibilità',
+  uiScale: 'Dimensione interfaccia',
 };
 
 const pt: Table = {
@@ -854,6 +864,8 @@ const pt: Table = {
   setMetropolis: 'Set da metrópole',
   setPlayground: 'Set dos gigantes',
   setStratosphere: 'Set da estratosfera',
+  accessibility: 'Acessibilidade',
+  uiScale: 'Tamanho da interface',
 };
 
 const tr: Table = {
@@ -996,6 +1008,8 @@ const tr: Table = {
   setMetropolis: 'Metropol seti',
   setPlayground: 'Devler seti',
   setStratosphere: 'Stratosfer seti',
+  accessibility: 'Erişilebilirlik',
+  uiScale: 'Arayüz boyutu',
 };
 
 export const TABLES: Readonly<Record<LocaleId, Table>> = { en, de, es, fr, it, pt, tr };
