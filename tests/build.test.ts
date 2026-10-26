@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 // @ts-expect-error plain ESM script without type declarations
-import { BUDGET, auditBuild } from '../scripts/check-budget.mjs';
+import { BUDGET, CLASS_BUDGETS, auditBuild } from '../scripts/check-budget.mjs';
 
 const root = resolve(__dirname, '..');
 let outDir = '';
@@ -36,6 +36,29 @@ describe('production build (Poki QA gates)', () => {
     const { total } = auditBuild(outDir);
     expect(total).toBeLessThan(BUDGET.initial);
     expect(total).toBeLessThan(BUDGET.hardInitial);
+  });
+
+  // R-PE-01: the per-class red line. The class table is the published budget
+  // (docs/PERF_BUDGET.md renders it), so both builds must sit under every line.
+  it('keeps every asset class inside its own line, in both builds', () => {
+    for (const dir of [outDir, pokiDir]) {
+      const { classes } = auditBuild(dir, { allowPokiSdk: dir === pokiDir });
+      const names = Object.keys(CLASS_BUDGETS);
+      expect(Object.keys(classes).sort()).toEqual([...names].sort());
+      for (const name of names) {
+        expect(classes[name], `${dir} ${name}`).toBeLessThan(CLASS_BUDGETS[name]);
+      }
+    }
+  });
+
+  // R-PE-07: the engine arrives as a file the browser compiles while it
+  // downloads, and the audit asserts the streaming loader survived the build.
+  it('ships the physics engine streaming and inside its growth line', () => {
+    const { sizes, classes } = auditBuild(outDir);
+    const wasm = sizes.find((s: { file: string }) => s.file.endsWith('.wasm'));
+    expect(wasm).toBeDefined();
+    expect(classes.wasm).toBeLessThanOrEqual(CLASS_BUDGETS.wasm);
+    expect(auditBuild(outDir).problems).toEqual([]);
   });
 
   it('passes the full audit: no maps, no external requests, no dev hooks, no Google', () => {

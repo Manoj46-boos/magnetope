@@ -33,7 +33,10 @@
     "perf": "tsx tools/perf.ts",
     "anim-cost": "node --expose-gc --import tsx tools/anim-cost.ts",
     "restart-time": "tsx tools/restart-time.ts",
-    "docs": "tsx tools/doc-spine.ts"
+    "docs": "tsx tools/doc-spine.ts",
+    "filmstrip": "tsx tools/filmstrip.ts",
+    "alloc": "node --expose-gc --import tsx tools/alloc-probe.ts",
+    "tiermap": "tsx tools/tiermap.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.21.0",

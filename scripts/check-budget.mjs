@@ -3,20 +3,42 @@ import { gzipSync } from 'node:zlib';
 import { join, relative, resolve } from 'node:path';
 
 /**
- * Size and hygiene gate for a production build (PRD 10.3 and 14.1).
+ * Size and hygiene gate for a production build (PRD 10.3 and 14.1, R-PE-01).
  *
  * Budgets are measured on gzipped bytes of everything the first screen needs.
  * The internal target is 4.0 MB against Poki's 5 MB hard limit; the whole game
- * must stay under 8 MB.
+ * must stay under 8 MB. Inside the total, each asset class has its own line, so
+ * a class cannot quietly eat another's headroom; the lines are published in
+ * docs/PERF_BUDGET.md, which the doc spine renders from these constants.
  */
 const MB = 1024 * 1024;
 export const BUDGET = { initial: 4.0 * MB, hardInitial: 5 * MB, total: 8 * MB };
+
+/** The engine's WebAssembly, gzipped, as shipped today: it may grow by at most a quarter (R-PE-07). */
+const WASM_TODAY = 1_149_100;
+export const CLASS_BUDGETS = {
+  js: 0.50 * MB,
+  wasm: Math.ceil(WASM_TODAY * 1.25),
+  fonts: 0.06 * MB,
+  'level-data': 0.08 * MB,
+  ui: 0.05 * MB,
+};
+
+/** The par-ghost chunks one level at a time: named after the biome that owns them. */
+const LEVEL_CHUNK = /(?:playground|scrapyard|suburbia|metropolis|stratosphere)-\d+-[A-Za-z0-9_-]+\.js$/;
 
 function walk(dir) {
   return readdirSync(dir).flatMap((name) => {
     const full = join(dir, name);
     return statSync(full).isDirectory() ? walk(full) : [full];
   });
+}
+
+function classify(file) {
+  if (file.endsWith('.wasm')) return 'wasm';
+  if (file.endsWith('.woff2') || file.endsWith('.txt')) return 'fonts';
+  if (file.endsWith('.js')) return LEVEL_CHUNK.test(file) ? 'level-data' : 'js';
+  return 'ui';
 }
 
 export function auditBuild(dist, { allowPokiSdk = false } = {}) {
@@ -28,11 +50,16 @@ export function auditBuild(dist, { allowPokiSdk = false } = {}) {
     gzip: gzipSync(readFileSync(file)).length,
   }));
   const total = sizes.reduce((sum, f) => sum + f.gzip, 0);
+  const classes = {};
+  for (const entry of sizes) classes[classify(entry.file)] = (classes[classify(entry.file)] ?? 0) + entry.gzip;
   const problems = [];
 
   if (total > BUDGET.initial) problems.push(`initial payload ${(total / MB).toFixed(2)} MB exceeds the ${(BUDGET.initial / MB).toFixed(1)} MB internal target`);
   if (total > BUDGET.hardInitial) problems.push(`initial payload exceeds Poki's ${(BUDGET.hardInitial / MB).toFixed(0)} MB hard limit`);
   if (total > BUDGET.total) problems.push(`total payload exceeds ${(BUDGET.total / MB).toFixed(0)} MB`);
+  for (const [name, line] of Object.entries(CLASS_BUDGETS)) {
+    if ((classes[name] ?? 0) > line) problems.push(`${name} is ${(classes[name] / MB).toFixed(2)} MB, over its ${(line / MB).toFixed(2)} MB line (R-PE-01)`);
+  }
 
   for (const entry of sizes) {
     if (entry.file.endsWith('.map')) problems.push(`source map shipped: ${entry.file}`);
@@ -49,6 +76,10 @@ export function auditBuild(dist, { allowPokiSdk = false } = {}) {
 
   const code = files.filter((f) => f.endsWith('.js') || f.endsWith('.css') || f.endsWith('.html'));
   const joined = code.map((f) => readFileSync(f, 'utf8')).join('\n');
+  // The engine's loader must keep compiling while it downloads (R-PE-07).
+  if (sizes.some((f) => f.file.endsWith('.wasm')) && !joined.includes('instantiateStreaming')) {
+    problems.push('WebAssembly no longer streams: instantiateStreaming is missing from the bundle');
+  }
   if (/__game\b/.test(joined)) problems.push('development hook (__game) leaked into the production bundle');
   if (/googleapis|gstatic|google-analytics|googletagmanager/i.test(joined)) problems.push('Google service reference found; Poki rejects them');
   if (/https?:\/\/(?!game-cdn\.poki\.com|www\.w3\.org|github\.com\/dimforge|threejs\.org|rapier\.rs|developers\.poki\.com|reactjs\.org|mths\.be|docs\.|www\.khronos\.org|registry\.khronos\.org|en\.wikipedia\.org|webglreport|get\.webgl\.org|bugzilla|crbug|bugs\.|issues\.|developer\.mozilla\.org|stackoverflow|gist\.github|raw\.githubusercontent|rollupjs|vite)[^\s"'`)]{4,}\/\S*\.(js|png|jpg|woff2?|json|mp3|ogg|wasm)\b/i.test(joined)) {
@@ -57,14 +88,19 @@ export function auditBuild(dist, { allowPokiSdk = false } = {}) {
   if (/\bfetch\s*\(\s*["'`]https?:/.test(joined)) problems.push('fetch to an absolute URL found');
   if (/<a\s[^>]*href=/i.test(joined)) problems.push('outbound anchor found in bundle');
 
-  return { sizes, total, problems };
+  return { sizes, total, classes, problems };
 }
 
 const invoked = process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 if (invoked) {
   const dist = resolve(process.argv.slice(2).find((arg) => !arg.startsWith('--')) ?? 'dist');
-  const { sizes, total, problems } = auditBuild(dist, { allowPokiSdk: process.argv.includes('--poki') });
+  const { sizes, total, classes, problems } = auditBuild(dist, { allowPokiSdk: process.argv.includes('--poki') });
   for (const f of sizes.sort((a, b) => b.gzip - a.gzip)) console.log(`${String(f.gzip).padStart(9)} B gzip  ${f.file}`);
+  console.log('\nper-class payload, gzipped:');
+  for (const [name, bytes] of Object.entries(classes).sort((a, b) => b[1] - a[1])) {
+    const line = CLASS_BUDGETS[name];
+    console.log(`  ${(bytes / MB).toFixed(2)} MB of ${line ? `${(line / MB).toFixed(2)}` : '?'}  ${name}`);
+  }
   console.log(`\ninitial payload: ${(total / MB).toFixed(2)} MB gzipped (target <= 4.00, hard limit 5.00)`);
   if (problems.length) {
     console.error(`\nBuild audit FAILED:\n - ${problems.join('\n - ')}`);

@@ -20,6 +20,8 @@ Anonymous gameplay telemetry in Poki’s `measure(category, what, action)` shape
 | cosmetic | the item id | `unlock` | a look enters the locker: bought, watched for, claimed free or earned |
 | dangle | the item id | `shown` | the clear card names the next unlock |
 | ending | watched / skipped | seconds spent | the film ends or is skipped |
+| watchdog | the tier being left `-` the tier entered | the frame rate the decision fired at | the watchdog steps the quality down (R-PE-08) |
+| perf | fps | the sessions own frame rate | the queue travels at a natural stop (R-PE-11) |
 | session | length | seconds | the queue flushes at a natural stop |
 
 ## The laws

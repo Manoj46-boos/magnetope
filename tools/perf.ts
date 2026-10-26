@@ -19,7 +19,8 @@ import { IDLE_INPUT } from '../src/sim/types';
  *   npm run perf -- --only=playground-08 --rounds=5
  */
 
-const BUDGET_MS = 3.5;
+/** The physics step's share of the frame, p99 (PRD 14.3, R-PE-02). */
+export const BUDGET_MS = 3.5;
 const IDLE_TICKS = 600;
 const WARM_UP_TICKS = 120;
 

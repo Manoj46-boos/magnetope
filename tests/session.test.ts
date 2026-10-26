@@ -182,7 +182,7 @@ describe('a first session in a real browser', () => {
     const ghosts = await page!.evaluate(() => Object.keys((window as unknown as GameWindow).__game.debug.save.data.ghosts));
     expect(measured.some((r) => r.category === 'ghost' && r.action === 'set')).toBe(ghosts.length > 0);
     // nothing the game said falls outside the published vocabulary (R-AN-01)
-    const vocabulary = ['level', 'retry', 'fall', 'attempt', 'stars', 'time', 'fallcount', 'session', 'ending', 'boot', 'input', 'ghost', 'cosmetic', 'scrap', 'dangle'];
+    const vocabulary = ['level', 'retry', 'fall', 'attempt', 'stars', 'time', 'fallcount', 'session', 'ending', 'boot', 'input', 'ghost', 'cosmetic', 'scrap', 'dangle', 'watchdog', 'perf'];
     for (const record of measured) expect(vocabulary, `${record.category}/${record.what} is not in the table`).toContain(record.category);
   });
 

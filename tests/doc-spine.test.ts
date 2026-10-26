@@ -4,12 +4,14 @@ import { describe, expect, it } from 'vitest';
 import * as recipes from '@/audio/recipes';
 import * as continuous from '@/audio/continuous';
 import { AudioEngine, BUS_DB } from '@/audio/engine';
-import { renderAudio, renderColorScript, renderEconomy, renderEvents, renderFeel, renderKpi, renderMagno, renderSpectacle } from '../tools/doc-spine';
+import { renderAudio, renderColorScript, renderEconomy, renderEvents, renderFeel, renderKpi, renderMagno, renderPerfBudget, renderSpectacle } from '../tools/doc-spine';
 import { FUNNEL_STEPS } from '../tools/analytics/funnel';
 import { BENCHMARKS, FRIDAY_SECTIONS } from '../tools/analytics/report';
 import { COSMETIC_IDS } from '@/config/cosmetics';
 import { LOCALES } from '@/locale';
 import { PROFILES } from '@/render/quality';
+// @ts-expect-error plain ESM script without type declarations
+import { CLASS_BUDGETS } from '../scripts/check-budget.mjs';
 import { FEEL_GAME_BEATS, FEEL_ROWS, SIM_EVENT_NAMES } from '@/game/feel-table';
 import { SPECTACLE_BEATS } from '@/game/spectacle-table';
 import { CHIRP_WORDS, MAGNO_EMOTIONS } from '@/game/magno-table';
@@ -25,9 +27,13 @@ import { ALL_LEVELS } from '@/levels';
 import { loadRapier } from '@/sim/rapier';
 import { Simulation } from '@/sim/simulation';
 import { ReplayPlayer, decodeRecording } from '@/sim/replay';
+import { PATIENCE_S } from '@/game/watchdog';
+import { STEP_ALLOC_CEILING_BYTES } from '../tools/alloc-probe';
+import { BUDGET_MS as STEP_BUDGET_MS } from '../tools/perf';
+import { FPS_FLOOR, LEVEL_LINK_BUDGET_MS, LONGTASK_MS, RESTART_BUDGET_MS } from '../tools/perf-laws';
 
 /**
- * The doc-drift spine (premium PRD W7): the eight spine docs are generated from
+ * The doc-drift spine (premium PRD W7): the nine spine docs are generated from
  * the code, and this suite holds them there. Each doc re-renders byte for
  * byte, every feel row names an event the simulation really emits and every
  * listener in the render, game and audio layers has a row, the audio map names
@@ -127,7 +133,7 @@ describe('the economy (R-EC-07)', () => {
 });
 
 describe('the event vocabulary (R-AN-01)', () => {
-  const CATEGORIES = new Set(['level', 'retry', 'fall', 'attempt', 'stars', 'time', 'fallcount', 'session', 'ending', 'boot', 'input', 'ghost', 'cosmetic', 'scrap', 'dangle']);
+  const CATEGORIES = new Set(['level', 'retry', 'fall', 'attempt', 'stars', 'time', 'fallcount', 'session', 'ending', 'boot', 'input', 'ghost', 'cosmetic', 'scrap', 'dangle', 'watchdog', 'perf']);
   const sourceFiles = (): string[] => {
     const walk = (dir: string): string[] =>
       readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -306,5 +312,37 @@ describe('the audio bible (R-AU-07)', () => {
     expect(text).toContain(`the bed ducks ${MIX_HIERARCHY.adDuck.db} dB (to a floor of ${MIX_HIERARCHY.adDuck.floorDb} dB)`);
     expect(text).toContain(`side-chain the bed ${MIX_HIERARCHY.stingerDuck.db} dB`);
     expect(text).toContain(`the true-peak ceiling ${MIX_HIERARCHY.monitoring.ceilingDb} dBTP`);
+  });
+});
+
+describe('the performance budget (R-PE-01…14)', () => {
+  it('is the generated file, byte for byte', () => {
+    expect(doc('PERF_BUDGET.md')).toBe(renderPerfBudget());
+  });
+
+  it('carries every payload class line the build audit enforces', () => {
+    const text = doc('PERF_BUDGET.md');
+    for (const name of Object.keys(CLASS_BUDGETS)) {
+      const line = (CLASS_BUDGETS as Record<string, number>)[name]!;
+      expect(text).toContain(`| ${name} | ${(line / (1024 * 1024)).toFixed(2)} MB |`);
+    }
+  });
+
+  it('publishes a promised frame and effect ceilings for all three tiers', () => {
+    const text = doc('PERF_BUDGET.md');
+    for (const tier of ['high', 'mid', 'low'] as const) {
+      expect(text).toContain(`| ${tier} | ${FPS_FLOOR[tier]} fps`);
+      expect(text).toContain(`${PROFILES[tier].particleCeiling} particles / ${PROFILES[tier].windStreaks} streaks`);
+    }
+  });
+
+  it('quotes the frame laws the suites gate against', () => {
+    const text = doc('PERF_BUDGET.md');
+    expect(text).toContain(`p99 ${STEP_BUDGET_MS} ms`);
+    expect(text).toContain(`over ${LONGTASK_MS} ms fails the battery`);
+    expect(text).toContain(`inside ${RESTART_BUDGET_MS} ms`);
+    expect(text).toContain(`fits ${LEVEL_LINK_BUDGET_MS / 1000} s`);
+    expect(text).toContain(`a full ${PATIENCE_S} s arms`);
+    expect(text).toContain(`fails above ${(STEP_ALLOC_CEILING_BYTES / 1000).toFixed(0)} KB`);
   });
 });
