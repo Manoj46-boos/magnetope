@@ -266,6 +266,11 @@ export class SceneRenderer {
     this.rig.applySkin(skin);
   }
 
+  /** R-EC-05: a complete set equipped turns the rig's character beat into the set's own flourish. */
+  setFullSet(on: boolean): void {
+    this.rig.setFullSet(on);
+  }
+
   /** Equips a field-line colour set; `null` restores the classic cyan and amber. */
   setFieldColors(look: FieldLook | null): void {
     fxTheme.setField(look);

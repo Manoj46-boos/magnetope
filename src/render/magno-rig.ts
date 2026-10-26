@@ -271,6 +271,10 @@ export class MagnoRig {
   private beatAge = -1;
   private spinLeft = 0;
   private spinAngle = 0;
+  /** R-EC-05: with a complete set equipped, the character beat's turn doubles into the set's own flourish. */
+  private fullSet = false;
+  private spinDuration = HOP_MS / 1000;
+  private spinTurns = 1;
   private pendingBeat: CharacterBeat | null = null;
   private curiosity: Vec2 | null = null;
   private readonly curiosityAt: Vec2 = { x: 0, y: 0 };
@@ -505,6 +509,16 @@ export class MagnoRig {
     this.pulse = { axis: 0, peak: 1.16, hold: 0.05, recover: 0.24, age: 0 };
   }
 
+  /** R-EC-05: the equipped look's set is complete, so the character beat carries the set's own double flourish. */
+  setFullSet(on: boolean): void {
+    this.fullSet = on;
+  }
+
+  /** The flourish the next character beat will carry — the set's completion, made visible. */
+  get fullSetFlourish(): boolean {
+    return this.fullSet;
+  }
+
   /** A 140 ms lid close, a one-shot like the hop; the ident's settle beat ends on it. */
   blink(): void {
     this.blinkMs = 0;
@@ -616,10 +630,11 @@ export class MagnoRig {
       // The character beat's flourish: a whole turn in place, eased out so it
       // reads as a flip and lands without a wobble. Presentation only — it
       // rides the inner rotation, so the squash axis and the upright charge
-      // arcs never take part.
+      // arcs never take part. A complete set doubles the turn into its own
+      // signature (R-EC-05).
       this.spinLeft = Math.max(0, this.spinLeft - dt);
-      const u = 1 - this.spinLeft / (HOP_MS / 1000);
-      this.spinAngle = (1 - (1 - u) ** 2) * Math.PI * 2;
+      const u = 1 - this.spinLeft / this.spinDuration;
+      this.spinAngle = (1 - (1 - u) ** 2) * Math.PI * 2 * this.spinTurns;
       if (this.spinLeft === 0) this.spinAngle = 0;
     }
     this.performIdle(view, dt, reducedMotion);
@@ -704,7 +719,9 @@ export class MagnoRig {
       this.nextBeatAt = this.idleMs + TUNING.character.beatMs + (this.roll01() * 2 - 1) * TUNING.character.beatJitterMs;
       if (!reducedMotion && this.hopMs < 0) {
         this.attentionHop();
-        this.spinLeft = HOP_MS / 1000;
+        this.spinDuration = (HOP_MS / 1000) * (this.fullSet ? 2 : 1);
+        this.spinTurns = this.fullSet ? 2 : 1;
+        this.spinLeft = this.spinDuration;
       }
     }
   }

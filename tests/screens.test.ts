@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { COSMETICS } from '@/config/cosmetics';
 import { buildMap } from '@/game/map-model';
 import { ALL_LEVELS } from '@/levels';
 import { freshSave } from '@/platform/storage';
@@ -65,6 +66,8 @@ describe('level map screen', () => {
       biomes: buildMap(ALL_LEVELS, save),
       stars: Object.values(stars).reduce((a, b) => a + b, 0),
       scrap: 120,
+      collection: { owned: save.owned.length, total: COSMETICS.length },
+      session: null,
       highlights: [{ levelId: 'scrapyard-00', levelName: 'First Steps', biome: 'scrapyard', heightMeters: 18.4, bounces: 3, junk: 2, grade: 'A', score: 30 }],
       currentLevelId: 'scrapyard-00',
     });
@@ -128,7 +131,7 @@ describe('level map screen', () => {
 
 describe('locker screen', () => {
   const build = (mutate: (s: ReturnType<typeof freshSave>) => void = () => undefined) => {
-    const handlers = { equip: vi.fn(), buy: vi.fn(), watch: vi.fn(), back: vi.fn(), tick: vi.fn() };
+    const handlers = { equip: vi.fn(), buy: vi.fn(), watch: vi.fn(), claim: vi.fn(), back: vi.fn(), tick: vi.fn() };
     const screen = new LockerScreen(document.body, new ModalHost(), handlers);
     const save = freshSave();
     mutate(save);

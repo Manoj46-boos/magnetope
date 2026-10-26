@@ -156,7 +156,7 @@ describe('opened from the pause menu', () => {
     tick: noop,
     stamp: noop,
     map: { select: noop, back: noop, openLocker: noop, share: noop, tick: noop },
-    locker: { equip: noop, buy: noop, watch: noop, back: noop, tick: noop },
+    locker: { equip: noop, buy: noop, watch: noop, claim: noop, back: noop, tick: noop },
     exchange: { exportCode: async () => null, importCode: async () => ({ ok: false, message: 'ghostErrFormat' }), removeFriend: noop, back: noop, tick: noop },
   });
   const pauseButton = (label: string): HTMLButtonElement =>

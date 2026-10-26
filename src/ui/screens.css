@@ -281,12 +281,54 @@
   font-weight: 900;
 }
 
+/* R-RT-02: a personal ghost waiting on a level. */
+.node .ghost-pip {
+  position: absolute;
+  top: calc(-8px * var(--zoom));
+  left: calc(-10px * var(--zoom));
+  display: grid;
+  place-items: center;
+  width: calc(18px * var(--zoom));
+  height: calc(18px * var(--zoom));
+  border-radius: 50%;
+  background: rgba(13, 17, 25, 0.92);
+  border: 2px solid var(--cyan);
+  color: var(--cyan);
+}
+
+.node .ghost-pip svg {
+  width: calc(10px * var(--zoom));
+  height: calc(10px * var(--zoom));
+}
+
 .biome .soon {
   margin: calc(16px * var(--zoom)) 0 0;
   font-size: 0.74rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.7);
+}
+
+/* R-RT-04: the session's tally, read back at the natural break. */
+.session-card {
+  display: none;
+}
+
+.session-card.live {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--panel-edge);
+}
+
+.session-card .session-line {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-dim);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .highlights {
@@ -354,6 +396,36 @@
   box-shadow: inset 0 -3px 0 var(--cyan);
 }
 
+/* R-EC-05: the five sets and how full each one is. */
+.sets {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  overflow-x: auto;
+}
+
+.set-chip {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink-dim);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.set-chip svg {
+  width: 11px;
+  height: 11px;
+  margin-right: 3px;
+  vertical-align: -1px;
+}
+
+.set-chip.complete {
+  background: rgba(60, 38, 8, 0.55);
+  color: var(--amber);
+}
+
 .locker-grid {
   flex: 1 1 auto;
   min-height: 0;
@@ -367,6 +439,7 @@
 }
 
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -374,6 +447,22 @@
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--panel-edge);
+}
+
+/* R-RT-05: the week's spotlight look, free for its week. */
+.spotlight-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: var(--amber);
+  color: #241503;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .card.equipped {
@@ -750,6 +839,29 @@
 
 .duel-tag.won {
   color: #e0a3ff;
+}
+
+/* R-RT-07: the player's own ghost, at the flip. */
+.ghost-tag {
+  margin: 0 0 6px;
+  color: var(--ink-dim);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+}
+
+.ghost-tag.ahead {
+  color: var(--amber);
+}
+
+/* R-EC-04: the dangle, nearest first and rotating. */
+.dangle-tag {
+  margin: 0 0 10px;
+  color: var(--ink-dim);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
 }
 
 /* ------------------------------------------------------------------ controls */
@@ -1137,6 +1249,16 @@
   .panel.pause .toggle,
   .panel.pause .lang select {
     min-height: 38px;
+  }
+
+  /* Tiny landscape phones: the sets strip and the shelf cards slim down so the
+     week's spotlight claim stays in view at the front of the grid (R-RT-05). */
+  .sets {
+    padding: 4px 14px;
+  }
+
+  .card .preview {
+    height: 64px;
   }
 }
 

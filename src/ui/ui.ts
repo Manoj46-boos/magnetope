@@ -1,5 +1,5 @@
 import type { InputManager } from '@/input/input';
-import { LOCALES, getLocale, t, tf, type LocaleId, type StringKey } from '@/locale';
+import { LOCALES, getLocale, t, tf, tn, type LocaleId, type StringKey } from '@/locale';
 import { DEFAULT_SETTINGS, type Settings } from '@/platform/settings';
 import { formatTime } from '@/game/progress';
 import { BiomeBanner } from './banner';
@@ -50,6 +50,10 @@ export interface ClearCardData {
   finale: boolean;
   /** The friend ghost raced this run, with the outcome. */
   friend: { name: string; beaten: boolean; marginMs: number } | null;
+  /** How the run stood against the player's own ghost at the flip (R-RT-07). */
+  ghostDelta: { aheadMs: number } | null;
+  /** The next visible unlock, nearest first and rotating (R-EC-04). */
+  dangle: { name: string; scrapToGo: number } | null;
 }
 
 export interface FallCardData {
@@ -420,12 +424,14 @@ export class GameUi {
       <div class="stamp">${LOCKUP_IDENT}</div>
       ${data.newBest ? `<p class="best-tag">${t('newBest')}</p>` : ''}
       ${data.friend ? `<p class="duel-tag ${data.friend.beaten ? 'won' : ''}">${esc(this.duelLine(data.friend))}</p>` : ''}
+      ${data.ghostDelta ? `<p class="ghost-tag ${data.ghostDelta.aheadMs >= 0 ? 'ahead' : ''}">${esc(this.ghostLine(data.ghostDelta))}</p>` : ''}
+      ${data.dangle ? `<p class="dangle-tag">${esc(this.dangleLine(data.dangle))}</p>` : ''}
       <div class="banner">${t('levelClear')}</div>
       <div class="stars">${[0, 1, 2].map(() => `<div class="slot">${ICONS.starOutline}</div>`).join('')}</div>
       <div class="facts">
         <div class="fact ${data.timeMs / 1000 <= data.parSeconds ? 'good' : ''}"><b>${formatTime(data.timeMs)}</b><span>${t('time')}</span></div>
         <div class="fact"><b>${par}</b><span>${t('par')}</span></div>
-        <div class="fact"><b><span class="scrap-icon">${ICONS.scrap}</span>${data.scrap}</b><span>${t('scrap')}</span></div>
+        <div class="fact"><b><span class="scrap-icon">${ICONS.scrap}</span>${tn(data.scrap)}</b><span>${t('scrap')}</span></div>
       </div>
       <div class="stack"></div>`;
     const stack = panel.querySelector('.stack') as HTMLElement;
@@ -469,6 +475,17 @@ export class GameUi {
     return friend.beaten
       ? tf('beatFriend', { n: friend.name })
       : tf('friendAhead', { n: friend.name, s: (friend.marginMs / 1000).toFixed(2) });
+  }
+
+  /** R-RT-07: the most personal line the card carries — the player against their own ghost. */
+  private ghostLine(delta: NonNullable<ClearCardData['ghostDelta']>): string {
+    const s = (Math.abs(delta.aheadMs) / 1000).toFixed(1);
+    return delta.aheadMs >= 0 ? tf('ghostAhead', { s }) : tf('ghostBehind', { s });
+  }
+
+  /** R-EC-04: the dangle, in the locale's own grouping so the Scrap stays neutral (R-EC-12). */
+  private dangleLine(dangle: NonNullable<ClearCardData['dangle']>): string {
+    return dangle.scrapToGo === 0 ? tf('dangleReady', { n: dangle.name }) : tf('dangleAway', { n: dangle.name, s: tn(dangle.scrapToGo) });
   }
 
   hideClear(): void {

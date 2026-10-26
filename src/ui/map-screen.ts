@@ -1,7 +1,8 @@
 import type { FallHighlight } from '@/game/highlights';
 import type { MapBiome, MapNode } from '@/game/map-model';
 import { formatTime, TOTAL_STARS } from '@/game/progress';
-import { t } from '@/locale';
+import type { SessionSummary } from '@/game/session-log';
+import { t, tf, tn } from '@/locale';
 import { PALETTES, type Hsl } from '@/render/palette';
 import { el, esc } from './dom';
 import { ICONS } from './icons';
@@ -19,6 +20,10 @@ export interface MapView {
   biomes: readonly MapBiome[];
   stars: number;
   scrap: number;
+  /** The collection ladder's own chip (R-EC-06). */
+  collection: { owned: number; total: number };
+  /** The session's own tally, shown at the natural break (R-RT-04). */
+  session: SessionSummary | null;
   highlights: readonly FallHighlight[];
   currentLevelId: string;
 }
@@ -39,6 +44,7 @@ export class MapScreen {
   private readonly scroll: HTMLElement;
   private readonly mountain: HTMLElement;
   private readonly chips: HTMLElement;
+  private readonly sessionCard: HTMLElement;
   private readonly strip: HTMLElement;
   private zoomValue = 1;
   private readonly pointers = new Map<number, { x: number; y: number }>();
@@ -73,9 +79,10 @@ export class MapScreen {
     this.scroll = el('div', { class: 'map-scroll' });
     this.mountain = el('div', { class: 'mountain' });
     this.scroll.appendChild(this.mountain);
+    this.sessionCard = el('footer', { class: 'session-card' });
     this.strip = el('footer', { class: 'highlights' });
 
-    frame.append(head, this.scroll, this.strip);
+    frame.append(head, this.scroll, this.sessionCard, this.strip);
     this.modal.appendChild(frame);
     parent.appendChild(this.modal);
     this.bindZoom();
@@ -152,13 +159,31 @@ export class MapScreen {
   }
 
   render(view: MapView): void {
+    const pct = view.collection.total > 0 ? Math.round((view.collection.owned / view.collection.total) * 100) : 0;
     this.chips.innerHTML = `
       <span class="chip"><span class="gold">${ICONS.starOutline}</span>${view.stars}<small>/${TOTAL_STARS}</small></span>
-      <span class="chip"><span class="gold">${ICONS.scrap}</span>${view.scrap}</span>`;
+      <span class="chip"><span class="gold">${ICONS.scrap}</span>${tn(view.scrap)}</span>
+      <span class="chip" title="${esc(t('collection'))}">${view.collection.owned}<small>/${view.collection.total}</small> · ${pct}%</span>`;
 
     this.mountain.style.setProperty('--zoom', String(this.zoomValue));
     this.mountain.replaceChildren(...[...view.biomes].reverse().map((biome, i) => this.biomeBand(biome, i, view.currentLevelId)));
+    this.renderSession(view.session);
     this.renderHighlights(view.highlights);
+  }
+
+  /** R-RT-04: the session's tally reads back at the map, the natural break — it never interrupts a run. */
+  private renderSession(session: SessionSummary | null): void {
+    const live = session !== null && session.clears > 0;
+    this.sessionCard.classList.toggle('live', live);
+    if (!live || !session) return;
+    const parts = [tf('sessionClears', { n: tn(session.clears) }), `${tn(session.stars)} ${t('stars')}`];
+    if (session.bestFall) parts.push(`${t('sessionFall')} ${session.bestFall.grade} ${session.bestFall.heightMeters.toFixed(1)} ${t('meters')}`);
+    const delta = session.deltas[session.deltas.length - 1];
+    if (delta) parts.push(`${esc(delta.levelName)}: ${tf('sessionDelta', { s: (Math.abs(delta.aheadMs) / 1000).toFixed(1) })}`);
+    this.sessionCard.replaceChildren(
+      el('span', { class: 'strip-title', 'data-i18n': 'thisSession' }, t('thisSession')),
+      el('span', { class: 'session-line' }, parts.join(' · ')),
+    );
   }
 
   private biomeBand(biome: MapBiome, depthFromPeak: number, currentLevelId: string): HTMLElement {
@@ -184,7 +209,7 @@ export class MapScreen {
   private node(node: MapNode, current: boolean): HTMLButtonElement {
     const locked = node.state === 'locked';
     const pips = [0, 1, 2].map((i) => `<i class="${i < node.stars ? 'on' : ''}"></i>`).join('');
-    const label = `${t('level')} ${node.index}, ${node.name}${node.stars ? `, ${node.stars}/3` : ''}`;
+    const label = `${t('level')} ${node.index}, ${node.name}${node.stars ? `, ${node.stars}/3` : ''}${node.hasGhost ? `, ${t('ghosts')}` : ''}`;
     const b = el(
       'button',
       {
@@ -197,7 +222,7 @@ export class MapScreen {
         'aria-disabled': locked ? 'true' : undefined,
         title: node.bestMs !== null ? `${esc(node.name)} · ${formatTime(node.bestMs)}` : esc(node.name),
       },
-      `<span class="num">${locked ? ICONS.lock : node.index}</span><span class="pips">${pips}</span>${node.grade ? `<span class="grade-tag">${esc(node.grade)}</span>` : ''}`,
+      `<span class="num">${locked ? ICONS.lock : node.index}</span><span class="pips">${pips}</span>${node.grade ? `<span class="grade-tag">${esc(node.grade)}</span>` : ''}${node.hasGhost ? `<span class="ghost-pip" aria-hidden="true">${ICONS.ghost}</span>` : ''}`,
     );
     b.addEventListener('click', () => {
       if (locked) return;

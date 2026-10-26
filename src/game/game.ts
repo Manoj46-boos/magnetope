@@ -1,6 +1,6 @@
 import { AudioDirector } from '@/audio/director';
 import { AudioEngine } from '@/audio/engine';
-import { DEFAULT_FIELD_ID, DEFAULT_SKIN_ID, cosmeticById, gradeRank, isGrade } from '@/config/cosmetics';
+import { COSMETICS, DEFAULT_FIELD_ID, DEFAULT_SKIN_ID, cosmeticById, gradeRank, isGrade, setOf } from '@/config/cosmetics';
 import { TUNING } from '@/config/tuning';
 import { FixedStepper } from '@/core/stepper';
 import { BackGuard } from '@/input/back-button';
@@ -30,18 +30,19 @@ import { GameUi } from '@/ui/ui';
 import type { CoachDevice } from '@/ui/coach-overlay';
 import type { ClimbSummary } from '@/ui/ending-screen';
 import { Coach } from './coach';
-import { GhostDirector } from './ghost-director';
+import { GhostDirector, type FlipMoment } from './ghost-director';
 import { Opener } from './opener';
 import { GhostExchange } from './ghost-exchange';
 import { HighlightStrip, type FallHighlight } from './highlights';
 import { FLAG, HudReveal } from './hud-reveal';
-import { claimEarned, equip, purchase, unlockByReward } from './locker';
+import { claimEarned, claimSpotlight, completesSet, equip, nextDangle, purchase, unlockByReward } from './locker';
 import { buildMap, isPlayable, nextPlayableId, resumeLevelId } from './map-model';
 import { biomeAnnouncement, scrapForClear, totalStars } from './progress';
 import { deliverShareCard, renderDuelCard, renderShareCard, type DuelCardSpec, type ShareCardSpec } from './share-card';
 import { EndingDirector } from './ending';
 import { SlowMoDirector } from './slowmo';
 import { HitStop } from './hit-stop';
+import { SessionLog } from './session-log';
 import { SpectacleLedger } from './spectacle';
 
 interface FriendRun {
@@ -65,6 +66,8 @@ const FIRST_CATCH_SCALE = 0.5;
 const FIRST_CATCH_HOLD_MS = 900;
 /** Used by the tutorial hand when no par ghost is available to point the way. */
 const DEFAULT_HEADING = { x: 0.35, y: 1 };
+/** The calendar day the replay decay counts, in the player's own clock (R-EC-10). */
+const dayKeyOf = (date: Date): string => `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
 
 const order = ALL_LEVELS.map((l) => l.id);
 
@@ -96,6 +99,7 @@ export class Game {
   private readonly ghosts = new GhostDirector(loadParGhost);
   private readonly exchange: GhostExchange;
   private readonly highlights = new HighlightStrip();
+  private readonly sessionLog = new SessionLog();
   private readonly telemetry: Telemetry;
   private readonly attempts: AttemptRecorder;
   private readonly hudReveal: HudReveal;
@@ -120,8 +124,9 @@ export class Game {
   private rafId = 0;
   private consecutiveFalls = 0;
   private clearTimer = -1;
-  private lastClear: { summary: RunSummary; levelId: string; scrap: number; doubled: boolean; friend: FriendRun | null } | null = null;
+  private lastClear: { summary: RunSummary; levelId: string; scrap: number; doubled: boolean; friend: FriendRun | null; deltaAtFlip: number | null } | null = null;
   private lastFall: FallHighlight | null = null;
+  private lastFlip: FlipMoment | null = null;
   private currentLevelId = '';
   private lastBiome: BiomeId | null = null;
   private hudShown = false;
@@ -185,6 +190,7 @@ export class Game {
         equip: (id) => this.equipCosmetic(id),
         buy: (id) => this.buyCosmetic(id),
         watch: (id) => void this.watchCosmetic(id),
+        claim: (id) => this.claimSpotlightItem(id),
         back: () => this.ui.locker.hide(),
         tick: () => this.audio.tick(),
       },
@@ -357,6 +363,7 @@ export class Game {
     this.clearTimer = -1;
     this.endingSettleMs = -1;
     this.lastClear = null;
+    this.lastFlip = null;
     this.scripted = null;
 
     this.ghosts.begin(id, this.save.data.ghosts[id], this.save.data.friends[id]);
@@ -449,6 +456,8 @@ export class Game {
         this.coach.onRepel();
         this.opener.onLaunch();
         this.attempts.flip(e.point);
+        // R-RT-07: the flip is the landmark the clear card's ghost delta reads.
+        this.lastFlip = { point: e.point, timeMs: sim.run.timeMs };
         // R-GF-01/06: only a full-power release earns the freeze, never during
         // an input-critical window and never on top of a slow-mo beat.
         if (e.power >= 1 && !this.inputCritical() && !this.slowMo.active) this.hitStop.request();
@@ -488,6 +497,7 @@ export class Game {
       score: report.score,
     };
     if (report.heightMeters >= SHAREABLE_FALL_METERS) this.highlights.add(this.lastFall);
+    this.sessionLog.recordFall(this.lastFall);
     this.claimRewards();
 
     if (this.phase === 'play') {
@@ -512,23 +522,33 @@ export class Game {
     const prior = this.save.data.stars[id] ?? 0;
     const firstClear = prior === 0;
     const assistOff = !this.settings.assist;
-    const award = scrapForClear(summary.stars, firstClear, assistOff);
+    // R-EC-10: the day's own tally decides whether this replay still pays in full.
+    const day = dayKeyOf(this.clock());
+    const tally = this.save.data.clearTally[id];
+    const sameDayClears = tally?.day === day ? tally.clears : 0;
+    const award = scrapForClear(summary.stars, firstClear, assistOff, sameDayClears);
     const previousBest = this.save.data.bestMs[id];
     const newBest = previousBest === undefined || summary.clearTimeMs < previousBest;
     const ghost = this.sim && summary.underPar && newBest ? this.ghosts.encodeRun(this.sim, id) : null;
     const friend = this.ghosts.race;
+    // R-RT-07: how the run stood against the player's own ghost at the flip.
+    const deltaAtFlip = this.lastFlip ? this.ghosts.deltaAtFlip(this.lastFlip) : null;
 
     this.save.update((s) => {
       s.stars[id] = Math.max(s.stars[id] ?? 0, summary.stars);
       if (newBest) s.bestMs[id] = Math.round(summary.clearTimeMs);
       if (ghost) s.ghosts[id] = ghost;
       s.scrap += award.amount;
+      s.clearTally[id] = { day, clears: sameDayClears + 1 };
     });
     // R-AU-05: the run went on record — the toast rides the clear card's own verdict chain.
     if (ghost) this.audio.ghostToast();
-    this.lastClear = { summary, levelId: id, scrap: award.amount, doubled: false, friend };
+    this.lastClear = { summary, levelId: id, scrap: award.amount, doubled: false, friend, deltaAtFlip };
     this.consecutiveFalls = 0;
     this.attempts.finish('clear', summary.clearTimeMs, summary.stars);
+    // R-RT-04: the session's own tally, read back at the natural break.
+    this.sessionLog.recordClear(summary.stars);
+    if (deltaAtFlip !== null) this.sessionLog.recordDelta({ levelName: levelById(id).name, aheadMs: deltaAtFlip });
 
     this.bus.stop();
     this.input.setEnabled(false);
@@ -558,6 +578,9 @@ export class Game {
         beaten: clear.summary.clearTimeMs < clear.friend.durationMs,
         marginMs: Math.abs(clear.friend.durationMs - clear.summary.clearTimeMs),
       },
+      // R-RT-07: the player's own ghost, at the flip; R-EC-04: the next unlock, rotating.
+      ghostDelta: clear.deltaAtFlip !== null ? { aheadMs: Math.round(clear.deltaAtFlip) } : null,
+      dangle: nextDangle(this.save.data, this.clock(), this.sessionLog.clearCount),
     });
     this.claimRewards();
     this.telemetry.flush();
@@ -731,6 +754,8 @@ export class Game {
       biomes: buildMap(ALL_LEVELS, this.save.data),
       stars: totalStars(this.save.data),
       scrap: this.save.data.scrap,
+      collection: { owned: this.save.data.owned.length, total: COSMETICS.length },
+      session: this.sessionLog.summary,
       highlights: this.highlights.list,
       currentLevelId: this.currentLevelId,
     };
@@ -777,19 +802,36 @@ export class Game {
   }
 
   private buyCosmetic(id: string): void {
+    const item = cosmeticById(id);
+    const willComplete = item !== undefined && completesSet(this.save.data, item);
     const result = purchase(this.save, id, this.clock());
     if (!result.ok) {
       if (result.reason === 'funds') this.ui.toast(t('noFunds'), 2200);
       return;
     }
+    if (willComplete) this.ui.toast(`${item!.name} — ${t('setComplete')}`, 2600);
     this.audio.starStamp(2);
     this.equipCosmetic(id);
   }
 
   private async watchCosmetic(id: string): Promise<void> {
+    const item = cosmeticById(id);
+    const willComplete = item !== undefined && completesSet(this.save.data, item);
     if (!(await this.bus.rewardedBreak())) return;
     const result = unlockByReward(this.save, id, this.clock());
     if (!result.ok) return;
+    if (willComplete) this.ui.toast(`${item!.name} — ${t('setComplete')}`, 2600);
+    this.audio.starStamp(2);
+    this.equipCosmetic(id);
+  }
+
+  /** The week's spotlight look, claimed free from the locker (R-RT-05). */
+  private claimSpotlightItem(id: string): void {
+    const item = cosmeticById(id);
+    const willComplete = item !== undefined && completesSet(this.save.data, item);
+    const result = claimSpotlight(this.save, id, this.clock());
+    if (!result.ok) return;
+    if (willComplete) this.ui.toast(`${item!.name} — ${t('setComplete')}`, 2600);
     this.audio.starStamp(2);
     this.equipCosmetic(id);
   }
@@ -808,6 +850,9 @@ export class Game {
     const fieldItem = cosmeticById(field);
     this.renderer.setSkin(skinItem?.kind === 'skin' && skinItem.id !== DEFAULT_SKIN_ID ? skinFromLook(skinItem.look) : CLASSIC_SKIN);
     this.renderer.setFieldColors(fieldItem?.kind === 'field' && fieldItem.id !== DEFAULT_FIELD_ID ? fieldItem.look : null);
+    // R-EC-05: a complete set equipped turns the idle beat into the set's flourish.
+    const set = skinItem ? setOf(skinItem) : null;
+    this.renderer.setFullSet(set !== null && set.pieces.every((piece) => this.save.data.owned.includes(piece.id)));
   }
 
   // -------------------------------------------------------------------- share

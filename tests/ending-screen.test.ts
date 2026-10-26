@@ -168,10 +168,10 @@ describe('level clear card on the last level', () => {
     tick: noop,
     stamp: noop,
     map: { select: noop, back: noop, openLocker: noop, share: noop, tick: noop },
-    locker: { equip: noop, buy: noop, watch: noop, back: noop, tick: noop },
+    locker: { equip: noop, buy: noop, watch: noop, claim: noop, back: noop, tick: noop },
     exchange: { exportCode: async () => null, importCode: async () => ({ ok: false, message: 'ghostErrFormat' }), removeFriend: noop, back: noop, tick: noop },
   });
-  const card: ClearCardData = { levelName: 'Summit', stars: 3, newBest: true, timeMs: 90_000, parSeconds: 100, scrap: 40, hasNext: false, canDouble: true, finale: true, friend: null };
+  const card: ClearCardData = { levelName: 'Summit', stars: 3, newBest: true, timeMs: 90_000, parSeconds: 100, scrap: 40, hasNext: false, canDouble: true, finale: true, friend: null, ghostDelta: null, dangle: null };
   const labels = (): string[] => [...document.querySelectorAll('.clear-card .btn')].map((b) => b.textContent!.trim());
 
   it('offers the ending again on the finale, and the button plays it', () => {

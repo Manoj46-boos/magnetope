@@ -18,7 +18,14 @@ interface GameWindow {
     debug: {
       phase: string;
       sim: { run: { timeMs: number; started: boolean }; level: { id: string } };
-      save: { data: { stars: Record<string, number>; scrap: number } };
+      save: {
+        data: {
+          stars: Record<string, number>;
+          scrap: number;
+          owned: string[];
+          ghosts: Record<string, string>;
+        };
+      };
       soundOn(): boolean;
       holdClock(held: boolean): void;
       advance(seconds: number): void;
@@ -216,6 +223,76 @@ describe('a first session in a real browser', () => {
     expect(await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.soundOn())).toBe(true);
     await page!.keyboard.press('Escape');
     await page!.waitForFunction(() => (window as unknown as GameWindow).__game.debug.phase === 'play');
+  });
+
+  runnable('rides the clear card with the dangle, and the ghost delta exactly when a ghost waited (R-EC-04, R-RT-07)', async () => {
+    const ghosts = await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.save.data.ghosts);
+    const outcome = await play('scrapyard-00');
+    expect(outcome.phase).toBe('cleared');
+    const card = page!.locator('.clear-card');
+    await card.waitFor({ state: 'visible' });
+    // The dangle always names the next unlock while anything is left to own.
+    const dangle = await card.locator('.dangle-tag').innerText();
+    expect(dangle.length).toBeGreaterThan(0);
+    // The delta line appears exactly when the player's own ghost was waiting on this level.
+    const ghostTags = await card.locator('.ghost-tag').count();
+    expect(ghostTags).toBe(ghosts['scrapyard-00'] ? 1 : 0);
+  });
+
+  runnable('reads the session back on the map, with the collection, the ghost pips and the locked vista (R-RT-02, R-RT-04)', async () => {
+    await page!.locator('.clear-card [data-i18n="quitToMap"]').click();
+    await page!.waitForFunction(() => document.querySelector('.map-frame .session-card.live') !== null);
+    const sessionLine = await page!.locator('.session-card .session-line').innerText();
+    expect(sessionLine, 'the session tally names its clears').toMatch(/cleared/i);
+    // Three ladders on the head: stars, Scrap, collection (R-EC-06).
+    expect(await page!.locator('.map-frame .chip').count()).toBeGreaterThanOrEqual(3);
+    // Every stored ghost waits on its own level, one pip a piece (R-RT-02).
+    const ghosts = await page!.evaluate(() => Object.keys((window as unknown as GameWindow).__game.debug.save.data.ghosts).length);
+    expect(await page!.locator('.node .ghost-pip').count()).toBe(ghosts);
+    // The next biome's vista card keeps its gate.
+    expect(await page!.locator('.biome.sealed .gate').count()).toBeGreaterThanOrEqual(1);
+  });
+
+  runnable('keeps the return hooks on the next boot, and hands the spotlight week its free claim (R-RT-02, R-RT-05)', async () => {
+    await page!.reload({ timeout: 90_000 });
+    await page!.waitForFunction(() => Boolean((window as unknown as Partial<GameWindow>).__game), null, { timeout: 30000 });
+    // The session tally is a visit, not a record: a fresh boot carries none (R-RT-08).
+    await page!.evaluate(() => {
+      const game = (window as unknown as GameWindow).__game;
+      game.startLevel('scrapyard-01');
+      game.debug.holdClock(true);
+    });
+    await page!.keyboard.press('Escape');
+    await page!.waitForFunction(() => (window as unknown as GameWindow).__game.debug.phase === 'paused');
+    await page!.locator('.modal.open [data-i18n="quitToMap"]').click();
+    await page!.waitForFunction(() => document.querySelector('.map-frame') !== null);
+    expect(await page!.locator('.session-card.live').count()).toBe(0);
+    // The ghosts persisted across the boot, one pip a level.
+    const ghosts = await page!.evaluate(() => Object.keys((window as unknown as GameWindow).__game.debug.save.data.ghosts).length);
+    expect(await page!.locator('.node .ghost-pip').count()).toBe(ghosts);
+
+    // The locker reads the sets, and the spotlight week's free claim stays free (R-EC-05, R-RT-05).
+    await page!.locator('.map-frame [data-i18n="locker"]').click();
+    await page!.waitForFunction(() => document.querySelector('.locker-frame') !== null);
+    const sets = await page!.locator('.set-chip').allInnerTexts();
+    expect(sets.length).toBe(5);
+    expect(sets.some((text) => /[1-9]\/[45]/.test(text)), 'a half-filled set is the return hook that pulls').toBe(true);
+
+    const scrapBefore = await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.save.data.scrap);
+    let spotlight = page!.locator('.card.spotlight');
+    if ((await spotlight.count()) === 0) {
+      await page!.locator('.tab[data-i18n="fieldLines"]').click();
+      spotlight = page!.locator('.card.spotlight');
+    }
+    expect(await spotlight.count()).toBe(1);
+    await spotlight.locator('.btn').click();
+    await page!.waitForFunction(() => document.querySelectorAll('.card.spotlight').length === 0);
+    const after = await page!.evaluate(() => ({
+      scrap: (window as unknown as GameWindow).__game.debug.save.data.scrap,
+      owned: (window as unknown as GameWindow).__game.debug.save.data.owned.length,
+    }));
+    expect(after.scrap).toBe(scrapBefore);
+    expect(after.owned).toBeGreaterThan(0);
   });
 
   runnable('made no request outside its own origin and raised no error', async () => {

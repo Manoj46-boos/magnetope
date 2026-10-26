@@ -258,7 +258,7 @@ describe('clear card and pause menu', () => {
     tick: noop,
     stamp: noop,
     map: { select: noop, back: noop, openLocker: noop, share: noop, tick: noop },
-    locker: { equip: noop, buy: noop, watch: noop, back: noop, tick: noop },
+    locker: { equip: noop, buy: noop, watch: noop, claim: noop, back: noop, tick: noop },
     exchange: { exportCode: async () => null, importCode: async () => ({ ok: false, message: 'ghostErrFormat' }), removeFriend: noop, back: noop, tick: noop },
     ...over,
   });
@@ -273,6 +273,8 @@ describe('clear card and pause menu', () => {
     canDouble: true,
     finale: false,
     friend: null,
+    ghostDelta: null,
+    dangle: null,
   };
   const clearButtons = (): string[] => [...document.querySelectorAll('.clear-card .btn')].map((b) => b.textContent!.trim());
 

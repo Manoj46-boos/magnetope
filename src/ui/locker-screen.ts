@@ -1,16 +1,18 @@
-import { cosmeticsOfKind, type Cosmetic, type CosmeticKind, type Requirement } from '@/config/cosmetics';
-import { canWatchToUnlock, cosmeticStatus, type ItemStatus } from '@/game/locker';
+import { COSMETICS, cosmeticsOfKind, spotlightOf, type Cosmetic, type CosmeticKind, type Requirement } from '@/config/cosmetics';
+import { canWatchToUnlock, cosmeticStatus, setProgress, type ItemStatus } from '@/game/locker';
 import { levelById } from '@/levels';
-import { t, tf, type StringKey } from '@/locale';
+import { t, tf, tn, type StringKey } from '@/locale';
 import type { SaveData } from '@/platform/storage';
 import { el, esc } from './dom';
 import { ICONS, fieldPreview, magnoPreview } from './icons';
 import type { ModalHost } from './modal-host';
+import type { BiomeId } from '@/sim/types';
 
 export interface LockerHandlers {
   equip(id: string): void;
   buy(id: string): void;
   watch(id: string): void;
+  claim(id: string): void;
   back(): void;
   tick(): void;
 }
@@ -24,6 +26,15 @@ const TABS: ReadonlyArray<{ kind: CosmeticKind; label: StringKey }> = [
   { kind: 'skin', label: 'skins' },
   { kind: 'field', label: 'fieldLines' },
 ];
+
+/** R-EC-05: each set wears its biome's name. */
+const SET_NAME_KEYS: Readonly<Record<BiomeId, StringKey>> = {
+  scrapyard: 'setScrapyard',
+  suburbia: 'setSuburbia',
+  metropolis: 'setMetropolis',
+  playground: 'setPlayground',
+  stratosphere: 'setStratosphere',
+};
 
 /** Plain-language requirement for a reward-path item, e.g. "15 stars". */
 export function describeRequirement(requirement: Requirement): string {
@@ -56,6 +67,7 @@ export class LockerScreen {
   readonly modal: HTMLElement;
   private readonly grid: HTMLElement;
   private readonly chips: HTMLElement;
+  private readonly sets: HTMLElement;
   private readonly tabButtons = new Map<CosmeticKind, HTMLButtonElement>();
   private tab: CosmeticKind = 'skin';
   private view: LockerView | null = null;
@@ -91,7 +103,8 @@ export class LockerScreen {
     }
 
     this.grid = el('div', { class: 'locker-grid', role: 'list' });
-    frame.append(head, tabs, this.grid);
+    this.sets = el('div', { class: 'sets', role: 'list' });
+    frame.append(head, tabs, this.sets, this.grid);
     this.modal.appendChild(frame);
     parent.appendChild(this.modal);
   }
@@ -116,23 +129,45 @@ export class LockerScreen {
     this.refresh();
   }
 
+  /** The week’s unclaimed spotlight look greets the front of its tab, not the bottom of the pile. */
+  private ordered(kind: CosmeticKind, view: LockerView): Array<Cosmetic> {
+    const spotlight = spotlightOf(view.today);
+    const pinned = spotlight.kind === kind && !view.save.owned.includes(spotlight.id) ? [spotlight] : [];
+    return [...pinned, ...cosmeticsOfKind(kind).filter((item) => item.id !== spotlight.id)];
+  }
+
   private refresh(): void {
     const view = this.view;
     if (!view) return;
     const focusedId = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('[data-item]')?.dataset.item;
 
-    this.chips.innerHTML = `<span class="chip"><span class="gold">${ICONS.scrap}</span>${view.save.scrap}</span>`;
+    const owned = view.save.owned.length;
+    this.chips.innerHTML = `<span class="chip"><span class="gold">${ICONS.scrap}</span>${tn(view.save.scrap)}</span><span class="chip" title="${esc(t('collection'))}">${t('collection')} ${tn(owned)}<small>/${tn(COSMETICS.length)}</small></span>`;
     for (const [kind, button] of this.tabButtons) button.setAttribute('aria-selected', String(kind === this.tab));
-    this.grid.replaceChildren(...cosmeticsOfKind(this.tab).map((item) => this.card(item, view)));
+    this.renderSets(view.save);
+    this.grid.replaceChildren(...this.ordered(this.tab, view).map((item) => this.card(item, view)));
 
     if (focusedId) this.grid.querySelector<HTMLElement>(`[data-item="${focusedId}"] [data-nav]`)?.focus({ preventScroll: true });
+  }
+
+  /** R-EC-05: the five sets and how full each one is — the collection's completion, set by set. */
+  private renderSets(save: SaveData): void {
+    this.sets.replaceChildren(
+      ...setProgress(save).map(({ set, have, need, complete }) =>
+        el(
+          'span',
+          { class: `set-chip ${complete ? 'complete' : ''}`, role: 'listitem' },
+          `${complete ? ICONS.check : ''}${esc(t(SET_NAME_KEYS[set.biome]))} ${tn(have)}/${tn(need)}`,
+        ),
+      ),
+    );
   }
 
   private card(item: Cosmetic, view: LockerView): HTMLElement {
     const status = cosmeticStatus(view.save, item, view.today);
     const preview = item.kind === 'skin' ? magnoPreview(item.look) : fieldPreview(item.look);
     const card = el('article', { class: `card ${status.state}`, role: 'listitem', 'data-item': item.id });
-    card.innerHTML = `<div class="preview">${preview}</div><h4>${esc(item.name)}</h4>`;
+    card.innerHTML = `<div class="preview">${preview}</div><h4>${esc(item.name)}</h4>${status.state === 'spotlight' ? `<span class="spotlight-tag">${esc(t('spotlightFree'))}</span>` : ''}`;
     card.appendChild(this.footer(item, status, view));
     return card;
   }
@@ -170,6 +205,19 @@ export class LockerScreen {
       case 'earnable': {
         const { have, need, requirement } = status.progress;
         foot.innerHTML = `<span class="state">${ICONS.lock}${esc(describeRequirement(requirement))}</span><span class="meter"><i style="width:${Math.round((have / need) * 100)}%"></i></span>`;
+        break;
+      }
+      case 'spotlight': {
+        const claim = el(
+          'button',
+          { class: 'btn compact primary', type: 'button', 'data-nav': true, 'data-ui': true, 'aria-label': `${t('unlock')} ${t('spotlightFree')}` },
+          esc(t('spotlightFree')),
+        );
+        claim.addEventListener('click', () => {
+          this.handlers.tick();
+          this.handlers.claim(item.id);
+        });
+        foot.appendChild(claim);
         break;
       }
       case 'offseason':
