@@ -71,7 +71,15 @@ canvas#view {
 
 #ui {
   position: fixed;
-  inset: 0;
+  left: 0;
+  top: 0;
+  /* Interface zoom (R-AC-06): the shell lays out in a smaller space and the
+     transform scales it back to the full screen, so every percentage inside
+     still means the same share of the player's viewport at any size. */
+  width: calc(100% / var(--ui-scale, 1));
+  height: calc(100% / var(--ui-scale, 1));
+  transform: scale(var(--ui-scale, 1));
+  transform-origin: 0 0;
   pointer-events: none;
 }
 
@@ -196,7 +204,7 @@ select:focus-visible {
 }
 
 .bar {
-  width: min(280px, 56vw);
+  width: min(280px, 56%);
   height: 6px;
   border-radius: 99px;
   background: rgba(255, 255, 255, 0.12);
@@ -259,7 +267,8 @@ select:focus-visible {
   border-radius: 50%;
   background: #fff;
   border: 3px solid var(--cyan);
-  box-shadow: 0 0 12px rgba(95, 212, 255, 0.7);
+  /* The dark ring under the cyan rim holds the marker's 3:1 against any sky (R-AC-05). */
+  box-shadow: 0 0 0 2px rgba(13, 17, 25, 0.66), 0 0 12px rgba(95, 212, 255, 0.7);
   bottom: 0;
 }
 
@@ -272,9 +281,16 @@ select:focus-visible {
   animation: bob var(--t-loop);
 }
 
+/* The star rides a dark chip, the pause button's own treatment, so the amber
+   clears 3:1 over the brightest sky a biome can put behind the rail (R-AC-05). */
 .rail .summit svg {
   width: 18px;
   height: 18px;
+  background: rgba(13, 17, 25, 0.66);
+  border-radius: 50%;
+  padding: 3px;
+  box-sizing: content-box;
+  margin: -3px;
 }
 
 @keyframes bob {
@@ -290,7 +306,8 @@ select:focus-visible {
   transform: translateX(-50%);
   padding: 6px 14px;
   border-radius: 99px;
-  background: rgba(13, 17, 25, 0.5);
+  /* Deep enough that white digits hold 4.5:1 over the brightest biome band (R-AC-05). */
+  background: rgba(13, 17, 25, 0.78);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -381,6 +398,9 @@ select:focus-visible {
 
 .stick-ring,
 .stick-thumb {
+  /* The stick is a direct-manipulation surface: it stays 1:1 with the finger
+     at any interface scale, unlike everything else in the shell. */
+  zoom: calc(1 / var(--ui-scale, 1));
   position: absolute;
   border-radius: 50%;
   display: none;
@@ -448,8 +468,8 @@ select:focus-visible {
 }
 
 .panel {
-  width: min(92vw, 420px);
-  max-height: 92vh;
+  width: min(92%, 420px);
+  max-height: 92%;
   overflow: auto;
   padding: 22px 22px 20px;
   border-radius: var(--radius);
@@ -529,6 +549,8 @@ select:focus-visible {
 
 .toggle .value {
   opacity: 0.66;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .toggles {
@@ -543,7 +565,7 @@ select:focus-visible {
   align-items: center;
   gap: 10px;
   min-width: 0;
-  min-height: 48px;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.06);
@@ -760,7 +782,7 @@ select:focus-visible {
   position: absolute;
   left: 50%;
   bottom: calc(20px + var(--safe-b));
-  width: min(92vw, 440px);
+  width: min(92%, 440px);
   transform: translate(-50%, 60px) scale(0.94);
   opacity: 0;
   visibility: hidden;
@@ -839,7 +861,7 @@ select:focus-visible {
   left: 50%;
   top: calc(64px + var(--safe-t));
   transform: translate(-50%, -20px);
-  max-width: min(88vw, 420px);
+  max-width: min(88%, 420px);
   padding: 10px 16px;
   border-radius: 12px;
   background: rgba(13, 17, 25, 0.9);

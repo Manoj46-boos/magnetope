@@ -1,5 +1,5 @@
 import type { InputManager } from '@/input/input';
-import { LOCALES, getLocale, t, tf, tn, type LocaleId, type StringKey } from '@/locale';
+import { LOCALES, pageLang, t, tf, tn, PSEUDO_ID, type LocaleId, type StringKey } from '@/locale';
 import { DEFAULT_SETTINGS, type Settings } from '@/platform/settings';
 import { formatTime } from '@/game/progress';
 import { BiomeBanner } from './banner';
@@ -127,6 +127,8 @@ export class GameUi {
   private toastTimer = 0;
   private lastTimerText = '';
   private settings: Settings = DEFAULT_SETTINGS;
+  /** The flash veil's own copy of the profile, so the ident dims the moment the setting lands (R-AC-09). */
+  private reducedMotion = false;
 
   constructor(
     parent: HTMLElement,
@@ -245,7 +247,9 @@ export class GameUi {
       const text = `${formatTime(state.timeMs ?? 0)}|${state.parSeconds}`;
       if (text !== this.lastTimerText) {
         this.lastTimerText = text;
-        this.timer.innerHTML = `${formatTime(state.timeMs ?? 0)}<span class="par">${t('par')} ${formatTime(state.parSeconds * 1000)}</span>`;
+        // Wordless in play (R-LO-02): the par rides beside the clock as a bare
+        // reference time — no label to read while flying.
+        this.timer.innerHTML = `${formatTime(state.timeMs ?? 0)}<span class="par">· ${formatTime(state.parSeconds * 1000)}</span>`;
         this.timer.classList.toggle('ahead', (state.timeMs ?? 0) / 1000 <= state.parSeconds);
       }
     }
@@ -265,10 +269,12 @@ export class GameUi {
     this.ring.style.display = show ? 'block' : 'none';
     this.thumb.style.display = show ? 'block' : 'none';
     if (show) {
-      this.ring.style.left = `${stick.originX}px`;
-      this.ring.style.top = `${stick.originY}px`;
-      this.thumb.style.left = `${stick.originX + stick.x * 54}px`;
-      this.thumb.style.top = `${stick.originY - stick.y * 54}px`;
+      // Pointer coordinates arrive in viewport pixels; the shell lays out in its own divided space (R-AC-06).
+      const s = this.settings.uiScale;
+      this.ring.style.left = `${stick.originX / s}px`;
+      this.ring.style.top = `${stick.originY / s}px`;
+      this.thumb.style.left = `${(stick.originX + stick.x * 54) / s}px`;
+      this.thumb.style.top = `${(stick.originY - stick.y * 54) / s}px`;
     }
     this.flipButton.classList.toggle('down', input.flipTouchActive);
   }
@@ -278,7 +284,8 @@ export class GameUi {
   }
 
   flash(amount: number): void {
-    this.flashEl.style.opacity = String(Math.min(0.05, amount * 0.05));
+    const veil = Math.min(0.05, amount * 0.05);
+    this.flashEl.style.opacity = String(veil * (this.reducedMotion ? 0.5 : 1));
   }
 
   // -------------------------------------------------------------------- pause
@@ -332,8 +339,9 @@ export class GameUi {
 
     const lang = el('label', { class: 'lang' }, ICONS.globe);
     this.languageSelect = el('select', { 'data-nav': true, 'data-ui': true, 'aria-label': t('language') });
-    this.languageSelect.innerHTML =
-      `<option value="auto">Auto</option>` + LOCALES.map((l) => `<option value="${l}">${LANGUAGE_NAMES[l]}</option>`).join('');
+    const options = `<option value="auto">Auto</option>` + LOCALES.map((l) => `<option value="${l}">${LANGUAGE_NAMES[l]}</option>`).join('');
+    // The QA fixture rides the menu only in dev builds, so a shipped player never meets it (R-LO-04).
+    this.languageSelect.innerHTML = __DEV_TOOLS__ ? `${options}<option value="${PSEUDO_ID}">Pseudo ×1.4 (QA)</option>` : options;
     this.languageSelect.addEventListener('change', () => this.handlers.setSetting('language', this.languageSelect.value));
     lang.appendChild(this.languageSelect);
     toggles.appendChild(lang);
@@ -365,6 +373,8 @@ export class GameUi {
     for (const [key, b] of this.toggles) b.setAttribute('aria-pressed', String(Boolean(settings[key as keyof Settings])));
     this.languageSelect.value = settings.language;
     document.documentElement.classList.toggle('reduced-motion', settings.reducedMotion);
+    document.documentElement.style.setProperty('--ui-scale', String(settings.uiScale));
+    this.reducedMotion = settings.reducedMotion;
     this.syncAssistValue();
   }
 
@@ -541,7 +551,7 @@ export class GameUi {
   // ------------------------------------------------------------------ locale
 
   applyLocale(): void {
-    document.documentElement.lang = getLocale();
+    document.documentElement.lang = pageLang();
     this.root.querySelectorAll<HTMLElement>('[data-i18n]').forEach((node) => {
       node.textContent = t(node.dataset.i18n as StringKey);
     });

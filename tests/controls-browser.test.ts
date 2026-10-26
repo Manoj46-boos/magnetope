@@ -95,7 +95,7 @@ describe('changing controls in a real browser', () => {
     await page!.locator('.segment', { hasText: 'Button' }).click();
     await page!.locator('.segment', { hasText: 'Mouse' }).click();
     await page!.locator('.range').fill('0.7');
-    await page!.locator('.panel.controls .toggle').click();
+    await page!.locator(".panel.controls [data-setting='rimTint']").click();
     expect(await settings()).toMatchObject({ touchLayout: 'single', aimMode: 'mouse', touchSensitivity: 0.7, rimTint: false });
   });
 
@@ -116,9 +116,9 @@ describe('changing controls in a real browser', () => {
     await boot(page!);
     expect(await settings()).toMatchObject({ touchLayout: 'single', aimMode: 'mouse', touchSensitivity: 0.7, rimTint: false });
     await openControls();
-    expect(await page!.locator('.segment[aria-checked="true"]').allInnerTexts()).toEqual(['Button', 'Mouse']);
+    expect(await page!.locator('.segment[aria-checked="true"]').allInnerTexts()).toEqual(['Button', 'Mouse', '100%']);
     expect(await page!.locator('.range').inputValue()).toBe('0.7');
-    expect(await page!.locator('.panel.controls .toggle').getAttribute('aria-pressed')).toBe('false');
+    expect(await page!.locator(".panel.controls [data-setting='rimTint']").getAttribute('aria-pressed')).toBe('false');
   });
 
   runnable('raised no console errors or page errors', async () => {

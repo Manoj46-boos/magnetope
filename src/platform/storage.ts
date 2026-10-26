@@ -3,7 +3,7 @@ import { clamp } from '@/core/mathx';
 import { COSMETIC_IDS, DEFAULT_FIELD_ID, DEFAULT_SKIN_ID, isGrade, type GradeName } from '@/config/cosmetics';
 import { sanitizeKeys } from '@/input/keymap';
 import { cleanName } from '@/sim/ghost-code';
-import { DEFAULT_SETTINGS, type Settings } from './settings';
+import { DEFAULT_SETTINGS, UI_SCALES, type Settings, type UiScale } from './settings';
 
 export const SAVE_VERSION = 2;
 const MAX_GHOST_CHARS = 60_000;
@@ -142,6 +142,7 @@ export function sanitizeSave(raw: unknown): SaveData {
     language: typeof settings.language === 'string' ? settings.language.slice(0, 8) : s.language,
     assist: bool('assist', s.assist),
     reducedMotion: bool('reducedMotion', s.reducedMotion),
+    uiScale: (UI_SCALES as readonly number[]).includes(Number(settings.uiScale)) ? (settings.uiScale as UiScale) : s.uiScale,
     aimMode: aim === 'keyboard' || aim === 'mouse' || aim === 'auto' ? aim : s.aimMode,
     touchLayout: layout === 'single' || layout === 'split' ? layout : s.touchLayout,
     touchSensitivity:

@@ -3,6 +3,10 @@ import { DEFAULT_KEYS, type KeyBindings } from '@/input/keymap';
 export type AimMode = 'auto' | 'keyboard' | 'mouse';
 export type TouchLayout = 'split' | 'single';
 
+/** The three interface sizes a player can choose (R-AC-06). */
+export const UI_SCALES = [1, 1.25, 1.5] as const;
+export type UiScale = (typeof UI_SCALES)[number];
+
 export interface Settings {
   sound: boolean;
   music: boolean;
@@ -10,6 +14,8 @@ export interface Settings {
   language: string;
   assist: boolean;
   reducedMotion: boolean;
+  /** Interface zoom for small screens and tired eyes; the world never scales. */
+  uiScale: UiScale;
   aimMode: AimMode;
   touchLayout: TouchLayout;
   touchSensitivity: number;
@@ -25,6 +31,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   language: 'auto',
   assist: true,
   reducedMotion: false,
+  uiScale: 1,
   aimMode: 'auto',
   touchLayout: 'split',
   touchSensitivity: 1,
