@@ -114,8 +114,13 @@ export class ModalHost {
 
   private onKey(e: KeyboardEvent): void {
     const modal = this.active;
+    if (!modal) return;
+    if (e.key === 'Tab') {
+      this.trapTab(modal, e);
+      return;
+    }
     const direction = KEY_DIRECTIONS[e.code];
-    if (!modal || !direction || isTextEntry(e.target) || adjustsItself(e.target, direction)) return;
+    if (!direction || isTextEntry(e.target) || adjustsItself(e.target, direction)) return;
     const items = [...modal.querySelectorAll<HTMLElement>('[data-nav]')].filter((n) => !n.hasAttribute('disabled') && n.offsetParent !== null);
     if (items.length === 0) return;
     e.preventDefault();
@@ -136,5 +141,22 @@ export class ModalHost {
       next = (current + (forward ? 1 : -1) + items.length) % items.length;
     }
     items[next]!.focus({ preventScroll: false });
+  }
+
+  /**
+   * The focus trap (R-UX-08): Tab and Shift+Tab stay inside the top modal —
+   * wrapping at the ends, and pulling focus back if it escaped behind the
+   * overlay. A modal with nothing to focus leaves the key alone.
+   */
+  private trapTab(modal: HTMLElement, e: KeyboardEvent): void {
+    const items = [...modal.querySelectorAll<HTMLElement>('button, select, input, [data-nav], [tabindex]')].filter(
+      (n) => !n.hasAttribute('disabled') && n.tabIndex >= 0 && n.offsetParent !== null,
+    );
+    if (items.length === 0) return;
+    const current = items.indexOf(document.activeElement as HTMLElement);
+    const forward = !e.shiftKey;
+    const next = current < 0 ? (forward ? 0 : items.length - 1) : (current + (forward ? 1 : -1) + items.length) % items.length;
+    e.preventDefault();
+    items[next]!.focus({ preventScroll: true });
   }
 }

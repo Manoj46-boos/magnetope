@@ -39,6 +39,7 @@ import { Backdrop } from './backdrop';
 import { blinkLook } from './blink-look';
 import { CAMERA_FOV, CameraRig, type ShakeKind } from './camera-rig';
 import { EndingStage } from './ending-stage';
+import { FlashGuard } from './flash-guard';
 import { GeometryBuilder } from './geometry';
 import { GhostView } from './ghost-view';
 import { braceAmount, grabPoint } from './hand-reach';
@@ -174,6 +175,7 @@ export class SceneRenderer {
   private flashAmount = 0;
   /** The same one-frame beats as the flash veil, carried by the bloom so the snap ident reads at gameplay strength (R-SM-03). */
   private beatFlash = 0;
+  private readonly flashGuard = new FlashGuard();
   private frameMs = 16;
   private lastFrameStamp = 0;
 
@@ -241,17 +243,22 @@ export class SceneRenderer {
       shake: (kind) => this.onShake(kind),
       // Only the snap ident rides the bloom: the staged beats keep their veil,
       // so a catch never washes the pole colours the silhouette lives on.
-      flash: (amount) => {
-        this.flashAmount = Math.max(this.flashAmount, amount);
-        this.beatFlash = Math.max(this.beatFlash, amount);
-      },
+      // Both flash paths pass the eye's law first (R-AC-09).
+      flash: (amount) => this.stageFlash(amount),
     });
     this.windStreaks = new WindStreaks(this.scene, ACTOR_Z + 0.12);
     this.windStreaks.setCeiling(this.profile.windStreaks);
   }
 
   triggerFlash(amount: number): void {
+    this.stageFlash(amount);
+  }
+
+  /** A flash beat the eye's law permits lifts the veil and the bloom together; a spent window swallows it whole. */
+  private stageFlash(amount: number): void {
+    if (!this.flashGuard.permits(performance.now())) return;
     this.flashAmount = Math.max(this.flashAmount, amount);
+    this.beatFlash = Math.max(this.beatFlash, amount);
   }
 
   get flash(): number {
@@ -889,8 +896,9 @@ export class SceneRenderer {
       if (ending) this.poseEnding(ending, sim);
       // The gameplay flash ident rides the bloom: a halo with the catch burst,
       // spent in a fraction of a second and never enough to wash the frame.
+      // Reduced motion halves the lift along with the shell's veil (R-AC-09).
       this.beatFlash = Math.max(0, this.beatFlash - ctx.dt * 2.5);
-      this.post.setBloomBoost(this.beatFlash * 0.6);
+      this.post.setBloomBoost(this.beatFlash * 0.6 * (ctx.reducedMotion ? 0.5 : 1));
     }
     this.parGhost.update(ctx.ghosts.par, ctx.dt);
     this.personalGhost.update(ctx.ghosts.personal, ctx.dt);

@@ -7,7 +7,7 @@ import { BackGuard } from '@/input/back-button';
 import { InputManager } from '@/input/input';
 import { ALL_LEVELS, levelById } from '@/levels';
 import { loadParGhost } from '@/levels/par-ghosts';
-import { getLocale, resolveLocale, setLocale, t, tf } from '@/locale';
+import { getLocale, setLanguage, t, tf } from '@/locale';
 import { createPlatformSdk, type PlatformSdk } from '@/platform/sdk';
 import { TouchMode, readPointerEnvironment } from '@/platform/device';
 import { FaultGuard } from '@/platform/fault-guard';
@@ -203,7 +203,9 @@ export class Game {
         if (!this.settings.reducedMotion) this.renderer.attentionHop();
       },
       firstCatch: () => {
-        const granted = this.slowMo.beat(FIRST_CATCH_SCALE, FIRST_CATCH_HOLD_MS);
+        // The presentation beat halves its dive for the reduced-motion player, same law as a fall's.
+        const scale = this.settings.reducedMotion ? 1 - (1 - FIRST_CATCH_SCALE) / 2 : FIRST_CATCH_SCALE;
+        const granted = this.slowMo.beat(scale, FIRST_CATCH_HOLD_MS);
         if (!granted) return;
         this.markSeen(FLAG.firstCatch);
         this.spectacle.mark('first-catch');
@@ -939,7 +941,9 @@ export class Game {
     const s = this.settings;
     this.audioEngine.setSound(s.sound);
     this.audioEngine.setMusic(s.music);
-    this.slowMo.disabled = s.reducedMotion;
+    // Slow motion halves its depth instead of switching off (R-AC-02); a frozen
+    // frame is the one beat reduced motion keeps refusing outright.
+    this.slowMo.reducedMotion = s.reducedMotion;
     this.hitStop.disabled = s.reducedMotion;
     this.sim?.magno.setAssist(s.assist);
     this.ui.syncSettings(s);
@@ -947,7 +951,7 @@ export class Game {
 
   private applyLanguage(): void {
     const tag = this.settings.language === 'auto' ? this.sdk.getLanguage() : this.settings.language;
-    setLocale(resolveLocale(tag));
+    setLanguage(tag);
     this.ui.applyLocale();
   }
 

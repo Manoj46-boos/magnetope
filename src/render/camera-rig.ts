@@ -21,6 +21,8 @@ const MAX_ROLL = 1.2 * DEG;
 /** Release kick (R-GF-01): the camera punches along the flight vector and gives it back well inside 300 ms. */
 const KICK_METERS = 1.1;
 const KICK_TAU = 0.07;
+/** Kicks and shakes keep a fifth of their amplitude under reduced motion (R-AC-02: at most 20%). */
+const REDUCED_AMPLITUDE = 0.2;
 /** FOV pop (R-GF-01): +3° at the release, settling home over 400 ms. */
 const POP_DEG = 3;
 const POP_TAU = 0.115;
@@ -127,7 +129,7 @@ export class CameraRig {
 
   /** The release lunge (R-GF-01): a short pan along the flight vector, spent inside 300 ms. */
   kick(direction: Vec2): void {
-    const scale = this.reducedMotion ? 0.3 : 1;
+    const scale = this.reducedMotion ? REDUCED_AMPLITUDE : 1;
     this.kickX = direction.x * KICK_METERS * scale;
     this.kickY = direction.y * KICK_METERS * scale;
   }
@@ -159,7 +161,7 @@ export class CameraRig {
   shake(kind: ShakeKind, inputCritical: boolean): void {
     if (inputCritical) return;
     const def = SHAKE[kind];
-    const scale = this.reducedMotion ? 0.3 : 1;
+    const scale = this.reducedMotion ? REDUCED_AMPLITUDE : 1;
     this.shakes.push({ amplitude: def.amplitude * scale, duration: def.duration, age: 0, seed: ++this.shakeSeed * 13.37 });
     if (this.shakes.length > 6) this.shakes.shift();
   }
@@ -182,7 +184,7 @@ export class CameraRig {
     this.settlePulse *= Math.exp(-dt / SETTLE_TAU);
     if (this.fovPop < 0.003) this.fovPop = 0;
     if (this.settlePulse < 0.003) this.settlePulse = 0;
-    const settleScale = this.reducedMotion ? 0.3 : 1;
+    const settleScale = this.reducedMotion ? REDUCED_AMPLITUDE : 1;
     const zoomTarget =
       1 +
       this.widen +

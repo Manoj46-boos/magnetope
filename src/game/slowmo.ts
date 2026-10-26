@@ -25,6 +25,12 @@ export class SlowMoDirector {
   private beatScale: number = TUNING.fall.slowMoScale;
   private beatHoldMs = -1;
   disabled = false;
+  /**
+   * Reduced motion halves the slow-motion depth instead of removing it
+   * (R-AC-02): the reaction aid a tall fall buys stays, only the drama calms —
+   * accessibility never becomes a different game.
+   */
+  reducedMotion = false;
 
   /** Current time scale handed to the fixed stepper and the audio layer. */
   scale = 1;
@@ -82,7 +88,7 @@ export class SlowMoDirector {
     this.clockMs += realMs;
     if (this.disabled && (this.phase === 'in' || this.phase === 'hold')) this.enter('out');
     this.phaseMs += realMs;
-    const target = this.beatHoldMs >= 0 ? this.beatScale : TUNING.fall.slowMoScale;
+    const target = this.beatHoldMs >= 0 ? this.beatScale : this.fallTarget();
     switch (this.phase) {
       case 'in': {
         const t = clamp(this.phaseMs / TUNING.fall.slowMoRampInMs, 0, 1);
@@ -113,5 +119,11 @@ export class SlowMoDirector {
     this.phaseMs = 0;
     this.fromScale = this.scale;
     if (phase === 'hold') this.holdMs = 0;
+  }
+
+  /** The depth a fall ramps to: the full dive, or half of it when the player asked for less motion. */
+  private fallTarget(): number {
+    const full = TUNING.fall.slowMoScale;
+    return this.reducedMotion ? 1 - (1 - full) / 2 : full;
   }
 }
