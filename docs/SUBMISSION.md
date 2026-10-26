@@ -76,7 +76,7 @@ Current state: the four machine points pass for all three cards and the ident (`
 | Incognito and blocked storage | Done | `tests/platform.test.ts` (quota and denied paths); `tests/session.test.ts` runs in a fresh browser context |
 | No external requests | Done for the game itself | `tests/session.test.ts` asserts every request stays on the page origin; `tests/build.test.ts` audits the bundle. A CSP-restricted run is not done |
 | No splash screens or outbound links | Done | build audit in `scripts/check-budget.mjs` |
-| SDK event correctness | Done | `tests/platform.test.ts` replays 10,000 scripted inputs and asserts the SDK rules |
+| SDK event correctness | Done | `tests/platform.test.ts` replays 10,000 scripted inputs and asserts the SDK rules; `tests/doc-spine.test.ts` holds every telemetry payload to the platform's own measure() alphabet and its two-number budget, because the live SDK drops what breaks either |
 | Clean production build | Done | dev hooks compile out; audited in `tests/build.test.ts` |
 | Save system and notice | Done | `tests/session.test.ts` reloads the page and finds the stars; `tests/platform.test.ts` covers the fallbacks |
 | Size and load speed | Done. 1.48 MB gzipped against a 4 MB target and 5 MB limit. Cold load measured in Chrome with a throttled CPU and network: about 1.3 s on desktop, 4 to 5 s on a mid-range phone over 4G, about 12 s on a low-end phone over slow 4G (software rendering, so drawing is pessimistic). Real devices not yet tried | `npm run build`, `npm run loadtime`, `tests/load-time.test.ts` |
@@ -97,6 +97,7 @@ These cannot be finished by building more code; each needs a person, a device or
 1. **Play it.** All 70 levels and the ending have been verified by bots and tests, never by a human. Mark unfair or dull levels; `docs/ROADMAP.md` lists the known weak ones.
 2. **Five external playtesters** with screen recordings, focusing on the first 90 seconds and the first fall (PRD 14.3).
 3. **Device matrix** (PRD table 14.2): at least one phone, one tablet and a low-end laptop.
-4. **Poki SDK names.** `measure(category, what, action)` matches Poki's public Game Events guide (checked in session 7). Re-check once a developer account exists, in case the SDK has moved on.
+4. **Poki SDK names.** `measure(category, what, action)` matches Poki's public Game Events guide (checked in session 7). Re-check once a developer account exists, in case the SDK has moved on. The channel's own law (its alphabet and its two-numeric-values budget) was verified against the live SDK script itself in session 28 and is enforced by the suite.
 5. **Native review** of the six non-English locales.
 6. **Agreement terms.** The PRD recommends the exclusive five-year revenue share; read the actual contract before signing.
+7. **Poki Inspector cross-check (R-AN-10).** With a developer account: open the game's page in the Poki Inspector, confirm the `measure` events arrive with the payloads the table in `docs/EVENTS.md` publishes, check the language behaviour in-platform, and file the screenshot as the milestone QA evidence slot.
