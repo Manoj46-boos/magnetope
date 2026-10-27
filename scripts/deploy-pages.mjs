@@ -6,12 +6,16 @@ import { tmpdir } from 'node:os';
 /**
  * Publishes the production build to the project page so the game stays
  * playable while the funnel runs (SUBMISSION.md section 12, the runbook's
- * "playtest immediately" leg). The build is relative (vite's base is './'),
- * so the same Poki bundle serves from any path the host gives it. The
- * gh-pages branch is an artifact, not a record: each publish replaces its
- * history wholesale, and a .nojekyll marker rides along so the host serves
- * the files exactly as built. Pages itself is enabled once, with gh-pages
- * as its source; the branch is what this script owns.
+ * "playtest immediately" leg). The page ships the SDK-free production bundle
+ * (`npm run build`), not the Poki bundle: the host's SDK is their own script
+ * and objects to running on domains they have not approved, and the game is
+ * SDK-optional by law (R-AN-08 — absence changes nothing), so the play build
+ * carries no tag at all. The build is relative (vite's base is './'), so it
+ * serves from any path the host gives it. The gh-pages branch is an artifact,
+ * not a record: each publish replaces its history wholesale, and a .nojekyll
+ * marker rides along so the host serves the files exactly as built. Pages
+ * itself is enabled once, with gh-pages as its source; the branch is what
+ * this script owns.
  *
  *   node scripts/deploy-pages.mjs              # build fresh, then publish
  *   node scripts/deploy-pages.mjs --no-build   # publish dist as it stands
@@ -24,7 +28,7 @@ const remote = process.env.PAGES_REMOTE ?? 'origin';
 const run = (command, args, cwd = root) => execFileSync(command, args, { cwd, stdio: 'inherit' });
 
 if (!process.argv.includes('--no-build')) {
-  run('npm', ['run', 'build:poki']);
+  run('npm', ['run', 'build']);
 }
 
 const stage = mkdtempSync(resolve(tmpdir(), 'magnetope-pages-'));
