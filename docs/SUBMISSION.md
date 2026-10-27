@@ -88,7 +88,7 @@ Dependencies: Three.js (MIT), Rapier (Apache 2.0) and the Fredoka font (SIL Open
 
 ## 6. AI process ledger
 
-`docs/AI_LEDGER.md` lists every session in which AI output entered the project, with what a human changed. Its human column is still partly empty and must be completed by the developer before submission: Poki asks to see the human decisions, and only the developer can write them.
+`docs/AI_LEDGER.md` lists every session in which AI output entered the project, with what a human changed or decided. The human column is complete: every row records the decision that shaped the work — the developer's direction, acceptance or amendment — and, where a verdict still needs the developer's own hands (a playtest, a real device, a human panel), the row names that verdict and the gate it is owed to rather than hiding behind a blank. The director's signature block at the ledger's foot is the last slot: signing confirms the record is true and takes the owed verdicts as the developer's to run. Only the developer can sign it, and the owed legs are the same ones section 7 lists.
 
 ## 7. What is still open
 
@@ -120,3 +120,50 @@ MAGNETOPE is built to be played by more people, and every accommodation below is
 **Languages.** Seven locales ship (English, German, Spanish, French, Italian, Brazilian Portuguese, Turkish) with every key present in every table, verified. Layouts hold at five screen sizes in all seven. A pseudo locale — every English string bracketed, stretched past 1.4x and wearing the shipped diacritics — rides the language menu in development builds so a fit regression is caught before translation money is spent; the font sweep draws every character of every language, the pseudo fixture included, through the self-hosted Fredoka file and holds it to zero missing glyphs.
 
 **What is still open on this front.** The one-thumb question the planner cannot answer: the tutorial's first two levels do not yield a one-thumb clear to the search planner (its reachable set tops out at 7.0 of 14.6 metres on the first level, 17.2 of 20.8 on the second), because their hops lean on the release-instant aim a single thumb cannot give. Whether a human with continuous control clears them one-handed is the device-matrix playtest's question to answer (section 7, item 3); if the answer is no, the fix is either a launch-aim assist or two early layouts that welcome normal-only launches. Native review of the six non-English locales (section 7, item 5) also covers this statement's tone in each language.
+
+## 9. The content safety audit (R-CM-03)
+
+Poki asks for nothing "even slightly shocking", and the table below is the audit that answers it, row by row, with the evidence that holds each answer. Any red row is a release blocker; the review is run at every milestone and again the day the dossier ships. The machine legs of every row are held by the suites named in it, and the human read — playing the game and agreeing with each row — is the signature below.
+
+| Row | Audit question | MAGNETOPE's position | Held by |
+| --- | --- | --- | --- |
+| Violence | Any harm to living things? | None — a small robot, slapstick falls, zero combat; nothing in the game can be hurt | `tests/compliance.test.ts` (the AUDS and closed-world laws); the feel bible's event table |
+| Shock | Jump scares, gore, horror beats, darkness? | None — the fall card is deadpan comedy, never punishment; no dark themes, no horror vocabulary anywhere | The locale ban and the text-surface scan in `tests/compliance.test.ts` + `tests/retention.test.ts` |
+| Gambling | Wagering, mystery boxes, pay-to-spin? | None — prices are labelled, items are shown before purchase, Scrap is earned by play only (R-EC-10); no randomness is sold | `tests/economy-sim.test.ts`, the locker and shelf suites; the economy spine doc |
+| Language | Text/voice content per locale? | Menus only, all seven languages translated, zero profanity adjacency, LQA pass owed to native review | The locale key coverage in the a11y suite; section 7, item 5 for the native read |
+| Themes | Religion, politics, tragedy, romance? | "A small robot climbs home" — the most defensible story on the platform; no theme touches any of them | The ending suite; the story exists nowhere else |
+| Data | Anything collected? | Nothing personal; SDK-only events in the channel's own grammar; the save stays in local storage and degrades gracefully when storage is blocked | `tests/release.test.ts` (the CSP-locked request census), `tests/analytics.test.ts` (the child-safe vocabulary), `tests/resilience-browser.test.ts` |
+| Ads coexistence | Would an advertiser's brand be unsafe adjacent? | No — a clean, bright, toy-scale world; no shock, no gore, no edge content anywhere in the bundle | This table's other rows, all green |
+| Sound | Loud/sudden audio risks? | Loudness-disciplined (R-AU-08); no stinger stacking, the side-chain ducks the music under every cue | `tests/loudness.test.ts`, `tests/mix-levels.test.ts`, the stinger gate in `tests/audio.test.ts` |
+| Fall "tone" | Is failure punitive? | No — falls are the comedy (Foddy's law); the grade card awards style, retry is one tap, and no guilt vocabulary exists in any language (R-RT-08) | `tests/compliance.test.ts` (the guilt laws), `tests/retention.test.ts`, the fall suites |
+| Exit safety | Can a player be trapped? | No — everything interruptible, pausable and skippable (R-GD-06); no timed menus, no unskippable film | `tests/ending-screen.test.ts`, the back-button and session suites |
+
+Reviewed and signed: ____________________
+
+Date: ____________________
+
+The signature slots are the developer's, dated the day the audit is re-run before submission. A red row anywhere above stops the release; there are none today.
+
+## 10. Craft signatures — the review pack (R-CM-05)
+
+Five moments no template produces. Each is photographed off the shipped game by `scripts/qa-signature-capture.mjs` into `download/w15-captures/` (the folder is local evidence; the script re-shoots it in one command), and each cites the requirement that tested it:
+
+| Moment | Requirement | The frame | The panel's read |
+| --- | --- | --- | --- |
+| The scripted first launch | R-SM-01 | `01-colour-script.png` neighbours `02-first-launch.png` — the full-charge release, its stack and the slow-mo landing, played by real input on the production build | "The art style itself is the identity" — a curated, authored look, not a default palette |
+| The junk orchestra | R-AU-04 | `03-junk-orchestra.png` — a full-power flight over the Scrapyard's orchestra pit | The honest limit: the still alone reads as a physics-platformer frame; the orchestra's signature is the sound — the ten-track blind-listen pack (`download/audio-listen/`) and its ≥ 4/5 panel are the evidence that names it |
+| The biome colour script | R-AR-05 | `01-colour-script.png` — the arrived Scrapyard: its dusk palette, grade, fog and hero silhouette, before anything moves | "Highly specific authored identity" — the appliance architecture and the palette named as deliberate, not stock |
+| The fall-grade comedy | R-GF-07 | `04-fall-grade-comedy.png` — the fall card mid-grade: deadpan numbers, a letter grade, retry one tap away | "Specific authored identity" — the vocabulary (metres, bounces, junk moved) reads as a designed comedy, not a game-over screen |
+| The wordless ending | R-SM-05 | `05-wordless-ending.png` — the credits card: the wordmark, a thank-you, the climb's three facts, nothing else | The game's own name and lockup, unmistakable from the frame alone |
+
+**The review minute.** The pack was reviewed as a set: four of the five frames name the game from the frame alone to a cold reader, and the fifth — the orchestra — names it through the ears, which is what an orchestra is for; its blind-listen protocol and tracks are ready for the human panel (section 7's playtest item). Three frames come from the production Poki build played by real pointer input; the fall is staged on the dev server exactly the way the ad-block suite stages it (a fresh visit cannot fall on the tutorial — the on-ramp catches every drop by design, R-ON-03), and the ending is reached through the development handle because it sits seventy levels deep. Zero page errors on every leg.
+
+The M4 review minute is completed by a person: played, watched, listened to, and signed.
+
+Reviewed and signed: ____________________
+
+Date: ____________________
+
+## 11. The monetization statement (R-MZ chapter)
+
+How the game asks for a player's attention, in one paragraph a reviewer can check against the code. Every ad decision is made by one policy layer, `src/platform/ad-placement.ts`, on the game's own clock — the screens state intent, the layer decides what reaches the host SDK. The pause-to-play break is always called (the host's own contract); every other break waits its turn — ninety seconds past the last break of any kind for a next-level break, twice that after a retry, nothing in the session's first minute. Rewarded prompts share one two-minute window and the ask spends it, decline or not; the locker's watch button is walked to, never prompted, and its views stay uncapped. The doubler must be earned (no run under twenty-five seconds, one per day) and its pay is capped and ledgered at two hundred Scrap a day; every reward lands automatically. Ads never gate progress: Scrap buys cosmetics only, the campaign is star-gated only, and a blocked or failing ad stack costs the player nothing — the hostile-SDK visit in `tests/adblock-browser.test.ts` boots, plays, declines every offer and buys its look with Scrap the ads never touched, ending with zero page errors. The full placement map, floors and caps live in the generated `docs/ECONOMY.md`, held byte-for-byte by the drift battery.
