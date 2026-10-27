@@ -4,6 +4,7 @@ import { buildDangle, type DangleReport } from './dangle';
 import { buildFunnel, buildTiers, readSessions, type FunnelReport, type TierRow } from './funnel';
 import { buildPacing, type PacingReport } from './pacing';
 import { parseTelemetry, type AttemptEvent, type ParsedTelemetry } from './records';
+import { buildStuckDrift, type StuckDriftReport } from './stuck-drift';
 
 export type Verdict = 'in-band' | 'too-hard' | 'too-easy' | 'sparse';
 
@@ -137,11 +138,13 @@ export const BENCHMARKS = {
   overAccumulationCeiling: 0.02,
 } as const;
 
-/** The five sections, in the order the weekly ritual reads them (R-AN-07). */
-export const FRIDAY_SECTIONS = ['difficulty', 'session-0 funnel', 'economy pacing', 'dangle', 'perf tiers'] as const;
+/** The six sections, in the order the weekly ritual reads them (R-AN-07, R-RT-10). */
+export const FRIDAY_SECTIONS = ['difficulty', 'stuck and drift', 'session-0 funnel', 'economy pacing', 'dangle', 'perf tiers'] as const;
 
 export interface FridayReport {
   difficulty: LevelReport[];
+  /** The stuck/drift read (R-RT-10): fail-repeat loops and clean mid-loop exits. */
+  stuckDrift: StuckDriftReport;
   funnel: FunnelReport;
   pacing: PacingReport;
   dangle: DangleReport;
@@ -153,7 +156,7 @@ export interface FridayReport {
 
 const firstInputShare = (funnel: FunnelReport): number => funnel.steps.find((s) => s.step === 'first-input')?.share ?? 0;
 
-function weekActions(funnel: FunnelReport, pacing: PacingReport, dangle: DangleReport, queue: readonly LevelReport[]): string[] {
+function weekActions(funnel: FunnelReport, pacing: PacingReport, dangle: DangleReport, stuckDrift: StuckDriftReport, queue: readonly LevelReport[]): string[] {
   const actions: string[] = [];
   const conversion = firstInputShare(funnel);
   if (funnel.visits > 0 && conversion < BENCHMARKS.conversionFloor) {
@@ -164,6 +167,15 @@ function weekActions(funnel: FunnelReport, pacing: PacingReport, dangle: DangleR
   if (funnel.worstDrop) actions.push(`the steepest funnel drop is at ${funnel.worstDrop.step} (${funnel.worstDrop.dropped} of the visits that got there fell away): the playtest fix list's next target`);
   if (pacing.medianMinutes !== null && pacing.medianMinutes < BENCHMARKS.playtimeFloorMinutes) actions.push(`the median visit lasts ${pacing.medianMinutes.toFixed(1)} min, under the ${BENCHMARKS.playtimeFloorMinutes} min floor: read the difficulty queue for where they stop`);
   if (queue.length > 0) actions.push(`${queue.length} level(s) sit outside their fall-rate band: the review queue is the retune list`);
+  const stuck = stuckDrift.stuck[0];
+  if (stuck) {
+    const gaveUp = stuck.gaveUp === stuck.players ? 'none of them cleared it' : `${stuck.gaveUp} left without clearing it`;
+    actions.push(`${stuck.players} visit(s) rode fail-repeat loops at ${stuck.levelId} (worst ${stuck.worstStreak} restarts in a row, ${gaveUp}): the level joins this week's retune cycle (R-LD-16)`);
+  }
+  const drifted = stuckDrift.drift.filter((row) => row.flagged);
+  for (const row of drifted) {
+    actions.push(`${percent(row.share)} of ${row.levelId}'s clears end the visit right there (${row.cleanExits} of ${row.clears}): rotate the clear card's dangle and audit the celebrate cadence (R-RT-10)`);
+  }
   if (dangle.shown > 0 && dangle.converted === 0) actions.push(`${dangle.shown} dangles shown and none taken: reprice the shelf or re-rotate the card's pool`);
   if (pacing.sinkRatio !== null && pacing.medianUnlocksPerVisit === 0) actions.push(`the median visit never takes a look off the shelf (sink ratio ${pacing.sinkRatio.toFixed(2)}): prices, or where the shelf sits in view`);
   if (funnel.medianFirstTouchS !== null && funnel.medianFirstTouchS > Math.max(BENCHMARKS.firstTouchCeilingS.desktop, BENCHMARKS.firstTouchCeilingS.touch)) {
@@ -172,14 +184,16 @@ function weekActions(funnel: FunnelReport, pacing: PacingReport, dangle: DangleR
   return actions;
 }
 
-/** The weekly retune ritual's whole input (R-AN-07): all five sections from one export. */
+/** The weekly retune ritual's whole input (R-AN-07, R-RT-10): all six sections from one export. */
 export function buildFridayReport(records: readonly TelemetryRecord[], levels: readonly LevelDef[], options: ReportOptions = {}): FridayReport {
-  const difficulty = buildReport(parseTelemetry(records), levels, options);
+  const parsed = parseTelemetry(records);
+  const difficulty = buildReport(parsed, levels, options);
   const funnel = buildFunnel(records, levels);
   const pacing = buildPacing(readSessions(records));
   const dangle = buildDangle(records);
   const tiers = buildTiers(records);
-  return { difficulty, funnel, pacing, dangle, tiers, actions: weekActions(funnel, pacing, dangle, reviewQueue(difficulty)) };
+  const stuckDrift = buildStuckDrift(records, levels);
+  return { difficulty, stuckDrift, funnel, pacing, dangle, tiers, actions: weekActions(funnel, pacing, dangle, stuckDrift, reviewQueue(difficulty)) };
 }
 
 const minutes = (value: number | null): string => (value === null ? '—' : `${value.toFixed(1)} min`);
@@ -191,6 +205,21 @@ export function fridayToMarkdown(report: FridayReport): string {
   for (const level of report.difficulty) lines.push(levelRow(level));
   const queue = reviewQueue(report.difficulty);
   if (queue.length) lines.push('', `The review queue: ${queue.map((r) => r.levelId).join(', ')}.`);
+
+  lines.push('', '## Stuck and drift (R-RT-10)', '');
+  if (report.stuckDrift.stuck.length === 0) {
+    lines.push('No visit rode a fail-repeat streak to the law\u2019s line (four restarts in a row at one level).');
+  } else {
+    lines.push('| Level | Visits stuck | Worst streak | Left without clearing |', '| --- | ---: | ---: | ---: |');
+    for (const row of report.stuckDrift.stuck) lines.push(`| ${row.levelId} | ${row.players} | ${row.worstStreak} | ${row.gaveUp} |`);
+  }
+  const readableDrift = report.stuckDrift.drift.filter((row) => row.cleanExits > 0);
+  if (readableDrift.length === 0) {
+    lines.push('', 'No visit ended straight on a mid-campaign clear.');
+  } else {
+    lines.push('', '| Level | Clears | Clean exits | Share |', '| --- | ---: | ---: | ---: |');
+    for (const row of readableDrift) lines.push(`| ${row.levelId} | ${row.clears} | ${row.cleanExits} | ${percent(row.share)}${row.flagged ? ' — flagged' : ''} |`);
+  }
 
   lines.push('', '## Session-0 funnel', '', '| Step | Reached | Share | Fell away |', '| --- | ---: | ---: | ---: |');
   for (const step of report.funnel.steps) lines.push(`| ${step.step} | ${step.reached} | ${percent(step.share)} | ${step.dropped === null ? '—' : step.dropped} |`);

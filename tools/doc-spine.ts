@@ -318,7 +318,7 @@ export function renderEvents(): string {
     '',
     '## The readers',
     '',
-    'The export loop keeps its four — heatmap, cluster, records, difficulty — and gains three: the session-0 funnel, the economy pacing medians and the dangle-choice ratios (R-AN-04). One command reads all five sections back from a week\u2019s export (R-AN-07): `npm run friday -- export.jsonl`. The KPI each number arms lives in KPI.md. The cluster and heatmap modules stay as the local lab: their input is synthetic points, because the platform\u2019s channel no longer carries positions to read.',
+    'The export loop keeps its four — heatmap, cluster, records, difficulty — and gains three: the session-0 funnel, the economy pacing medians and the dangle-choice ratios (R-AN-04). One command reads all six sections back from a week\u2019s export (R-AN-07, R-RT-10): `npm run friday -- export.jsonl`. The KPI each number arms lives in KPI.md. The cluster and heatmap modules stay as the local lab: their input is synthetic points, because the platform\u2019s channel no longer carries positions to read.',
     '',
   ];
   return out.join('\n');
@@ -481,6 +481,8 @@ export function renderKpi(): string {
     '| First-clear conversion | the funnel\u2019s first-clear share | locale \u00d7 device | the on-ramp\u2019s own promise: the first two levels are guaranteed-clearable | the on-ramp: catch window, assist, telegraphs |',
     `| Average playtime | the visit length the session records report | locale \u00d7 device | ${BENCHMARKS.playtimeTargetMinutes} min against Poki\u2019s ${BENCHMARKS.playtimeFloorMinutes} min floor | pacing: the review queue, the dangle cadence, the celebration stack |`,
     '| Fall rate per level | the difficulty report | level | the level\u2019s own target and band | retune the level, or re-lay it |',
+    '| Stuck loops | the stuck and drift read | level \u00d7 visit | no invented floor \u2014 four restarts in a row at one level is the line, because par honesty clears a level in two to three | the retune cycle: the loop\u2019s level joins the week\u2019s review queue |',
+    '| Drift after clear | the stuck and drift read | level | no invented floor \u2014 half of a level\u2019s clears ending the visit, on six or more clears, is flagged | rotate the clear card\u2019s dangle and audit the celebrate cadence |',
     '| Ghost adoption | the funnel\u2019s first-par and first-ghost shares | session-0 | no invented floor \u2014 it arms the par-honesty audit, not a quota | the par ghosts\u2019 pacing (the author\u2019s own time plus twenty) |',
     '| Dangle conversion | the dangle reader | look | no invented floor \u2014 a look shown and never taken reprices | the shelf\u2019s prices and the card\u2019s rotation pool |',
     `| Sink health | the pacing reader\u2019s spend-of-earned ratio | visit | the sim\u2019s own over-accumulation law, ${(BENCHMARKS.overAccumulationCeiling * 100).toFixed(0)}% | prices, or a new sink |`,
@@ -488,7 +490,7 @@ export function renderKpi(): string {
     '',
     '## The Friday report (R-AN-07)',
     '',
-    'One command, `npm run friday -- export.jsonl`, regenerates the five sections the weekly retune ritual reads (R-LD-16, R-RT-10), every one of them split by the boot record\u2019s own locale and device (R-AN-09):',
+    'One command, `npm run friday -- export.jsonl`, regenerates the six sections the weekly retune ritual reads (R-LD-16, R-RT-10), every one of them split by the boot record\u2019s own locale and device (R-AN-09):',
     '',
     ...sections,
     '',
@@ -572,7 +574,8 @@ export function renderPerfBudget(): string {
   ].join('\n');
 }
 
-const DOCS: ReadonlyArray<[string, () => string]> = [
+/** The nine spine docs and their renderers, in the order the battery holds them. */
+export const SPINE_DOCS: ReadonlyArray<[string, () => string]> = [
   ['FEEL.md', renderFeel],
   ['SPECTACLE.md', renderSpectacle],
   ['COLOR_SCRIPT.md', renderColorScript],
@@ -585,7 +588,7 @@ const DOCS: ReadonlyArray<[string, () => string]> = [
 ];
 
 if (process.argv[1]?.endsWith('doc-spine.ts')) {
-  for (const [name, render] of DOCS) {
+  for (const [name, render] of SPINE_DOCS) {
     writeFileSync(resolve(import.meta.dirname, `../docs/${name}`), render());
     console.log(`wrote docs/${name}`);
   }

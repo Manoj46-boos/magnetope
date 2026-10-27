@@ -27,6 +27,8 @@ Seven steps, one per row, in the order a first visit either climbs or falls off.
 | First-clear conversion | the funnel’s first-clear share | locale × device | the on-ramp’s own promise: the first two levels are guaranteed-clearable | the on-ramp: catch window, assist, telegraphs |
 | Average playtime | the visit length the session records report | locale × device | 7 min against Poki’s 5 min floor | pacing: the review queue, the dangle cadence, the celebration stack |
 | Fall rate per level | the difficulty report | level | the level’s own target and band | retune the level, or re-lay it |
+| Stuck loops | the stuck and drift read | level × visit | no invented floor — four restarts in a row at one level is the line, because par honesty clears a level in two to three | the retune cycle: the loop’s level joins the week’s review queue |
+| Drift after clear | the stuck and drift read | level | no invented floor — half of a level’s clears ending the visit, on six or more clears, is flagged | rotate the clear card’s dangle and audit the celebrate cadence |
 | Ghost adoption | the funnel’s first-par and first-ghost shares | session-0 | no invented floor — it arms the par-honesty audit, not a quota | the par ghosts’ pacing (the author’s own time plus twenty) |
 | Dangle conversion | the dangle reader | look | no invented floor — a look shown and never taken reprices | the shelf’s prices and the card’s rotation pool |
 | Sink health | the pacing reader’s spend-of-earned ratio | visit | the sim’s own over-accumulation law, 2% | prices, or a new sink |
@@ -34,13 +36,14 @@ Seven steps, one per row, in the order a first visit either climbs or falls off.
 
 ## The Friday report (R-AN-07)
 
-One command, `npm run friday -- export.jsonl`, regenerates the five sections the weekly retune ritual reads (R-LD-16, R-RT-10), every one of them split by the boot record’s own locale and device (R-AN-09):
+One command, `npm run friday -- export.jsonl`, regenerates the six sections the weekly retune ritual reads (R-LD-16, R-RT-10), every one of them split by the boot record’s own locale and device (R-AN-09):
 
 1. difficulty
-2. session-0 funnel
-3. economy pacing
-4. dangle
-5. perf tiers
+2. stuck and drift
+3. session-0 funnel
+4. economy pacing
+5. dangle
+6. perf tiers
 
 ## The one metric per milestone (Croll)
 

@@ -35,4 +35,4 @@ Anonymous gameplay telemetry in Poki’s `measure(category, what, action)` shape
 
 ## The readers
 
-The export loop keeps its four — heatmap, cluster, records, difficulty — and gains three: the session-0 funnel, the economy pacing medians and the dangle-choice ratios (R-AN-04). One command reads all five sections back from a week’s export (R-AN-07): `npm run friday -- export.jsonl`. The KPI each number arms lives in KPI.md. The cluster and heatmap modules stay as the local lab: their input is synthetic points, because the platform’s channel no longer carries positions to read.
+The export loop keeps its four — heatmap, cluster, records, difficulty — and gains three: the session-0 funnel, the economy pacing medians and the dangle-choice ratios (R-AN-04). One command reads all six sections back from a week’s export (R-AN-07, R-RT-10): `npm run friday -- export.jsonl`. The KPI each number arms lives in KPI.md. The cluster and heatmap modules stay as the local lab: their input is synthetic points, because the platform’s channel no longer carries positions to read.

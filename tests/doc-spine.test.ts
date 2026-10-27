@@ -253,7 +253,7 @@ describe('the KPI contract (R-AN-05)', () => {
     expect(carried.slice(0, FUNNEL_STEPS.length)).toEqual([...FUNNEL_STEPS]);
   });
 
-  it('quotes the report\u2019s own benchmarks and names its five sections', () => {
+  it('quotes the report\u2019s own benchmarks and names its six sections', () => {
     const text = doc('KPI.md');
     expect(text).toContain(`${Math.round(BENCHMARKS.conversionTarget * 100)}% overall, ${Math.round(BENCHMARKS.mobileConversionTarget * 100)}% on touch`);
     expect(text).toContain(`${BENCHMARKS.firstTouchCeilingS.desktop} s desktop, ${BENCHMARKS.firstTouchCeilingS.touch} s touch`);

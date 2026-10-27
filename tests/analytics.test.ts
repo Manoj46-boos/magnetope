@@ -11,6 +11,7 @@ import { renderHeatmap } from '../tools/analytics/heatmap';
 import { buildPacing } from '../tools/analytics/pacing';
 import { buildDangle } from '../tools/analytics/dangle';
 import { parseTelemetry, readJsonLines } from '../tools/analytics/records';
+import { buildStuckDrift, DRIFT_MIN_CLEARS, DRIFT_SHARE, STUCK_STREAK } from '../tools/analytics/stuck-drift';
 import { BENCHMARKS, buildFridayReport, fridayToMarkdown, FRIDAY_SECTIONS, toMarkdown, buildReport, reviewQueue } from '../tools/analytics/report';
 
 /** Plays attempts through the shipped recorder and returns exactly what it would have flushed. */
@@ -255,6 +256,99 @@ describe('the dangle-choice reader (R-AN-04)', () => {
   });
 });
 
+describe('the stuck and drift read (R-RT-10)', () => {
+  const finalLevel = ALL_LEVELS[ALL_LEVELS.length - 1]!;
+  const restarts = (level: string, count: number) => Array.from({ length: count }, () => ({ level, outcome: 'restart' as const, ms: 15_000 }));
+
+  it('calls a fail-repeat loop stuck at the law\u2019s own line, and not one restart before it', () => {
+    const learning = playVisit({ input: true, attempts: [...restarts('scrapyard-04', STUCK_STREAK - 1), { level: 'scrapyard-04', outcome: 'clear', ms: 30_000 }] });
+    expect(buildStuckDrift(learning, ALL_LEVELS).stuck).toEqual([]);
+
+    const looped = playVisit({ input: true, attempts: [...restarts('scrapyard-04', STUCK_STREAK), { level: 'scrapyard-04', outcome: 'clear', ms: 30_000 }] });
+    const stuck = buildStuckDrift(looped, ALL_LEVELS).stuck;
+    expect(stuck).toHaveLength(1);
+    expect(stuck[0]).toMatchObject({ levelId: 'scrapyard-04', players: 1, worstStreak: STUCK_STREAK, gaveUp: 0 });
+  });
+
+  it('breaks a streak at a clear, and does not join streaks across a level change', () => {
+    const broken = playVisit({
+      input: true,
+      attempts: [
+        ...restarts('scrapyard-04', STUCK_STREAK - 1),
+        { level: 'scrapyard-04', outcome: 'clear', ms: 30_000 },
+        ...restarts('scrapyard-04', STUCK_STREAK - 1),
+        { level: 'scrapyard-05', outcome: 'restart', ms: 15_000 },
+      ],
+    });
+    expect(buildStuckDrift(broken, ALL_LEVELS).stuck).toEqual([]);
+  });
+
+  it('counts the player the loop kept: the visit that never cleared its level', () => {
+    const trapped = playVisit({ input: true, attempts: restarts('scrapyard-04', STUCK_STREAK + 1) });
+    const stuck = buildStuckDrift(trapped, ALL_LEVELS).stuck;
+    expect(stuck).toHaveLength(1);
+    expect(stuck[0]).toMatchObject({ levelId: 'scrapyard-04', players: 1, worstStreak: STUCK_STREAK + 1, gaveUp: 1 });
+  });
+
+  it('reads a clean exit after a mid-campaign clear, and nowhere else', () => {
+    const walkedAway = playVisit({ input: true, attempts: [{ level: 'scrapyard-04', outcome: 'clear', ms: 30_000 }], idleSeconds: 90 });
+    const walkedRow = buildStuckDrift(walkedAway, ALL_LEVELS).drift.find((row) => row.levelId === 'scrapyard-04')!;
+    expect(walkedRow.cleanExits).toBe(1);
+    expect(walkedRow.share).toBe(1);
+
+    const keptGoing = playVisit({ input: true, attempts: [{ level: 'scrapyard-04', outcome: 'clear', ms: 30_000 }, { level: 'scrapyard-05', outcome: 'restart', ms: 15_000 }] });
+    expect(buildStuckDrift(keptGoing, ALL_LEVELS).drift.find((row) => row.levelId === 'scrapyard-04')!.cleanExits).toBe(0);
+
+    // the final level's clear is the ending: leaving after it is finishing, not drift
+    const finished = playVisit({ input: true, attempts: [{ level: finalLevel.id, outcome: 'clear', ms: 60_000 }] });
+    const finishedRow = buildStuckDrift(finished, ALL_LEVELS).drift.find((row) => row.levelId === finalLevel.id);
+    // the row may exist — the level has clears to count — but no exit of its is ever called drift
+    expect(finishedRow?.cleanExits ?? 0).toBe(0);
+  });
+
+  it('flags drift only where enough clears say it, and only past the share\u2019s own line', () => {
+    const weekWhereHalfWalk = Array.from({ length: DRIFT_MIN_CLEARS }, (_, index) =>
+      playVisit({
+        input: true,
+        attempts:
+          index % 2 === 0
+            ? [{ level: 'scrapyard-05', outcome: 'clear', ms: 30_000 }]
+            : [{ level: 'scrapyard-05', outcome: 'clear', ms: 30_000 }, { level: 'scrapyard-06', outcome: 'restart', ms: 15_000 }],
+      }),
+    ).flat();
+    const halfWalk = buildStuckDrift(weekWhereHalfWalk, ALL_LEVELS).drift.find((row) => row.levelId === 'scrapyard-05')!;
+    expect(halfWalk.clears).toBe(DRIFT_MIN_CLEARS);
+    expect(halfWalk.cleanExits).toBe(DRIFT_MIN_CLEARS / 2);
+    expect(halfWalk.share).toBeCloseTo(DRIFT_SHARE, 5);
+    expect(halfWalk.flagged).toBe(true);
+
+    const tooFew = Array.from({ length: DRIFT_MIN_CLEARS - 2 }, (_, index) =>
+      playVisit({ input: true, attempts: [{ level: 'scrapyard-07', outcome: 'clear', ms: 30_000 }, ...(index % 2 ? [{ level: 'scrapyard-08', outcome: 'clear' as const, ms: 30_000 }] : [])] }),
+    ).flat();
+    const sparseRow = buildStuckDrift(tooFew, ALL_LEVELS).drift.find((row) => row.levelId === 'scrapyard-07')!;
+    expect(sparseRow.cleanExits).toBe(DRIFT_MIN_CLEARS / 2 - 1);
+    expect(sparseRow.share).toBeCloseTo(DRIFT_SHARE, 5);
+    expect(sparseRow.flagged).toBe(false);
+
+    const mostStayed = [...weekWhereHalfWalk, ...playVisit({ input: true, attempts: [{ level: 'scrapyard-05', outcome: 'clear', ms: 30_000 }, { level: 'scrapyard-06', outcome: 'clear', ms: 30_000 }] })];
+    const diluted = buildStuckDrift(mostStayed, ALL_LEVELS).drift.find((row) => row.levelId === 'scrapyard-05')!;
+    expect(diluted.share).toBeLessThan(DRIFT_SHARE);
+    expect(diluted.flagged).toBe(false);
+  });
+
+  it('arms exactly the two actions the protocol names, from the event trails alone', () => {
+    const stuckWeek = playVisit({ input: true, attempts: [...restarts('scrapyard-04', STUCK_STREAK), { level: 'scrapyard-04', outcome: 'clear', ms: 30_000 }] });
+    const stuckReport = buildFridayReport(stuckWeek, ALL_LEVELS);
+    expect(stuckReport.actions.some((a) => a.includes(`fail-repeat loops at scrapyard-04`) && a.includes('retune cycle'))).toBe(true);
+    expect(stuckReport.actions.some((a) => a.includes('celebrate cadence'))).toBe(false);
+
+    const driftWeek = Array.from({ length: DRIFT_MIN_CLEARS }, () => playVisit({ input: true, attempts: [{ level: 'scrapyard-05', outcome: 'clear', ms: 30_000 }] })).flat();
+    const driftReport = buildFridayReport(driftWeek, ALL_LEVELS);
+    expect(driftReport.actions.some((a) => a.includes('clears end the visit right there') && a.includes('rotate the clear card') && a.includes('celebrate cadence'))).toBe(true);
+    expect(driftReport.actions.some((a) => a.includes('fail-repeat loops'))).toBe(false);
+  });
+});
+
 describe('the Friday report (R-AN-07)', () => {
   const third = ALL_LEVELS[2]!;
   const parMs = third.parSeconds * 1000;
@@ -284,7 +378,7 @@ describe('the Friday report (R-AN-07)', () => {
       .map((record) => JSON.stringify(record))
       .join('\n');
 
-  it('produces all five sections from a fixture export, through the export loop', () => {
+  it('produces all six sections from a fixture export, through the export loop', () => {
     const records = readJsonLines(weekFixture());
     expect(records.length).toBeGreaterThan(20);
     const report = buildFridayReport(records, ALL_LEVELS);
@@ -294,6 +388,10 @@ describe('the Friday report (R-AN-07)', () => {
     expect(text).toContain('## The week\u2019s decisions');
     // the difficulty section carries the fixture's hard level with its verdict
     expect(text).toContain('| scrapyard-04 | 60 |');
+    // the stuck and drift section reads the fixture's own trails: the returning regular's visit
+    // caught the bootless scrapyard-04 loop, and the level-3 clear ended its visit
+    expect(text).toContain('| scrapyard-04 | 1 | 4 | 0 |');
+    expect(text).toContain(`| ${third.id} | 1 | 1 | 100% |`);
     // the funnel names the steepest drop, and the ladder's numbers are the fixture's own
     expect(text).toContain('| first-input | 2 |');
     expect(text).toContain('| level-3-entry | 1 |');
