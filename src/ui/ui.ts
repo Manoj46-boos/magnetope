@@ -46,6 +46,8 @@ export interface ClearCardData {
   scrap: number;
   hasNext: boolean;
   canDouble: boolean;
+  /** True once a watched video paid this run's award again (R-MZ-08: the card's flourish). */
+  doubled: boolean;
   /** True on the last level, where the clear card offers the ending again. */
   finale: boolean;
   /** The friend ghost raced this run, with the outcome. */
@@ -441,7 +443,7 @@ export class GameUi {
       <div class="facts">
         <div class="fact ${data.timeMs / 1000 <= data.parSeconds ? 'good' : ''}"><b>${formatTime(data.timeMs)}</b><span>${t('time')}</span></div>
         <div class="fact"><b>${par}</b><span>${t('par')}</span></div>
-        <div class="fact"><b><span class="scrap-icon">${ICONS.scrap}</span>${tn(data.scrap)}</b><span>${t('scrap')}</span></div>
+        <div class="fact${data.doubled ? ' rewarded' : ''}"><b><span class="scrap-icon">${ICONS.scrap}</span>${tn(data.scrap)}</b><span>${t('scrap')}</span></div>
       </div>
       <div class="stack"></div>`;
     const stack = panel.querySelector('.stack') as HTMLElement;

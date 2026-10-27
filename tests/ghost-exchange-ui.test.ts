@@ -271,6 +271,7 @@ describe('clear card and pause menu', () => {
     scrap: 20,
     hasNext: true,
     canDouble: true,
+    doubled: false,
     finale: false,
     friend: null,
     ghostDelta: null,

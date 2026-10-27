@@ -106,6 +106,27 @@ export const TUNING = {
 
   safetyLine: { dropMeters: 6 },
 
+  /**
+   * Monetization etiquette (R-MZ). The placement layer reads every number from
+   * here so the spacing between ads is tuning, not scattered judgement.
+   */
+  ads: {
+    /** R-ON-01 tie-in: the session opens on play alone — no break rides the first minute. */
+    firstBreakMinMs: 60_000,
+    /** R-MZ-03: no two commercial breaks closer together than this in one session. */
+    breakFloorMs: 90_000,
+    /** The retry waits twice the floor: retry momentum is sacred (PRD 9.3). */
+    retryFloorMs: 180_000,
+    /** R-MZ-06: at most one rewarded prompt per this window, whatever card carries it. */
+    promptGapMs: 120_000,
+    /** R-MZ-06: at most this many distinct rewarded placements in one session. */
+    maxPlacements: 3,
+    /** R-MZ-11: the doubler is earned, not given — runs shorter than this don't offer it. */
+    doublerMinRunMs: 25_000,
+    /** R-MZ-10: Scrap from rewarded videos stops here for the day; views stay unlimited. */
+    dailyAdScrapCap: 200,
+  },
+
   /** PRD 10.4: hard cap on concurrent physics bodies; levels are authored well inside it. */
   budget: { maxBodies: 260 },
 } as const;

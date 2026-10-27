@@ -138,7 +138,7 @@ function measureHud(): string[] {
 const HUD_STATE = { altitudeFrac: 0.5, showRail: true, timeMs: 93450, parSeconds: 90, bestStars: 3, showStars: true };
 const CLIMB = { stars: 210, maxStars: 210, levelsCleared: 70, totalLevels: 70, bestFall: { heightMeters: 123.4, grade: 'SSS' } };
 
-const TYPICAL_CLEAR = { levelName: 'Level', stars: 3, newBest: true, timeMs: 83450, parSeconds: 60, scrap: 50, hasNext: true, canDouble: true, finale: false, friend: null };
+const TYPICAL_CLEAR = { levelName: 'Level', stars: 3, newBest: true, timeMs: 83450, parSeconds: 60, scrap: 50, hasNext: true, canDouble: true, doubled: false, finale: false, friend: null };
 const BUSY_CLEAR = { ...TYPICAL_CLEAR, friend: { name: 'WWWWWWWWWWWW', beaten: true, marginMs: 1230 } };
 const FALL = { heightMeters: 123.4, bounces: 12, junk: 34, grade: 'SSS', offerSecondWind: true, shareable: true };
 

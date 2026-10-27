@@ -296,6 +296,15 @@ describe('SaveStore persistence', () => {
     expect(repaired.settings.sound).toBe(false);
   });
 
+  it('keeps the daily ad Scrap ledger whole and repairs a tampered one', () => {
+    const kept = sanitizeSave({ adScrap: { day: '2026-10-27', earned: 140 } });
+    expect(kept.adScrap).toEqual({ day: '2026-10-27', earned: 140 });
+    const repaired = sanitizeSave({ adScrap: { day: 'a'.repeat(40), earned: -12.7 } });
+    expect(repaired.adScrap).toEqual({ day: 'a'.repeat(10), earned: 0 });
+    expect(sanitizeSave({ adScrap: { earned: 5 } }).adScrap).toEqual({ day: '', earned: 0 });
+    expect(sanitizeSave({}).adScrap).toEqual({ day: '', earned: 0 });
+  });
+
   it('keeps a custom key layout across a reload', () => {
     const backend = new MemoryBackend();
     const first = new SaveStore(backend);

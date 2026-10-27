@@ -44,6 +44,8 @@ export interface SaveData {
   ghosts: Record<string, string>;
   /** The same-day clear tally per level the replay decay reads (R-EC-10). */
   clearTally: Record<string, ClearTally>;
+  /** Scrap earned from rewarded videos today, the daily cap's own ledger (R-MZ-10). */
+  adScrap: { day: string; earned: number };
   /** The ghost a friend shared for each level, with the name it arrived under. */
   friends: Record<string, FriendGhost>;
   /** The name that travels with the player's own ghost codes. */
@@ -107,6 +109,7 @@ export const freshSave = (): SaveData => ({
   bestGrade: {},
   ghosts: {},
   clearTally: {},
+  adScrap: { day: '', earned: 0 },
   friends: {},
   alias: '',
   seen: [],
@@ -182,6 +185,9 @@ export function sanitizeSave(raw: unknown): SaveData {
       if (!isRecord(entry) || typeof entry.day !== 'string' || typeof entry.clears !== 'number') continue;
       base.clearTally[level.slice(0, 40)] = { day: entry.day.slice(0, 10), clears: clamp(Math.round(entry.clears), 0, 999) };
     }
+  }
+  if (isRecord(raw.adScrap) && typeof raw.adScrap.day === 'string' && typeof raw.adScrap.earned === 'number') {
+    base.adScrap = { day: raw.adScrap.day.slice(0, 10), earned: clamp(Math.round(raw.adScrap.earned), 0, 999) };
   }
   if (isRecord(raw.friends)) {
     const entries = Object.entries(raw.friends).slice(0, MAX_GHOSTS);

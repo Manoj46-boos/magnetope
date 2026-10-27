@@ -11,6 +11,7 @@ import { getLocale, setLanguage, t, tf } from '@/locale';
 import { createPlatformSdk, type PlatformSdk } from '@/platform/sdk';
 import { TouchMode, readPointerEnvironment } from '@/platform/device';
 import { FaultGuard } from '@/platform/fault-guard';
+import { AdPlacement } from '@/platform/ad-placement';
 import { SdkBus } from '@/platform/sdk-bus';
 import type { Settings } from '@/platform/settings';
 import { SaveStore } from '@/platform/storage';
@@ -86,6 +87,7 @@ export class Game {
   private readonly ui: GameUi;
   private readonly save: SaveStore;
   private readonly bus: SdkBus;
+  private readonly ads: AdPlacement;
   private readonly sdk: PlatformSdk;
   private readonly clock: () => Date;
   private readonly audioEngine = new AudioEngine();
@@ -150,6 +152,7 @@ export class Game {
     this.sdk = deps.sdk ?? createPlatformSdk();
     this.clock = deps.clock ?? (() => new Date());
     this.bus = new SdkBus(this.sdk);
+    this.ads = new AdPlacement(this.bus);
     this.telemetry = new Telemetry({
       send: (batch) => batch.forEach((r) => this.sdk.measure(r.category, r.what, r.action)),
       canFlush: () => this.phase !== 'play' && this.bus.state !== 'ad',
@@ -538,7 +541,7 @@ export class Game {
         bounces: report.bounces,
         junk: report.junkDisplaced,
         grade: report.grade,
-        offerSecondWind: report.heightMeters >= 8 && !sim.run.cleared,
+        offerSecondWind: report.heightMeters >= 8 && !sim.run.cleared && this.ads.offer('second-wind'),
         shareable: report.heightMeters >= SHAREABLE_FALL_METERS,
       });
       // R-CH-06: only a spectacular fail earns MAGNO's own verdict — the deadpan
@@ -610,7 +613,14 @@ export class Game {
       parSeconds: level.parSeconds,
       scrap: clear.scrap,
       hasNext: nextPlayableId(ALL_LEVELS, this.save.data, clear.levelId) !== null,
-      canDouble: !clear.doubled,
+      // R-MZ-11: a short run has not earned the offer; R-MZ-10: a spent cap retires it for
+      // the day; R-MZ-06: the prompt clock keeps the session un-pushy. Showing it spends the window.
+      canDouble:
+        !clear.doubled &&
+        clear.summary.clearTimeMs > TUNING.ads.doublerMinRunMs &&
+        this.adScrapRemaining() > 0 &&
+        this.ads.offer('scrap-doubler'),
+      doubled: clear.doubled,
       finale: Boolean(level.finale),
       friend: clear.friend && {
         name: clear.friend.name,
@@ -722,7 +732,7 @@ export class Game {
     this.phase = 'busy';
     this.ui.closeScreens();
     this.audioEngine.resume();
-    await this.bus.commercialBreak();
+    await this.ads.resumeBreak();
     this.input.reset();
     // A capture stage keeps its hands off the controls, even across a pause cycle
     this.input.setEnabled(!this.thumbnailActive);
@@ -734,12 +744,15 @@ export class Game {
     if (this.phase === 'busy') return;
     const id = this.currentLevelId;
     this.attempts.finish('restart', this.sim?.run.timeMs ?? 0);
+    const replay = this.phase === 'cleared';
     this.phase = 'busy';
     this.ui.hideFall();
     this.ui.closeScreens();
-    if (this.consecutiveFalls >= RETRY_AD_FALLS) {
+    // The retry break, streak or replay, waits out its floor in the placement layer —
+    // the streak is the moment, the floor decides whether the SDK hears it.
+    if (replay || this.consecutiveFalls >= RETRY_AD_FALLS) {
       this.consecutiveFalls = 0;
-      await this.bus.commercialBreak();
+      await this.ads.retryBreak();
     } else {
       this.bus.stop();
     }
@@ -752,7 +765,7 @@ export class Game {
     if (!next || this.phase === 'busy') return;
     this.phase = 'busy';
     this.ui.hideClear();
-    await this.bus.commercialBreak();
+    await this.ads.advanceBreak();
     this.startLevel(next);
     this.lastStamp = performance.now();
   }
@@ -779,12 +792,27 @@ export class Game {
     if (!clear || clear.doubled || this.phase !== 'cleared') return;
     const granted = await this.bus.rewardedBreak();
     if (!granted || this.lastClear !== clear) return;
+    // R-MZ-10: the day's videos stop paying at the cap; the card keeps the run's own award.
+    const paid = Math.min(clear.scrap, this.adScrapRemaining());
+    if (paid <= 0) return;
+    const day = dayKeyOf(this.clock());
     this.save.update((s) => {
-      s.scrap += clear.scrap;
+      s.scrap += paid;
+      s.adScrap = { day, earned: (s.adScrap.day === day ? s.adScrap.earned : 0) + paid };
     });
-    if (clear.scrap > 0) this.telemetry.record('scrap', 'earn', String(clear.scrap));
-    this.lastClear = { ...clear, scrap: clear.scrap * 2, doubled: true };
+    this.telemetry.record('scrap', 'earn', String(paid));
+    this.lastClear = { ...clear, scrap: clear.scrap + paid, doubled: true };
+    // R-MZ-08: the pay lands as its own small ceremony — the reward chime, and the flourish on the fact.
+    this.audio.starStamp(2);
     this.presentClear();
+  }
+
+  /** What today's rewarded videos may still pay (R-MZ-10): the cap, read from its own ledger. */
+  private adScrapRemaining(): number {
+    const { adScrap } = this.save.data;
+    const day = dayKeyOf(this.clock());
+    const earned = adScrap.day === day ? adScrap.earned : 0;
+    return Math.max(0, TUNING.ads.dailyAdScrapCap - earned);
   }
 
   // --------------------------------------------------------------- map, locker
@@ -868,7 +896,10 @@ export class Game {
   private async watchCosmetic(id: string): Promise<void> {
     const item = cosmeticById(id);
     const willComplete = item !== undefined && completesSet(this.save.data, item);
-    if (!(await this.bus.rewardedBreak())) return;
+    const granted = await this.bus.rewardedBreak();
+    // The view happened either way; the locker is walked to, never prompted.
+    this.ads.noteWatched();
+    if (!granted) return;
     const result = unlockByReward(this.save, id, this.clock());
     if (!result.ok) return;
     this.telemetry.record('cosmetic', id, 'unlock');
@@ -1046,6 +1077,7 @@ export class Game {
     this.slowMo.update(realDt * 1000);
     this.hitStop.update(realDt * 1000);
     this.spectacle.update(realDt * 1000);
+    this.ads.advance(realDt * 1000);
 
     if (this.phase === 'play' && !this.ui.modalOpen && !this.thumbnailActive) {
       const { framing } = this.opener.update(realDt * 1000, sim.run.started);
@@ -1171,6 +1203,7 @@ export class Game {
       sim: this.sim,
       phase: this.phase,
       bus: this.bus,
+      ads: this.ads,
       sdk: this.sdk,
       save: this.save,
       telemetry: this.telemetry,

@@ -767,6 +767,23 @@ select:focus-visible {
   color: var(--amber);
 }
 
+/* The watched video paid: the fact lands with its own small ceremony (R-MZ-08). */
+.fact.rewarded b {
+  color: var(--amber);
+  animation: reward-pulse var(--t-hero);
+}
+
+@keyframes reward-pulse {
+  0% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
 .best-tag {
   margin: 0 0 6px;
   color: var(--cyan);
