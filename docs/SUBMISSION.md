@@ -31,7 +31,9 @@ No sign-in, no waiting, no downloads after the first load.
 
 **Languages:** English, German, Spanish, French, Italian, Portuguese, Turkish.
 
-**Suggested tags:** physics, magnet, skill, one button, ragdoll, rage game, 3D, casual, speedrun.
+**Suggested tags:** physics, magnet, skill, one button, 3D, casual, speedrun.
+
+**Suggested categories:** physics · puzzle · skill · one-button — the spaces where a magnet-polarity climber is a differentiator, deliberately adjacent-but-distinct from the swing-fling lineage. Four suggestions because the platform allows up to four and their team balances the mix; the tags mirror the set and carry no tone-risky label (no rage, no ragdoll — the fall comedy is the game's own, but a rage-game shelf is a promise this game does not make). Re-checked against the live catalog the day this dossier ships, because the platform's portfolio moves (R-QA-11).
 
 ## 3. Thumbnails (PRD 17.3)
 
@@ -92,15 +94,16 @@ Dependencies: Three.js (MIT), Rapier (Apache 2.0) and the Fredoka font (SIL Open
 
 ## 7. What is still open
 
-These cannot be finished by building more code; each needs a person, a device or a Poki account.
+These cannot be finished by building more code; each needs a person, a device or a Poki account. Sections 13 to 15 are their protocols and forms; this list is the short read.
 
-1. **Play it.** All 70 levels and the ending have been verified by bots and tests, never by a human. Mark unfair or dull levels; `docs/ROADMAP.md` lists the known weak ones.
-2. **Five external playtesters** with screen recordings, focusing on the first 90 seconds and the first fall (PRD 14.3).
-3. **Device matrix** (PRD table 14.2): at least one phone, one tablet and a low-end laptop.
+1. **Play it.** All 70 levels and the ending have been verified by bots and tests, never by a human. The form is `docs/VERDICTS.md` (section 14); `docs/ROADMAP.md` lists the known weak levels.
+2. **Five external playtesters** with screen recordings, focusing on the first 90 seconds, the first fall and the first ad moment (section 15).
+3. **Device matrix** (section 13): at least one phone, one tablet and a low-end laptop — the one-thumb question (section 8) and the tier floors ride on it.
 4. **Poki SDK names.** `measure(category, what, action)` matches Poki's public Game Events guide (checked in session 7). Re-check once a developer account exists, in case the SDK has moved on. The channel's own law (its alphabet and its two-numeric-values budget) was verified against the live SDK script itself in session 28 and is enforced by the suite.
 5. **Native review** of the six non-English locales.
 6. **Agreement terms.** The PRD recommends the exclusive five-year revenue share; read the actual contract before signing.
 7. **Poki Inspector cross-check (R-AN-10).** With a developer account: open the game's page in the Poki Inspector, confirm the `measure` events arrive with the payloads the table in `docs/EVENTS.md` publishes, check the language behaviour in-platform, and file the screenshot as the milestone QA evidence slot.
+8. **The panels.** The thumbnail forced-choice panel (section 3), the chirp and blind-listen ears (section 16's pending points), the plush tiles' human 5/5 — all owed to M5, all one sitting.
 
 ## 8. Accessibility and languages statement
 
@@ -167,3 +170,67 @@ Date: ____________________
 ## 11. The monetization statement (R-MZ chapter)
 
 How the game asks for a player's attention, in one paragraph a reviewer can check against the code. Every ad decision is made by one policy layer, `src/platform/ad-placement.ts`, on the game's own clock — the screens state intent, the layer decides what reaches the host SDK. The pause-to-play break is always called (the host's own contract); every other break waits its turn — ninety seconds past the last break of any kind for a next-level break, twice that after a retry, nothing in the session's first minute. Rewarded prompts share one two-minute window and the ask spends it, decline or not; the locker's watch button is walked to, never prompted, and its views stay uncapped. The doubler must be earned (no run under twenty-five seconds, one per day) and its pay is capped and ledgered at two hundred Scrap a day; every reward lands automatically. Ads never gate progress: Scrap buys cosmetics only, the campaign is star-gated only, and a blocked or failing ad stack costs the player nothing — the hostile-SDK visit in `tests/adblock-browser.test.ts` boots, plays, declines every offer and buys its look with Scrap the ads never touched, ending with zero page errors. The full placement map, floors and caps live in the generated `docs/ECONOMY.md`, held byte-for-byte by the drift battery.
+
+## 12. The submission-day runbook (R-QA-08, R-QA-10)
+
+One page, read top to bottom on the day. `npm run preflight` walks every machine leg and prints the human legs with the state they are honestly in; this section is what it walks and what the day adds by hand.
+
+1. **Build green.** `npm run build:poki` — the typecheck, the bundle, the byte audit. The preflight runs it fresh (`--fast` re-audits the built tree instead).
+2. **Thumbnail pre-flight.** The five points of section 3: the four machine audits on every card and the ident, then the panel. Nothing uploads before the forced-choice panel scores at least 9/10.
+3. **Dossier current.** The nine spine docs re-render byte for byte (`npm run docs` is a no-op when current) and this file's shape laws are green in `tests/final-gate.test.ts`.
+4. **Ledger signed.** The director's block in `docs/AI_LEDGER.md`, and the safety audit and review pack signatures in sections 9 and 10 — dated the day they are signed.
+5. **Categories chosen.** Section 2's suggestion set, re-read against the live catalog at the door.
+6. **Version tagged.** `git tag v1.0.0` on the exact build that uploads, its row in `CHANGELOG.md`, and the dossier state hash the preflight prints recorded beside the submission.
+7. **Upload.** The tagged build through the platform's dashboard.
+8. **Playtest immediately.** The build stays playable at the project page (`https://manoj46-boos.github.io/magnetope/`, rebuilt by `node scripts/deploy-pages.mjs`), and the first session is watched the day it exists.
+9. **Log the first 10 videos.** Recordings and confusions to `docs/ROADMAP.md` — watching them is the unlock for player-fit.
+
+**While the funnel measures (PRD Ch. 30.4).** Playtest and watch all ten videos twice, logging confusions; run player-fit only when its entry conditions are true and read it device-split; iterate per the published diagnostics — CTR to thumbnail variants, playtime to the stuck/drift protocol (the Friday report's sixth section reads it off the export), C2P to load and onboarding — one focused change per test; prepare the parallel-portal builds the agreement allows; and start game #2 the same week. The weekly cadence itself is logged in `docs/ROADMAP.md`: the Friday report over the week's export, the stuck and drift read with an action item, the curve band re-checked (R-LD-16, R-RT-10, R-GD-08).
+
+## 13. The device matrix (R-QA-05)
+
+The machine half is done and permanent: the tier map (`npm run tiermap`) labels the fleet, the layout battery walks both orientations and five geometries in real Chrome, the watchdog steps tiers down at the boundaries, and the C2P filmstrips hold the load law on three profiles. What only a physical device can give is the table below — one phone, one tablet, one low-end laptop, both orientations, Chrome plus whatever second browser the device carries. Each cell takes a photo or a short screen recording and the tier the probe read; the matrix is done when every row says so.
+
+| Device | Orientation | Browser | What to capture | Evidence |
+| --- | --- | --- | --- | --- |
+| Phone (the one in your pocket) | portrait + landscape | Chrome | the boot, the first launch, a fall card, a clear, the pause panel; the tier the first frame read (`npm run tiermap` says what to expect); whether one thumb clears the first two levels (section 8's open question) | ______ |
+| Phone | as above | Samsung Internet or Firefox, if installed | the same five moments | ______ |
+| Tablet | portrait + landscape | Chrome | the same five moments, plus the touch stick's reach at the larger size | ______ |
+| Low-end laptop | landscape | Chrome | the boot and a mid-biome level: does the watchdog step the tier, does the frame rate hold the floor | ______ |
+
+The tier floors the physical legs answer: tier-mid 60 fps on a 2020 mid-range profile, tier-low at least 30 fps on a 2021 budget-Android (Mali-G52-class) — the absolute lines the software-rendered stand-in cannot falsify (PERF_BUDGET.md says so in its own words).
+
+## 14. The human playthrough (R-QA-06)
+
+Seventy levels and the ending, played start to finish by the developer, one sitting per biome is fine. The form is `docs/VERDICTS.md`: a row per level, **fair** (could I see it was my fault?), **fun** (1 to 5), **flow** (where the rhythm broke), and a **verdict** — keep, retune or re-lay, with what to do. A dull level is a bug, not a taste. `npm run verdicts` audits the form and never writes it; today it reads 71 rows, 0 verdicts, 71 pending. Every retune or re-lay row joins the weekly retune cycle (R-LD-16) and closes there; the playthrough is done when the audit reads 71 of 71 and no verdict row is left open.
+
+## 15. The five-tester dress rehearsal (R-QA-07)
+
+Five external players who have never seen the game, screen recordings on, no help offered. The protocol focuses where the funnel decides: the first 90 seconds (would they have clicked, did the first flip land, did the HUD make sense), the first fall (did they laugh or close the tab), and the first ad moment (did the break feel like the game's own manners or an interruption). Findings land in the log below with a closure state; the rehearsal is done when every finding reads fixed or declined-with-reason, before any player-fit test is requested.
+
+| Tester | First 90 seconds | First fall | First ad moment | Findings | Closure |
+| --- | --- | --- | --- | --- | --- |
+| 1 | ______ | ______ | ______ | ______ | open |
+| 2 | ______ | ______ | ______ | ______ | open |
+| 3 | ______ | ______ | ______ | ______ | open |
+| 4 | ______ | ______ | ______ | ______ | open |
+| 5 | ______ | ______ | ______ | ______ | open |
+
+## 16. The Final Gate scorecard (PRD Ch. 35)
+
+The submission-day instrument: ten sections, ten points each, every point citing its requirement IDs and its evidence. 1.0 is evidence complete; 0.5 is machine evidence only, the human leg named; a red point would carry a dated remediation and there are none. **Submission requires at least 95.** The machine evidence stands at 91.5 today; the seventeen pending half-points below are the developer's legs (sections 7, 13, 14, 15 and the panels), worth 8.5 together — the line crosses at seven of them, and the M5 set is exactly that.
+
+| Section | Sum | The pending half-points, each owed to M5 |
+| --- | ---: | --- |
+| A. Hard gates | 9.5 | devices verified live needs the physical matrix (R-MO-01/03, R-QA-05) |
+| B. The card | 9.0 | the eye's 5/5 panel read at card size (R-TH-06); the forced-choice panel at 9/10 (R-TH-07) |
+| C. The opener | 10.0 | — |
+| D. Feel | 9.5 | the frozen-frame panel's formal sheet, ten frames a level (R-GF-11) |
+| E. Levels | 10.0 | — |
+| F. Identity | 8.0 | the plush tiles' human 5/5 (R-CH-01); the chirp recognition panel at 4/5 (R-CH-06); the motif hummability probe at 4/5 (R-AU-01); the blind-listen gate at 4/5 (R-AU-11) |
+| G. Economy and ads | 10.0 | — |
+| H. Cross-device and perf | 9.5 | the tier targets on real silicon (R-PE-03, R-QA-05) |
+| I. Trust and law | 8.5 | getLanguage verified on a hosted page (R-LO-01); the ledger signed (R-CM-04); the safety audit signed (R-CM-03) |
+| J. Release ops | 7.5 | the physical matrix evidence (R-QA-05); the 70-level verdicts (R-QA-06); the five-tester rehearsal artifacts (R-QA-07); the runbook executed on the day (R-QA-08); this scorecard's own total crossing 95 (Ch. 35) |
+
+The predicted scorecard against the platform's eight criteria (PRD Ch. 35.1) reads 9.3 of 10 on the same evidence — the local projection, not the verdict; the funnel's strangers and impressions remain the only votes that count on player fit and first impression. The suite holds this table's arithmetic (`tests/final-gate.test.ts`): each section's sum is ten minus half a point per pending point it names, the grand total is the sections summed, and a pending point without its requirement citation fails the build.
