@@ -6,10 +6,10 @@ import { MAX_GHOST_SAMPLES, type GhostTrack } from './ghost';
  * steps as zigzag varints, closed by a CRC-32. The bytes are deflated and
  * written as URL-safe base64 behind a version prefix.
  */
-const PREFIX = 'MGH1.';
-const MAGIC = [0x4d, 0x47, 0x01];
+export const PREFIX = 'MGH1.';
+export const MAGIC = [0x4d, 0x47, 0x01];
 export const MAX_NAME_LENGTH = 14;
-const MAX_CODE_CHARS = 48_000;
+export const MAX_CODE_CHARS = 48_000;
 const MAX_RAW_BYTES = 96_000;
 const MAX_ID_BYTES = 48;
 
