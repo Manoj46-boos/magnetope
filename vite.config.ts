@@ -1,4 +1,5 @@
 import { defineConfig, type Plugin } from 'vite';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const POKI_SDK_URL = 'https://game-cdn.poki.com/scripts/v2/poki-sdk.js';
@@ -31,10 +32,30 @@ function rapierWasmAsset(): Plugin {
   };
 }
 
+/**
+ * The third-party notice ships inside the bundle as well as the repo (R-CM-02):
+ * a reviewer who only ever receives the built game finds the licenses beside
+ * it. The canonical file is THIRD_PARTY.md at the repo root; this copies it in
+ * verbatim so the two cannot drift.
+ */
+function thirdPartyNotice(): Plugin {
+  return {
+    name: 'magnetope:third-party-notice',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'THIRD_PARTY.txt',
+        source: readFileSync(fileURLToPath(new URL('./THIRD_PARTY.md', import.meta.url)), 'utf8'),
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => ({
   base: './',
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-  plugins: [rapierWasmAsset(), pokiSdkTag(mode === 'poki')],
+  plugins: [rapierWasmAsset(), pokiSdkTag(mode === 'poki'), thirdPartyNotice()],
   define: { __DEV_TOOLS__: JSON.stringify(mode === 'development') },
   build: {
     target: 'es2022',

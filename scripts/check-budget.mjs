@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * Size and hygiene gate for a production build (PRD 10.3 and 14.1, R-PE-01).
@@ -60,6 +61,19 @@ export function auditBuild(dist, { allowPokiSdk = false } = {}) {
   for (const [name, line] of Object.entries(CLASS_BUDGETS)) {
     if ((classes[name] ?? 0) > line) problems.push(`${name} is ${(classes[name] / MB).toFixed(2)} MB, over its ${(line / MB).toFixed(2)} MB line (R-PE-01)`);
   }
+
+  // Licenses travel with the game: the notice and the font's licence both ship (R-CM-02).
+  // The canonical notice lives at the repo root wherever the build lands, so it is
+  // resolved from this script's own location.
+  const notice = sizes.find((f) => f.file === 'THIRD_PARTY.txt');
+  if (!notice) problems.push('THIRD_PARTY.txt missing from the bundle (R-CM-02)');
+  else {
+    const canonical = readFileSync(resolve(fileURLToPath(new URL('..', import.meta.url)), 'THIRD_PARTY.md'), 'utf8');
+    if (readFileSync(join(dist, 'THIRD_PARTY.txt'), 'utf8') !== canonical) {
+      problems.push('THIRD_PARTY.txt does not match THIRD_PARTY.md at the repo root; rebuild so the bundle carries the current notice');
+    }
+  }
+  if (!sizes.some((f) => f.file === 'fonts/OFL.txt')) problems.push('the font licence (fonts/OFL.txt) does not ship with the build (R-CM-02)');
 
   for (const entry of sizes) {
     if (entry.file.endsWith('.map')) problems.push(`source map shipped: ${entry.file}`);

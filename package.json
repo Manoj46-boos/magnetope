@@ -36,7 +36,8 @@
     "docs": "tsx tools/doc-spine.ts",
     "filmstrip": "tsx tools/filmstrip.ts",
     "alloc": "node --expose-gc --import tsx tools/alloc-probe.ts",
-    "tiermap": "tsx tools/tiermap.ts"
+    "tiermap": "tsx tools/tiermap.ts",
+    "licenses": "tsx tools/license-scan.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.21.0",
