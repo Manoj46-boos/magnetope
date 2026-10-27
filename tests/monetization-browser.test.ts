@@ -106,6 +106,13 @@ async function advance(ticks: number): Promise<void> {
   }, ticks);
 }
 
+/** Session clock, in five-second frames: the stepper clamps the sim, the placement clock takes it all. */
+const drive = (seconds: number): Promise<void> =>
+  page!.evaluate((s) => {
+    const game = (window as unknown as { __game: any }).__game;
+    for (let left = s; left > 0; left -= 5) game.debug.advance(Math.min(5, left));
+  }, seconds);
+
 /**
  * Puts MAGNO high over the yard and steps the simulation (no drawing, which is slow in a software
  * renderer and the card closes itself after a few seconds) until the fall has landed and its card is up.
@@ -253,6 +260,20 @@ describe('Second Wind', () => {
     expect(problems).toEqual([]);
   });
 
+  runnable('keeps the ask to one window: a second long fall inside it is not re-offered (R-MZ-06)', async () => {
+    await fallFar();
+    expect((await probe()).buttons.join(' ')).toMatch(/second wind/i);
+    await page!.locator('.fall-card .actions .btn').first().click();
+    await page!.waitForFunction(() => (window as unknown as { __game: any }).__game.debug.phase === 'play');
+    await fallFar();
+    expect((await probe()).buttons.join(' '), 'the first ask spent the window').not.toMatch(/second wind/i);
+    await page!.locator('.fall-card .actions .btn').first().click();
+    await page!.waitForFunction(() => (window as unknown as { __game: any }).__game.debug.phase === 'play');
+    await drive(125);
+    await fallFar();
+    expect((await probe()).buttons.join(' '), 'the window slid, so the ask may return').toMatch(/second wind/i);
+  }, 120000);
+
   runnable('ducks the music bed with the ad — no tail crosses the break — and restores it after (R-AU-09)', async () => {
     await fallFar();
     await page!.locator('.fall-card .actions .btn').nth(1).click();
@@ -297,22 +318,32 @@ describe('the retry break', () => {
     expect((await probe()).calls).not.toContain('commercialBreak');
   });
 
-  runnable('signals one natural stop on the retry after the third fall in a row, and resets the count', async () => {
+  runnable('signals one natural stop on the retry after the third fall in a row, once the session is open, and resets the count', async () => {
+    // The streak's moment lands inside the first minute: the session opens on play alone (R-MZ-03).
     for (let i = 0; i < 3; i++) {
       await fallFar();
       if (i < 2) await retry();
     }
+    await retry();
     expect((await probe()).calls).not.toContain('commercialBreak');
+
+    await drive(61);
+    for (let i = 0; i < 3; i++) {
+      await fallFar();
+      if (i < 2) await retry();
+    }
     await retry();
     expect((await probe()).calls.filter((c) => c === 'commercialBreak')).toHaveLength(1);
 
     await fallFar();
     await retry();
     expect((await probe()).calls.filter((c) => c === 'commercialBreak')).toHaveLength(1);
-  });
+  }, 180000);
 });
 
 describe('the clear card', () => {
+  // Playground-08's own route runs ~49 s, so the doubler is earned on it (R-MZ-11).
+  const LONG = 'playground-08';
   const routeOf = (id: string): unknown => JSON.parse(readFileSync(resolve(__dirname, `../src/levels/routes/${id}.json`), 'utf8'));
 
   /** Plays the stored route through the real game loop until the clear card is up. */
@@ -335,11 +366,11 @@ describe('the clear card', () => {
   beforeEach(async () => {
     if (!page) return;
     await begin();
-    await page.evaluate(() => (window as unknown as { __game: any }).__game.startLevel('scrapyard-01'));
-    await clearLevel('scrapyard-01');
+    await page.evaluate((id) => (window as unknown as { __game: any }).__game.startLevel(id), LONG);
+    await clearLevel(LONG);
   }, 120000);
 
-  runnable('pays the award once more for a watched video, and only once', async () => {
+  runnable('pays the award once more for a watched video, only once, and the pay lands with its flourish (R-MZ-08)', async () => {
     const award = await cardScrap();
     const before = await scrap();
     expect(award).toBeGreaterThan(0);
@@ -351,6 +382,7 @@ describe('the clear card', () => {
     await page!.waitForFunction((expected) => (window as unknown as { __game: any }).__game.debug.save.data.scrap === expected, before + award);
 
     expect(await cardScrap()).toBe(award * 2);
+    expect(await page!.locator('.clear-card .fact.rewarded').count(), 'the doubled fact carries its ceremony').toBe(1);
     expect(await doubleButton().count(), 'the offer is gone once taken').toBe(0);
     expect(await scrap()).toBe(before + award);
   }, 120000);
@@ -363,16 +395,137 @@ describe('the clear card', () => {
     expect(await scrap()).toBe(before);
     expect(await doubleButton().count()).toBe(1);
   }, 120000);
+});
 
-  runnable('signals one natural stop when the player moves on to the next level', async () => {
+describe('the next-level break', () => {
+  const routeOf = (id: string): unknown => JSON.parse(readFileSync(resolve(__dirname, `../src/levels/routes/${id}.json`), 'utf8'));
+  const clearLevel = async (id: string): Promise<void> => {
+    await page!.evaluate(
+      ({ route }) => {
+        const game = (window as unknown as { __game: any }).__game;
+        game.debug.autoplay(route);
+        for (let i = 0; i < 1200 && game.debug.phase !== 'cleared'; i++) game.debug.advance(5 / 60);
+      },
+      { route: routeOf(id) },
+    );
+    await page!.locator('.clear-card').waitFor({ state: 'visible' });
+  };
+
+  beforeEach(async () => {
+    if (page) await begin();
+  }, 60000);
+
+  runnable('signals one natural stop when the player moves on, once the session is open', async () => {
     await page!.evaluate(() => ((window as unknown as { __calls: string[] }).__calls.length = 0));
+    await drive(61);
+    await page!.evaluate((id) => (window as unknown as { __game: any }).__game.startLevel(id), 'scrapyard-01');
+    await clearLevel('scrapyard-01');
     await page!.locator('.clear-card .btn.primary').click();
-    await page!.waitForFunction(() => (window as unknown as { __game: any }).__game.debug.sim.level.id === 'scrapyard-02');
+    await page!.waitForFunction(() => (window as unknown as { __game: any }).__game.debug.sim.level.id === 'scrapyard-02', null, {
+      timeout: 30000,
+    });
     const state = await probe();
     expect(state.phase).toBe('play');
     expect(state.calls.filter((c) => c === 'commercialBreak')).toHaveLength(1);
     expect(state.calls).not.toContain('rewardedBreak');
   }, 120000);
+
+  runnable('measures the next-level break from the last break of any kind, and only past the floor (R-MZ-03)', async () => {
+    await page!.keyboard.press('Escape');
+    await page!.waitForFunction(() => (window as unknown as { __game: any }).__game.debug.phase === 'paused');
+    await drive(61);
+    await page!.keyboard.press('Escape');
+    await page!.waitForFunction(() => (window as unknown as { __game: any }).__game.debug.phase === 'play');
+    expect((await probe()).calls.filter((c) => c === 'commercialBreak')).toHaveLength(1);
+
+    await page!.evaluate((id) => (window as unknown as { __game: any }).__game.startLevel(id), 'scrapyard-01');
+    await clearLevel('scrapyard-01');
+    await page!.locator('.clear-card .btn.primary').click();
+    await page!.waitForFunction(() => (window as unknown as { __game: any }).__game.debug.sim.level.id === 'scrapyard-02', null, {
+      timeout: 30000,
+    });
+    expect((await probe()).calls.filter((c) => c === 'commercialBreak'), 'the resume break spends the floor').toHaveLength(1);
+
+    await drive(95);
+    await clearLevel('scrapyard-02');
+    await page!.locator('.clear-card .btn.primary').click();
+    await page!.waitForFunction(() => (window as unknown as { __game: any }).__game.debug.sim.level.id === 'scrapyard-03', null, {
+      timeout: 30000,
+    });
+    expect((await probe()).calls.filter((c) => c === 'commercialBreak')).toHaveLength(2);
+  }, 180000);
+});
+
+describe('the doubler is earned', () => {
+  const routeOf = (id: string): unknown => JSON.parse(readFileSync(resolve(__dirname, `../src/levels/routes/${id}.json`), 'utf8'));
+  const clearLevel = async (id: string): Promise<void> => {
+    await page!.evaluate(
+      ({ route }) => {
+        const game = (window as unknown as { __game: any }).__game;
+        game.debug.autoplay(route);
+        for (let i = 0; i < 1200 && game.debug.phase !== 'cleared'; i++) game.debug.advance(5 / 60);
+      },
+      { route: routeOf(id) },
+    );
+    await page!.locator('.clear-card').waitFor({ state: 'visible' });
+  };
+
+  /** Fills today's ad-Scrap ledger the way a long day of watched videos would. */
+  const seedToday = (earned: number): Promise<void> =>
+    page!.evaluate((n) => {
+      const game = (window as unknown as { __game: any }).__game;
+      const d = new Date();
+      const day = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+      game.debug.save.update((s: Record<string, any>) => {
+        s.adScrap = { day, earned: n };
+      });
+    }, earned);
+
+  const ledger = (): Promise<{ day: string; earned: number }> =>
+    page!.evaluate(() => (window as unknown as { __game: any }).__game.debug.save.data.adScrap);
+  const scrap = (): Promise<number> => page!.evaluate(() => (window as unknown as { __game: any }).__game.debug.save.data.scrap);
+  const cardScrap = async (): Promise<number> => Number((await page!.locator('.clear-card .fact').nth(2).locator('b').innerText()).trim());
+  const doubleButton = () => page!.locator('.clear-card .btn', { hasText: /double/i });
+
+  beforeEach(async () => {
+    if (page) await begin();
+  }, 60000);
+
+  runnable('never shows for a run under twenty-five seconds (R-MZ-11)', async () => {
+    await page!.evaluate((id) => (window as unknown as { __game: any }).__game.startLevel(id), 'scrapyard-01');
+    await clearLevel('scrapyard-01');
+    expect(await doubleButton().count()).toBe(0);
+  }, 120000);
+
+  runnable('retires for the day once the cap is spent (R-MZ-10)', async () => {
+    await seedToday(200);
+    await page!.evaluate((id) => (window as unknown as { __game: any }).__game.startLevel(id), 'playground-08');
+    await clearLevel('playground-08');
+    expect(await doubleButton().count()).toBe(0);
+  }, 180000);
+
+  runnable('pays only what the cap still allows, and writes the day into the ledger (R-MZ-10)', async () => {
+    await seedToday(190);
+    // Playground-07 has never been cleared in this visit: its first-pass award outgrows
+    // the ten Scrap the day has left, so the cap is what stops the pay, not the award.
+    await page!.evaluate((id) => (window as unknown as { __game: any }).__game.startLevel(id), 'playground-07');
+    await clearLevel('playground-07');
+    const award = await cardScrap();
+    const before = await scrap();
+    expect(award).toBeGreaterThan(10);
+
+    await doubleButton().click();
+    await endAd(true);
+    await page!.waitForFunction(
+      (expected) => (window as unknown as { __game: any }).__game.debug.save.data.scrap === expected,
+      before + 10,
+    );
+    expect(await cardScrap()).toBe(award + 10);
+    const spent = await ledger();
+    expect(spent.earned).toBe(200);
+    expect(spent.day).toContain(String(new Date().getFullYear()));
+    expect(await doubleButton().count()).toBe(0);
+  }, 180000);
 });
 
 describe('pausing', () => {
