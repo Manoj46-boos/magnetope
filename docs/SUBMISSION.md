@@ -39,11 +39,11 @@ No sign-in, no waiting, no downloads after the first load.
 
 | Asset | File | Status |
 | --- | --- | --- |
-| Hero card, 628 x 628 | `thumbnails/static/thumbnail-hero-628.png` | Done. MAGNO caught mid-launch on a live beam, arms and eye already on the junk stack above him; dusk sky, six degree roll |
-| Blooper card, 628 x 628 | `thumbnails/static/thumbnail-fall-628.png` | Done. The flip that never connected: windmilling fall, panic eye, amber repel glow, the calm stack for scale |
+| Hero card, 628 x 628 | `thumbnails/static/thumbnail-panic-628.png` | Done (rebuild PRD 1.4). The panic launch: MAGNO at the lower-left thirds crossing on the 38-degree vector, the card-grade panic eye wide on the beam end waiting upper right, junk tumbling below, indigo-to-coral sky at a six degree roll |
+| Blooper card, 628 x 628 | `thumbnails/static/thumbnail-fall-628.png` | Done. The flip that never connected: windmilling fall, the card-grade panic face, amber repel glow, the calm stack for scale against the violet sibling of the hero's ramp |
 | Ambience card, 628 x 628 | `thumbnails/static/thumbnail-tower-628.png` | Done. The whole Tin Roof shaft, summit beacon lit, clouds and ridges, MAGNO small on his beam up the left wall |
 | Sharp copies, 1256 x 1256 | `thumbnails/static/thumbnail-*-1256.png` | Done, the same three compositions for stores that want the extra pixels |
-| Animated ident | `thumbnails/animated/` as WebM, WebP and GIF | Done. The Cooper timeline: flip-in inside half a second, the catch with its flash by 2.0 s, settle and one blink, loop-clean at 3.0 s. WebM is 245 KB against the 300 KB budget |
+| Animated ident | `thumbnails/animated/` as WebM, WebP and GIF | Done (rebuild PRD 1.4.4). The Cooper timeline on the panic composition: tumble-in inside half a second, the launch up the vector with the beam connecting in the last tenth, the catch flash exactly on the two-second mark, settle and one blink, loop-clean at 3.0 s. The WebM encoder climbs quality grades until the loop fits the 300 KB budget |
 
 Every number behind the cards lives in one module, `src/render/thumbnail-scene.ts`: the framing, the staged pose, the dress props, the sky grade and the ident timeline. The engine renders the card with the same rig, field lines and post pass as gameplay, so the store frame is a designed shot, not a screenshot luck produced, and it cannot drift from the game. Regenerate the family with `npm run dev` in one terminal and `npm run thumbnails` in another. The run ends by auditing every card and the ident budgets (`python tools/check-thumbnail.py --report thumbnails`) and exits non-zero when any rule fails.
 

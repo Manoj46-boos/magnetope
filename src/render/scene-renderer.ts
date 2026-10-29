@@ -50,7 +50,7 @@ import { PostStack } from './post-stack';
 import type { PropPlacement } from '@/sim/types';
 import { PROP_DEPTH, buildPropParts, type PropParts } from './prop-mesh';
 import { CARD_GRADE } from './grade';
-import { CARD_SKY, ThumbnailStage, cardDressProp, type ThumbnailVariant } from './thumbnail-scene';
+import { ThumbnailStage, cardDressProp, type ThumbnailVariant } from './thumbnail-scene';
 import { PROFILES, type QualityProfile, type QualityTier } from './quality';
 import { ResolutionGovernor, layoutStage } from './stage';
 import { Vfx } from './vfx';
@@ -679,18 +679,21 @@ export class SceneRenderer {
     this.exitThumbnail();
     if (!this.sim) return;
     this.thumbnail = new ThumbnailStage(variant, ident);
-    const sky = CARD_SKY;
+    const sky = this.thumbnail.sky;
     const palette = PALETTES[this.sim.level.biome];
     this.backdrop?.gradeSky({ ...sky.top }, { ...sky.horizon }, { ...sky.sun });
     this.backdrop?.setAmbientVisible(this.thumbnail.ambientSky);
     this.post.setGrade(CARD_GRADE);
-    // The card is a dusk shot: the graded sky goes deep amber behind a thin fog,
-    // while a hotter key light keeps MAGNO and the junk stack lit (R-TH-05).
-    this.sun.intensity = palette.sunIntensity * 2.6;
+    // The card is a dusk shot: the graded sky goes deep behind a thin fog,
+    // while the card's own key light keeps MAGNO and the staged junk lit
+    // (R-TH-05) — hotter on the panic ramp, where the near-white body has to
+    // read near-white against indigo.
+    this.sun.intensity = palette.sunIntensity * this.thumbnail.key;
     this.hemi.intensity = palette.hemiIntensity * 0.9;
     this.fog.density = this.baseFogDensity * 0.55;
     this.flashAmount = 0;
     this.thumbFlash = 0;
+    this.rig.setCardFace(this.thumbnail.face);
     this.buildThumbnailDress(this.thumbnail.dress, this.thumbnail.guide);
   }
 
@@ -718,6 +721,7 @@ export class SceneRenderer {
     this.rig.setJoy(0);
     this.rig.setBrace(0);
     this.rig.setGrab(null);
+    this.rig.setCardFace(null);
     if (this.sim) {
       const palette = PALETTES[this.sim.level.biome];
       this.sun.intensity = palette.sunIntensity;
@@ -765,11 +769,11 @@ export class SceneRenderer {
     this.thumbnailDress = group;
   }
 
-  /** A tight two-ring bullseye at the catch point, sized for the card where the gameplay rings would read as abstract circles. */
+  /** A tight two-ring bullseye at the catch point, sized for the card where the gameplay rings would read as abstract circles. Dimmer than the gameplay rings' noon: on a card the bullseye is a destination, and a destination must never outshine the traveller. */
   private buildDressGuide(point: { x: number; y: number }): void {
     const geometry = new TorusGeometry(0.42, 0.03, 5, 28);
     for (let i = 0; i < 2; i++) {
-      const material = new MeshBasicMaterial({ color: new Color().setHSL(0.52, 0.95, 0.66), transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false });
+      const material = new MeshBasicMaterial({ color: new Color().setHSL(0.52, 0.85, 0.45), transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false });
       const ring = new Mesh(geometry, material);
       ring.position.set(point.x, point.y, ACTOR_Z - 0.12);
       ring.renderOrder = 5;
@@ -940,18 +944,20 @@ export class SceneRenderer {
     // white out the frame: the sky lifts a little, the key light flares the
     // subject, the bloom adds a halo — the scene stays legible through the beat.
     const lift = this.thumbFlash * 7;
+    const sky = this.thumbnail!.sky;
     this.backdrop?.gradeSky(
-      { h: CARD_SKY.top.h, s: CARD_SKY.top.s, l: CARD_SKY.top.l + lift },
-      { h: CARD_SKY.horizon.h, s: CARD_SKY.horizon.s, l: CARD_SKY.horizon.l + lift },
-      { h: CARD_SKY.sun.h, s: CARD_SKY.sun.s, l: CARD_SKY.sun.l + lift },
+      { h: sky.top.h, s: sky.top.s, l: sky.top.l + lift },
+      { h: sky.horizon.h, s: sky.horizon.s, l: sky.horizon.l + lift },
+      { h: sky.sun.h, s: sky.sun.s, l: sky.sun.l + lift },
     );
     const palette = PALETTES[this.sim!.level.biome];
-    this.sun.intensity = palette.sunIntensity * 2.6 * (1 + this.thumbFlash * 0.35);
+    this.sun.intensity = palette.sunIntensity * this.thumbnail!.key * (1 + this.thumbFlash * 0.35);
     this.post.setBloomBoost(this.thumbFlash * 1.2);
     this.cameraRig.direct(staged.framing.center, staged.framing.visibleHeight, staged.framing.rollDeg ?? 0);
     this.rig.setBrace(0);
     this.rig.setGrab(null);
     this.rig.setJoy(staged.joy);
+    this.rig.setCardFace(staged.face);
     if (staged.blink) this.rig.blink();
     if (staged.flash > 0) this.triggerFlash(staged.flash);
     this.rig.update(staged.view, staged.view.position, ctx.dt, ctx.reducedMotion);

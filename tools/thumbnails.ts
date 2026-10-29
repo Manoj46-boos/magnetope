@@ -19,7 +19,7 @@ const statics = join(out, 'static');
 /** Frames the pose springs settle before the still is grabbed. */
 const SETTLE = 25;
 const BASE: Record<ThumbnailVariant, string> = {
-  'hero-launch': 'hero',
+  'panic-launch': 'panic',
   'fall-comedy': 'fall',
   'tower-scale': 'tower',
 };
@@ -64,7 +64,7 @@ for (const variant of THUMBNAIL_VARIANTS) {
   }
 }
 
-capture(['--thumb=hero-launch', '--ident', `--frames=${IDENT_FRAMES}`, '--size=628', '--scale=1', `--out=${frames}`]);
+capture(['--thumb=panic-launch', '--ident', `--frames=${IDENT_FRAMES}`, '--size=628', '--scale=1', `--out=${frames}`]);
 const captured = readdirSync(frames).filter((f) => f.endsWith('.png')).length;
 if (captured !== IDENT_FRAMES) throw new Error(`ident captured ${captured} frames, expected ${IDENT_FRAMES} (3 s at 60 fps)`);
 

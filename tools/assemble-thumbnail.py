@@ -13,6 +13,9 @@ import sys
 from PIL import Image
 
 FRAME_MS = 1000 / 60
+WEBM_BUDGET = 300 * 1024
+CRF_FLOOR = 42
+CRF_CEILING = 48
 
 
 def option(name, default):
@@ -62,17 +65,33 @@ def main():
     )
 
     if ffmpeg:
-        encoder = subprocess.Popen(
-            [ffmpeg, "-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", "60", "-c:v", "mjpeg", "-i", "pipe:0",
-             "-c:v", "libvpx-vp9", "-b:v", "0", "-crf", "33", "-pix_fmt", "yuv420p",
-             os.path.join(out, "thumbnail-animated.webm")],
-            stdin=subprocess.PIPE,
-        )
+        # The three-second loop must live under the 300 KB budget whatever the
+        # card's entropy: the tight panic frame, its saturated sky and the amber
+        # field lines through the whole flight carry far more entropy than the
+        # dusk card the grade replaced. The encoder starts at the quality floor
+        # the audit is happy with and climbs in two-step grades until the
+        # budget holds — and a card that outgrows the ceiling still fails the
+        # audit loudly instead of shipping over weight.
+        import io
+
+        jpegs = []
         for frame in loop:
-            frame.save(encoder.stdin, format="JPEG", quality=96, subsampling=0)
-        encoder.stdin.close()
-        if encoder.wait() != 0:
-            raise SystemExit("ffmpeg failed to encode the WebM")
+            buf = io.BytesIO()
+            frame.save(buf, format="JPEG", quality=96, subsampling=0)
+            jpegs.append(buf.getvalue())
+        jpeg = b"".join(jpegs)
+
+        webm_path = os.path.join(out, "thumbnail-animated.webm")
+        crf = CRF_FLOOR
+        while True:
+            subprocess.run(
+                [ffmpeg, "-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", "60", "-c:v", "mjpeg", "-i", "pipe:0",
+                 "-c:v", "libvpx-vp9", "-b:v", "0", "-crf", str(crf), "-pix_fmt", "yuv420p", webm_path],
+                input=jpeg, check=True,
+            )
+            if os.path.getsize(webm_path) <= WEBM_BUDGET or crf >= CRF_CEILING:
+                break
+            crf += 2
 
     for name in sorted(os.listdir(out)):
         print(f"{name}: {os.path.getsize(os.path.join(out, name)) / 1024:.0f} KB")

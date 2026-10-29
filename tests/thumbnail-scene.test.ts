@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { prop } from '@/levels/author';
 import {
   CARD_SKY,
+  FALL_SKY,
   IDENT_CATCH_MS,
   IDENT_HOOK_MS,
   IDENT_MS,
+  PANIC_SKY,
   THUMBNAIL_VARIANTS,
   ThumbnailStage,
   cardDressProp,
@@ -18,14 +20,11 @@ const FRAME = 1000 / 60;
 
 /** Runs the ident from phase 0 to `ms`, collecting every frame so latch beats (flash, blink) are observed on the exact step that fired them. */
 function identRun(ms: number) {
-  const stage = new ThumbnailStage('hero-launch', true);
+  const stage = new ThumbnailStage('panic-launch', true);
   const frames = [stage.step(0)];
   for (let t = FRAME; t <= ms; t += FRAME) frames.push(stage.step(FRAME));
   return frames.map((frame, i) => ({ frame, phase: i * FRAME }));
 }
-
-const firstAt = (frames: ReturnType<typeof identRun>, when: (frame: ReturnType<ThumbnailStage['step']>) => boolean) =>
-  frames.find(({ frame }) => when(frame));
 
 /** The subject box's centre in card UV, the number the legibility audit is derived from. */
 const centre = (variant: ThumbnailVariant) => {
@@ -35,7 +34,7 @@ const centre = (variant: ThumbnailVariant) => {
 
 describe('the variant registry', () => {
   it('names the three scored cards and nothing else', () => {
-    expect(THUMBNAIL_VARIANTS).toEqual(['hero-launch', 'fall-comedy', 'tower-scale']);
+    expect(THUMBNAIL_VARIANTS).toEqual(['panic-launch', 'fall-comedy', 'tower-scale']);
     for (const id of THUMBNAIL_VARIANTS) expect(thumbnailVariant(id)).toBe(id);
     expect(thumbnailVariant('scrapyard-04')).toBeNull();
     expect(thumbnailVariant('')).toBeNull();
@@ -46,17 +45,35 @@ describe('the variant registry', () => {
   });
 });
 
-describe('the card compositions (R-TH-01)', () => {
-  it('sits the hero low and left, where the eye enters the frame', () => {
-    const hero = centre('hero-launch');
-    expect(hero.x).toBeLessThan(0.45);
-    expect(hero.y).toBeGreaterThan(0.55);
+describe('the card compositions (R-TH-01, rebuild PRD 1.4)', () => {
+  it('sits the panic launch at the lower-left thirds crossing, where the eye enters the frame', () => {
+    // the box is centred on the subject point: the box's middle is MAGNO's own UV
+    const box = thumbnailSubjectBox('panic-launch');
+    expect(box.x + box.w / 2).toBeCloseTo(0.38, 2);
+    expect(box.y + box.h / 2).toBeCloseTo(0.62, 2);
   });
 
-  it('fills a third of the hero card with MAGNO, the 200 ms read', () => {
-    const { w } = thumbnailSubjectBox('hero-launch');
-    expect(w).toBeGreaterThan(0.28);
-    expect(w).toBeLessThan(0.4);
+  it('fills near half the panic card with its subject, the 200 ms read', () => {
+    const { w } = thumbnailSubjectBox('panic-launch');
+    expect(w).toBeCloseTo(0.45, 1);
+  });
+
+  it('launches along the 38-degree vector, repelling, with the destination already in view', () => {
+    const view = new ThumbnailStage('panic-launch').step(0).view;
+    expect(Math.atan2(view.velocity.y, view.velocity.x)).toBeCloseTo((38 * Math.PI) / 180, 2);
+    expect(view.polarity).toBe('repel');
+    expect(view.state).toBe('airborne');
+    expect(view.snapEngaged).toBe(false);
+    expect(view.snapTarget).not.toBeNull();
+    // the launch reads bottom-left to top-right: the destination sits up and right of him
+    expect(view.snapTarget!.x).toBeGreaterThan(view.position.x);
+    expect(view.snapTarget!.y).toBeGreaterThan(view.position.y);
+  });
+
+  it('performs the panic face on both close cards and leaves the ambience card to its view', () => {
+    expect(new ThumbnailStage('panic-launch').step(0).face).toBe('panic');
+    expect(new ThumbnailStage('fall-comedy').step(0).face).toBe('panic');
+    expect(new ThumbnailStage('tower-scale').step(0).face).toBeNull();
   });
 
   it('keeps the fall card on the same corner so the pair reads as one brand', () => {
@@ -73,19 +90,28 @@ describe('the card compositions (R-TH-01)', () => {
     expect(tower.w).toBeLessThan(0.15);
   });
 
-  it('grades a dusk sky: burnt horizon, deep teal zenith, no Poki-green lightness', () => {
-    expect(CARD_SKY.horizon.h).toBeGreaterThanOrEqual(15);
-    expect(CARD_SKY.horizon.h).toBeLessThanOrEqual(45);
-    expect(CARD_SKY.top.h).toBeGreaterThanOrEqual(190);
-    expect(CARD_SKY.top.h).toBeLessThanOrEqual(230);
-    // the hue-collision rule fires on light, saturated greens; a dusk sky never enters that band
-    for (const band of [CARD_SKY.top, CARD_SKY.horizon, CARD_SKY.sun]) expect(band.l).toBeLessThan(45);
+  it('grades the panic family: indigo zenith, coral horizon, violet for the fall sibling', () => {
+    // the dusk grade keeps its burnt amber; the panic ramp biases to indigo and
+    // coral, the fall card to violet — and no band of any of them sits in the
+    // green hue window the Poki background rule lives in, whatever its lightness
+    for (const band of [CARD_SKY.top, CARD_SKY.horizon, CARD_SKY.sun, PANIC_SKY.top, PANIC_SKY.horizon, PANIC_SKY.sun, FALL_SKY.top, FALL_SKY.horizon, FALL_SKY.sun]) {
+      const mint = band.h > 140 && band.h < 180 && band.s > 40;
+      expect(mint, `band ${JSON.stringify(band)} sits in the mint window`).toBe(false);
+      expect(band.l).toBeLessThan(45);
+    }
+    expect(PANIC_SKY.top.h).toBeGreaterThanOrEqual(215);
+    expect(PANIC_SKY.top.h).toBeLessThanOrEqual(230);
+    expect(PANIC_SKY.horizon.h).toBeGreaterThanOrEqual(350);
+    expect(PANIC_SKY.horizon.h).toBeLessThanOrEqual(362);
+    // the family lockup: the fall card is the panic ramp with one hue shifted
+    expect(FALL_SKY.top.h).toBeGreaterThan(PANIC_SKY.top.h);
+    expect(FALL_SKY.sun).toEqual(PANIC_SKY.sun);
   });
 });
 
 describe('the static cards hold their pose', () => {
   it('returns the same frame no matter how long the stage runs', () => {
-    const stage = new ThumbnailStage('hero-launch');
+    const stage = new ThumbnailStage('panic-launch');
     const first = stage.step(0);
     for (let i = 0; i < 300; i++) stage.step(FRAME);
     const held = stage.step(0);
@@ -95,19 +121,18 @@ describe('the static cards hold their pose', () => {
     expect(held.blink).toBe(false);
   });
 
-  it('arms the hero on a live beam and the blooper on a repel', () => {
-    expect(new ThumbnailStage('hero-launch').step(0).view.snapEngaged).toBe(true);
+  it('arms no beam on the launch and stages the blooper on a repel', () => {
+    expect(new ThumbnailStage('panic-launch').step(0).view.snapEngaged).toBe(false);
     expect(new ThumbnailStage('fall-comedy').step(0).view.polarity).toBe('repel');
     expect(new ThumbnailStage('tower-scale').step(0).view.snapEngaged).toBe(true);
   });
 
-  it('stages the hero at joy, the falls and the wide card dead straight', () => {
-    expect(new ThumbnailStage('hero-launch').step(0).joy).toBeGreaterThan(0);
+  it('stages the launch and the falls dead straight, never at joy', () => {
+    expect(new ThumbnailStage('panic-launch').step(0).joy).toBe(0);
     expect(new ThumbnailStage('fall-comedy').step(0).joy).toBe(0);
-    expect(new ThumbnailStage('tower-scale').step(0).joy).toBe(0);
   });
 
-  it('never plays the ident timeline outside the hero composition', () => {
+  it('never plays the ident timeline outside the panic composition', () => {
     const stage = new ThumbnailStage('fall-comedy', true);
     let frame = stage.step(0);
     for (let t = FRAME; t <= IDENT_CATCH_MS + 800; t += FRAME) frame = stage.step(FRAME);
@@ -117,38 +142,55 @@ describe('the static cards hold their pose', () => {
   });
 });
 
-describe('the ident timeline (R-TH-10)', () => {
-  it('starts off-frame: the flip-in enters from below and left, unarmed', () => {
-    const first = new ThumbnailStage('hero-launch', true).step(0);
-    const settled = new ThumbnailStage('hero-launch').step(0);
+describe('the ident timeline (R-TH-10, rebuild PRD 1.4.4)', () => {
+  it('starts off-frame: the tumble-in enters from below and left, the panic face already on', () => {
+    const first = new ThumbnailStage('panic-launch', true).step(0);
+    const settled = new ThumbnailStage('panic-launch').step(0);
     expect(first.view.position.x).toBeLessThan(settled.view.position.x);
     expect(first.view.position.y).toBeLessThan(settled.view.position.y);
     expect(first.view.snapArmed).toBe(false);
+    expect(first.face).toBe('panic');
     expect(first.flash).toBe(0);
   });
 
-  it('lands the hook inside half a second, within a frame of the mark, and arms the beam', () => {
+  it('lands the hook inside half a second, within a frame of the mark', () => {
     const frames = identRun(IDENT_HOOK_MS + 3 * FRAME);
-    const armed = firstAt(frames, (frame) => frame.view.snapArmed)!;
-    expect(armed.phase).toBeLessThanOrEqual(IDENT_HOOK_MS + FRAME);
-    expect(frames[29]!.frame.view.position.x).toBeCloseTo(armed.frame.view.position.x, 1);
+    const at = frames[29]!.frame.view.position;
+    const settled = new ThumbnailStage('panic-launch').step(0).view.position;
+    expect(at.x).toBeCloseTo(settled.x, 1);
+    expect(at.y).toBeCloseTo(settled.y, 1);
   });
 
-  it('flashes the catch exactly once, on the frame the beam engages', () => {
+  it('flies the launch unarmed and panicking until the last tenth, when the beam connects', () => {
+    const frames = identRun(IDENT_CATCH_MS - 100 - 2 * FRAME);
+    const late = frames.at(-1)!.frame;
+    expect(late.face).toBe('panic');
+    expect(late.view.snapEngaged).toBe(false);
+    expect(late.flash).toBe(0);
+    expect(frames.filter(({ frame }) => frame.flash > 0)).toHaveLength(0);
+    // the beam connects in the final tenth, ahead of the flash it precedes
+    const connecting = identRun(IDENT_CATCH_MS - 2 * FRAME).at(-1)!.frame;
+    expect(connecting.view.snapEngaged).toBe(true);
+    expect(connecting.flash).toBe(0);
+  });
+
+  it('flashes the catch exactly once, on the two-second mark', () => {
     const frames = identRun(IDENT_MS);
-    const engaged = firstAt(frames, (frame) => frame.view.snapEngaged)!;
-    expect(engaged.frame.flash).toBe(1);
-    expect(engaged.phase).toBeLessThanOrEqual(IDENT_HOOK_MS + 620 + FRAME);
-    expect(frames.filter(({ frame }) => frame.flash > 0)).toHaveLength(1);
+    const caught = frames.filter(({ frame }) => frame.flash > 0);
+    expect(caught).toHaveLength(1);
+    expect(caught[0]!.phase).toBeLessThanOrEqual(IDENT_CATCH_MS + FRAME);
+    expect(caught[0]!.phase).toBeGreaterThanOrEqual(IDENT_CATCH_MS);
+    expect(caught[0]!.frame.view.state).toBe('attached');
   });
 
-  it('settles into the catch attached, joy on, no drift after the loop point', () => {
+  it('settles into the catch attached, joy on, the face handed back, no drift after the loop point', () => {
     const frames = identRun(IDENT_MS + 2000);
-    const settled = firstAt(frames, (frame) => frame.view.state === 'attached')!;
+    const settled = frames.find(({ frame }) => frame.view.state === 'attached')!;
     expect(settled.phase).toBeLessThanOrEqual(IDENT_CATCH_MS + FRAME);
     expect(settled.frame.view.velocity).toEqual({ x: 0, y: 0 });
     expect(settled.frame.view.attachNormal).not.toBeNull();
     expect(settled.frame.joy).toBe(1);
+    expect(settled.frame.face).toBeNull();
     const loop = frames.find(({ phase }) => phase >= IDENT_MS)!;
     const past = frames.at(-1)!;
     expect(past.frame.view.position).toEqual(loop.frame.view.position);

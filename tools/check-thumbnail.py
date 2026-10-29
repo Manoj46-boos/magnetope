@@ -37,16 +37,24 @@ OCR_MIN_LENGTH = 3
 WEBM_BUDGET = 300 * 1024
 IDENT_MAX_MS = 3000
 DIM = 0.7
-VARIANT_BASE = {"hero-launch": "hero", "fall-comedy": "fall", "tower-scale": "tower"}
-ARC_VARIANTS = ("hero-launch", "tower-scale")
+VARIANT_BASE = {"panic-launch": "panic", "fall-comedy": "fall", "tower-scale": "tower"}
+ARC_VARIANTS = ("panic-launch", "tower-scale")
 # The wide ambience card carries the arc as a minor element: MAGNO's beam is a
 # ~30 px sliver at that shot's scale, so presence is the bar, not abundance — and
 # the bar sits below the capture's run-to-run drift (28-35 px, the ring and aurora
 # phases seed from the wall clock before the capture holds it).
-ARC_MIN_BY_VARIANT = {"hero-launch": (240, 40), "tower-scale": (20, 3)}
+ARC_MIN_BY_VARIANT = {"panic-launch": (240, 40), "tower-scale": (20, 3)}
 # R-TH-05's subject/background law presumes a subject-forward card; the ambience
 # card is measured on every other leg and the panel decides its fate (R-TH-07).
-CONTRAST_VARIANTS = ("hero-launch", "fall-comedy")
+CONTRAST_VARIANTS = ("panic-launch", "fall-comedy")
+# The panic cards' emotion gate (rebuild PRD 1.9, G2): inside the subject's core
+# at 128 px there must be a bright cluster with a dark cluster hard beside it —
+# the eye-and-pupil (or eye-and-mouth) pair that survives the downscale. A card
+# whose subject is all one tone carries no expression the shelf can read.
+EMOTION_MIN_BRIGHT = 25
+EMOTION_MIN_DARK = 6
+EMOTION_BRIGHT = 0.85
+EMOTION_DARK = 0.35
 
 
 def option(name, default=None):
@@ -110,8 +118,49 @@ def subject_masks(size, subject):
 
 
 def arc_pixels(rgb01):
-    """The magnetic signature renders as additive cyan-white light: blue clearly above red and bright."""
-    return (rgb01[..., 2] - rgb01[..., 0] >= ARC_BLUE_RED_GAP / 255) & (rgb01[..., 2] > ARC_MIN_VAL) & (rgb01[..., 1] > ARC_MIN_VAL * 0.9)
+    """The magnetic signature renders as additive light in either of its two pole
+    voices: cyan-white on attract, hot amber on repel (the panic cards launch on
+    repel, and their signature is amber). Both must sit clearly past the opposite
+    channel and read bright."""
+    cyan = (rgb01[..., 2] - rgb01[..., 0] >= ARC_BLUE_RED_GAP / 255) & (rgb01[..., 2] > ARC_MIN_VAL) & (rgb01[..., 1] > ARC_MIN_VAL * 0.9)
+    amber = (rgb01[..., 0] - rgb01[..., 2] >= ARC_BLUE_RED_GAP / 255) & (rgb01[..., 0] > ARC_MIN_VAL) & (rgb01[..., 1] > ARC_MIN_VAL * 0.55)
+    return cyan | amber
+
+
+def subject_core_mask(size, subject):
+    """The inner 60% of the subject box, as a boolean mask."""
+    x, y, w, h = subject
+    x0, y0 = int(x * size), int(y * size)
+    x1, y1 = int((x + w) * size), int((y + h) * size)
+    if x1 <= x0 or y1 <= y0:
+        return None
+    core = np.zeros((size, size), dtype=bool)
+    inset = 0.2
+    core[int((y0 + inset * (y1 - y0))) : int(y1 - inset * (y1 - y0)), int((x0 + inset * (x1 - x0))) : int(x1 - inset * (x1 - x0))] = True
+    return core
+
+
+def emotion_pair(rgb, subject):
+    """G2, as a machine can hold it: a bright cluster in the subject's core with
+    a dark cluster within a few pixels of it — the two-shape face at card scale.
+    Returns (bright_count, dark_count_beside_bright) or None when there is no core."""
+    size = min(rgb.shape[0], rgb.shape[1])
+    core = subject_core_mask(size, subject)
+    if core is None or not core.any():
+        return None
+    luma = luminance(rgb)
+    bright = core & (luma >= EMOTION_BRIGHT)
+    if int(bright.sum()) < EMOTION_MIN_BRIGHT:
+        return int(bright.sum()), 0
+    # dilate the bright cluster by a 7 px ring and count the dark pixels inside it
+    ring = np.zeros_like(bright)
+    ring[7:, :] |= bright[:-7, :]
+    ring[:-7, :] |= bright[7:, :]
+    ring[:, 7:] |= bright[:, :-7]
+    ring[:, :-7] |= bright[:, 7:]
+    ring &= ~bright
+    dark = int((ring & (luma <= EMOTION_DARK)).sum())
+    return int(bright.sum()), dark
 
 
 def audit_image(path, variant, subject):
@@ -194,6 +243,12 @@ def audit_image(path, variant, subject):
             failures.append(f"contrast on a 30%-dimmed screen {dim_contrast:.2f} below {DIMMED_MIN:g}:1")
         if small_contrast < LEGIBILITY_128:
             failures.append(f"subject contrast at 128 px {small_contrast:.2f} below {LEGIBILITY_128:g}:1")
+        pair = emotion_pair(small, subject)
+        if pair is not None:
+            stats["emotion"] = list(pair)
+            bright, dark = pair
+            if bright < EMOTION_MIN_BRIGHT or dark < EMOTION_MIN_DARK:
+                failures.append(f"no two-shape face in the subject at 128 px: {bright} bright px, {dark} dark beside them (need {EMOTION_MIN_BRIGHT}/{EMOTION_MIN_DARK})")
     if variant in ARC_VARIANTS:
         full_min, small_min = ARC_MIN_BY_VARIANT.get(variant, (ARC_FULL_MIN, ARC_128_MIN))
         top = float(np.percentile(luma, 75))
@@ -201,7 +256,9 @@ def audit_image(path, variant, subject):
         stats["arcBand"] = bright_arcs
         if bright_arcs < full_min:
             failures.append(f"{bright_arcs} arc pixels in the top luminance quartile (need {full_min})")
-        small_arcs = int((arc_pixels(small) | ((small[..., 2] - small[..., 0] >= ARC_128_GAP / 255) & (small[..., 2] > 0.45))).sum())
+        small_cyan = (small[..., 2] - small[..., 0] >= ARC_128_GAP / 255) & (small[..., 2] > 0.45) & (small[..., 1] > 0.16)
+        small_amber = (small[..., 0] - small[..., 2] >= ARC_128_GAP / 255) & (small[..., 0] > 0.45) & (small[..., 1] > 0.16)
+        small_arcs = int((arc_pixels(small) | small_cyan | small_amber).sum())
         stats["arc128"] = small_arcs
         if small_arcs < small_min:
             failures.append(f"{small_arcs} arc pixels survive at 128 px (need {small_min})")
@@ -265,14 +322,15 @@ def write_report(root):
     if not animated_failures:
         print("PASS animated ident budgets")
 
-    hero = detail["hero-launch"]
+    hero = detail["panic-launch"]
     report = {
         "date": previous.get("date"),
-        "variants": ["A-hero-launch", "B-fall-comedy", "C-tower-scale"],
+        "variants": ["A-panic-launch", "B-fall-comedy", "C-tower-scale"],
         "panel": previous.get("panel", {"n": 10, "exposureMs": 200, "forcedChoiceWinner": None, "score": None}),
         "audits": {
             "legibility128": not hero["failures"] and hero.get("at128", 0) >= LEGIBILITY_128,
             "contrast": hero.get("contrast", 0),
+            "emotion128": not any("two-shape" in f for f in hero["failures"]),
             "hueCollision": any("ΔE" in f for f in hero["failures"]),
             "ocrEmpty": not any("OCR" in f for f in hero["failures"]),
         },

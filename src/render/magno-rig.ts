@@ -81,6 +81,14 @@ const LOOK_SWEEP_DEG = 12;
 const LOOK_SWEEP_MS = 1400;
 /** R-CH-03: the fall deep enough to read as panic — the same bar the arms' windmill answers. */
 const PANIC_DROP_M = 7;
+/** The staged card's panic grade (rebuild PRD 1.4.2): the eye grows until it clears the 12-pixel law at 128 px on the primary card's framing. */
+const CARD_EYE_SCALE = 2.3;
+/** The card's pupil share: small on the wide white — the concept card's own law, a pupil half the eye reads as a camera lens, a quarter reads as panic. */
+const CARD_PUPIL_SCALE = 0.5;
+/** The card's gaze rides further than gameplay dares, so the look toward the destination survives the downscale. */
+const CARD_GAZE = 0.065;
+/** The card's windmill frozen mid-cycle, so a still reads as motion. */
+const CARD_WINDMILL_PHASE = 1.15;
 /** The relief face: a catch inside this window of the panic earns it, held this long. */
 const RELIEF_CATCH_S = 1.2;
 const RELIEF_HOLD_S = 0.9;
@@ -222,6 +230,10 @@ export class MagnoRig {
   private readonly lid: Mesh;
   private readonly daze: Group;
   private readonly gleam: Group;
+  private readonly mouth: Mesh;
+  private readonly mouthRing: Mesh;
+  private readonly spark: Mesh;
+  private readonly socketMesh: Mesh;
   private readonly glow: Mesh;
   private readonly arcs: Mesh[] = [];
   private readonly arcMaterials: MeshBasicMaterial[] = [];
@@ -287,6 +299,7 @@ export class MagnoRig {
   private prevLimp = false;
   private dazed = false;
   private settled = false;
+  private cardFace: 'panic' | null = null;
   private breathWeight = 0;
   private breathPhase = 0;
   private idleRolls = 0;
@@ -338,10 +351,10 @@ export class MagnoRig {
 
     // Eye: a single large eye in a dark socket, sized to read MAGNO's
     // personality at gameplay distance (Carter Goodrich: the eye carries it).
-    const socket = new Mesh(new SphereGeometry(0.135, 9, 6), this.socketMaterial);
-    socket.scale.set(1, 1, 0.55);
-    socket.position.set(0, 0.1, 0.17);
-    this.inner.add(socket);
+    this.socketMesh = new Mesh(new SphereGeometry(0.135, 9, 6), this.socketMaterial);
+    this.socketMesh.scale.set(1, 1, 0.55);
+    this.socketMesh.position.set(0, 0.1, 0.17);
+    this.inner.add(this.socketMesh);
     this.eyeGroup.position.set(0, 0.1, 0.22);
     const eye = new Mesh(new SphereGeometry(0.105, 8, 6), white);
     eye.scale.set(1, 1, 0.5);
@@ -378,6 +391,26 @@ export class MagnoRig {
     this.gleam.position.set(0.048, 0.052, 0.05);
     this.gleam.visible = false;
     this.eyeGroup.add(this.gleam);
+    // The staged card's panic mouth (rebuild PRD 1.4.2): a dark agape O on a
+    // bright disc, riding the eye group so it grows with it — the same
+    // two-shape read the eye itself uses, because a dark O on the body's own
+    // shadow side reads as nothing at card scale. Gameplay MAGNO has no mouth;
+    // this shows only while a card face is set, and nothing in the simulation
+    // or the gameplay loop can set one.
+    this.mouthRing = new Mesh(new CircleGeometry(0.112, 12), white);
+    this.mouthRing.position.set(0, -0.128, 0.055);
+    this.mouthRing.visible = false;
+    this.eyeGroup.add(this.mouthRing);
+    this.mouth = new Mesh(new CircleGeometry(0.082, 10), black);
+    this.mouth.position.set(0, -0.128, 0.058);
+    this.mouth.visible = false;
+    this.eyeGroup.add(this.mouth);
+    // The wet gleam's smallest unit: one bright dot at ten o'clock, the
+    // specular that keeps an oversized eye alive at card scale.
+    this.spark = new Mesh(new SphereGeometry(0.016, 6, 4), gleamMaterial);
+    this.spark.position.set(-0.062, 0.058, 0.075);
+    this.spark.visible = false;
+    this.eyeGroup.add(this.spark);
     this.inner.add(this.eyeGroup);
 
     // Horseshoe magnet head. The arch and legs stay as the steel-coloured body
@@ -547,9 +580,14 @@ export class MagnoRig {
     return beat;
   }
 
-  /** R-CH-03/04: the face the eye is performing this frame. */
+  /** The face this frame names — the emotion table and its doc are held to this vocabulary, and the tests read it straight off the rig. */
   get eyeState(): EyeState {
     return this.eye;
+  }
+
+  /** The staged card's face override (rebuild PRD 1.7): the card-grade panic — the oversized eye, the agape mouth, the frozen windmill. Gameplay never sets it. */
+  setCardFace(face: 'panic' | null): void {
+    this.cardFace = face;
   }
 
   onImpact(normal: Vec2, speed: number): void {
@@ -804,7 +842,14 @@ export class MagnoRig {
 
     let lid = 1;
     let size = 1;
-    if (view.state === 'charging') {
+    const card = this.cardFace === 'panic';
+    if (card) {
+      // The card grade (rebuild PRD 1.4.2): the eye oversized past the point
+      // physics would ever ask of it, the lid raised past open — surprise as
+      // geometry, because a two-shape face is what survives the downscale.
+      size = CARD_EYE_SCALE;
+      lid = 1.06;
+    } else if (view.state === 'charging') {
       lid = 0.62;
       size = 0.92;
     } else if (view.limp) {
@@ -834,6 +879,13 @@ export class MagnoRig {
     this.eyeGroup.scale.set(this.eyeScale.value, this.eyeScale.value * (0.45 + 0.55 * this.lidOpen.value), 1);
     this.lid.visible = this.lidOpen.value < 0.97;
     this.lid.position.y = 0.09 * (this.lidOpen.value - 1) * -1;
+    // The card's mouth, spark and socket grade ride the same gate: on with the
+    // face, off with it, and the socket's bezel widens under the oversized eye.
+    this.mouthRing.visible = card;
+    this.mouth.visible = card;
+    this.spark.visible = card;
+    const socketScale = card ? CARD_EYE_SCALE * 0.72 : 1;
+    this.socketMesh.scale.set(socketScale, socketScale, 0.55);
 
     let towardX = view.velocity.x;
     let towardY = view.velocity.y;
@@ -841,7 +893,7 @@ export class MagnoRig {
     if (view.snapTarget) {
       towardX = view.snapTarget.x - view.position.x;
       towardY = view.snapTarget.y - view.position.y;
-      amount = 0.034;
+      amount = card ? CARD_GAZE : 0.034;
     } else if (wary) {
       // The failing surface under him: the pupil goes to it and stays.
       towardX = this.waryAt.x - view.position.x;
@@ -885,34 +937,36 @@ export class MagnoRig {
     if (dazedNow) this.daze.rotation.z = 0.35 * Math.sin(t * 3.1);
     this.gleam.visible = pride && !view.limp;
     if (this.gleam.visible) this.gleam.scale.setScalar(0.8 + 0.25 * Math.sin(t * 9));
-    const dilate = view.state === 'charging' ? 1 + TUNING.character.pupilDilate * view.charge01 : relief ? 1.15 : panic ? 0.85 : 1;
+    const dilate = card ? CARD_PUPIL_SCALE : view.state === 'charging' ? 1 + TUNING.character.pupilDilate * view.charge01 : relief ? 1.15 : panic ? 0.85 : 1;
     this.pupil.scale.setScalar(dazedNow ? 1 : view.limp ? 0.6 + 0.4 * Math.sin(t * 18) : dilate);
 
     // R-CH-04: the face this frame names — the emotion table and its doc are
     // held to this vocabulary, and the tests read it straight off the rig.
     this.eye = this.joy > 0.5
       ? 'home'
-      : view.limp
-        ? 'dazed'
-        : this.winceLeft > 0
-          ? 'wince'
-          : wary
-            ? 'wary'
-            : view.state === 'charging'
-              ? 'focused'
-              : view.state === 'recovering'
-                ? 'weary'
-                : pride
-                  ? 'pride'
-                  : relief
-                    ? 'relief'
-                    : panic
-                      ? 'panic'
-                      : this.gazeIntent
-                        ? 'whee'
-                        : this.beatAge >= 0
-                          ? 'curious'
-                          : 'idle';
+      : card
+        ? 'panic'
+        : view.limp
+          ? 'dazed'
+          : this.winceLeft > 0
+            ? 'wince'
+            : wary
+              ? 'wary'
+              : view.state === 'charging'
+                ? 'focused'
+                : view.state === 'recovering'
+                  ? 'weary'
+                  : pride
+                    ? 'pride'
+                    : relief
+                      ? 'relief'
+                      : panic
+                        ? 'panic'
+                        : this.gazeIntent
+                          ? 'whee'
+                          : this.beatAge >= 0
+                            ? 'curious'
+                            : 'idle';
     if (this.winceLeft > 0) this.winceLeft = Math.max(0, this.winceLeft - dt);
   }
 
@@ -932,6 +986,12 @@ export class MagnoRig {
       } else if (this.joy > 0.5) {
         tx = side * (0.2 + 0.04 * Math.sin(t * 5 + side));
         ty = SHOULDER_Y + 0.27 + 0.03 * Math.sin(t * 6 + side * 2);
+      } else if (this.cardFace === 'panic') {
+        // The card's windmill, frozen mid-cycle: arms thrown to opposite
+        // quarters, so the still carries the motion a tumbling fall would.
+        const phase = CARD_WINDMILL_PHASE + (side > 0 ? Math.PI : 0);
+        tx = side * 0.1 + Math.cos(phase) * 0.28;
+        ty = SHOULDER_Y + Math.sin(phase) * 0.28;
       } else if (view.state === 'recovering') {
         const push = Math.sin(clamp(view.recoverPhase, 0, 1) * Math.PI * 2);
         tx = side * (0.3 + 0.05 * push);

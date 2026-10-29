@@ -171,7 +171,7 @@ const runnable = (name: string, body: () => Promise<void>, timeout = 180000) =>
 
 describe('the store-card composition scene', () => {
   runnable('boots the level it names, with the game input neutered', async () => {
-    await stage(page!, 'hero-launch');
+    await stage(page!, 'panic-launch');
     expect((await game(page!)).sim.level.id).toBe('scrapyard-04');
     const marksAtEntry = await log(page!);
     // the shell keeps answering while the stage is live, so a stuck capture can
@@ -200,41 +200,42 @@ describe('the store-card composition scene', () => {
     expect(await log(page!)).toEqual(marksAtEntry);
   });
 
-  runnable('renders the hero card: subject, poles and catching arc', async () => {
+  runnable('renders the panic card: subject low and left, poles and field arcs', async () => {
     await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.setUiVisible(false));
-    await stage(page!, 'hero-launch');
+    await stage(page!, 'panic-launch');
     await advance(page!, 24 / 60);
     const card = await probe(page!);
     expect(card.saturated).toBeGreaterThan(100_000);
-    expect(card.blue).toBeGreaterThan(80);
+    expect(card.blue).toBeGreaterThan(50);
     expect(card.red).toBeGreaterThan(100);
-    // the read: MAGNO sits low and left, where the eye enters the card
+    // the read: the launch sits at the lower-left thirds crossing, where the
+    // eye enters — the blue pole tip rides the head's swing, so the bar is the
+    // left half, the body's own ground
     expect(card.blueX).toBeGreaterThan(0);
-    expect(card.blueX).toBeLessThan(0.45);
-    expect(card.blueY).toBeGreaterThan(0.55);
+    expect(card.blueX).toBeLessThan(0.55);
+    expect(card.blueY).toBeGreaterThan(0.5);
     expect(card.arc).toBeGreaterThan(800);
   });
 
-  runnable('plays the ident: one flash on the catch frame, then the attached settle', async () => {
-    await stage(page!, 'hero-launch', true);
-    await advance(page!, 66 / 60);
-    const midSwing = await probe(page!);
+  runnable('plays the ident: the launch flies unarmed, one flash on the two-second catch, then the settle', async () => {
+    await stage(page!, 'panic-launch', true);
+    // the flight, mid-swing: unarmed through the launch's own second
+    await advance(page!, 75 / 60);
     expect(await flashLevel(page!)).toBe(0);
+    const midFlight = await probe(page!);
+    expect(midFlight.arc).toBeGreaterThan(400);
+    // the beat fires on the catch frame — the two-second mark exactly: the
+    // renderer's flash state is live and the frame measurably lifts (the unit
+    // suite pins the exact frame and the single fire; the pixel deltas stay
+    // loose because the ring pulse phases this page's shared clock)
+    await advance(page!, 44 / 60);
     const flash = await probe(page!);
-    // the beat fires on the catch frame: the renderer's flash state is live and
-    // the frame measurably lifts (the unit suite pins the exact frame and the
-    // single fire; the ring pulse phases this page's shared clock, so the
-    // pixel deltas stay loose)
     expect(await flashLevel(page!)).toBeGreaterThan(0.4);
-    expect(flash.luma).toBeGreaterThan(midSwing.luma + 15);
-    // the beam is the ident's protagonist: it connects on the catch frame
-    expect(flash.arc).toBeGreaterThan(midSwing.arc);
-    await advance(page!, 123 / 60);
+    expect(flash.luma).toBeGreaterThan(midFlight.luma + 15);
+    await advance(page!, 70 / 60);
     const settled = await probe(page!);
     expect(await flashLevel(page!)).toBe(0);
-    // The settle breathes now (R-CH-02): the aura rides the rig, so its area
-    // dips a percent or two with the idle breath. The bar keeps a margin under
-    // that — the arc's presence at settle still reads by an order.
+    // the settle rides the rig's own aura: presence still reads by an order
     expect(settled.arc).toBeGreaterThan(280);
   });
 
@@ -273,7 +274,7 @@ describe('the store-card composition scene', () => {
     await advance(page!, 1 / 2);
     expect((await log(page!)).length).toBeGreaterThan(marks.length);
     // re-entry after a handback still stages, and a second exit is a no-op
-    await stage(page!, 'tower-scale');
+    await stage(page!, 'panic-launch');
     await stage(page!, null);
     expect((await game(page!)).phase).toBe('play');
   });

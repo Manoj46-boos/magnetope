@@ -337,6 +337,56 @@ describe('MAGNO rig', () => {
     rig.dispose();
   });
 
+  // ------------------------------------- the staged card's face (rebuild PRD 1.4.2)
+
+  const eyeScaleOf = (rig: MagnoRig): number => (rig as unknown as { eyeScale: { value: number } }).eyeScale.value;
+  const mouthOf = (rig: MagnoRig): Mesh => (rig as unknown as { mouth: Mesh }).mouth;
+  const sparkOf = (rig: MagnoRig): Mesh => (rig as unknown as { spark: Mesh }).spark;
+
+  it('performs the card-grade panic on command: the oversized eye, the agape mouth, the small pupil on wide white', () => {
+    const rig = new MagnoRig();
+    const flying = view({ velocity: { x: 3.94, y: 3.08 }, snapTarget: { x: 0.55, y: 16.6 }, polarity: 'repel' });
+    rig.setCardFace('panic');
+    run(rig, flying, 300);
+    expect(rig.eyeState).toBe('panic');
+    // the eye grows past anything gameplay asks of it — the 12-pixel law at 128 px
+    expect(eyeScaleOf(rig)).toBeGreaterThan(2.2);
+    expect(mouthOf(rig).visible).toBe(true);
+    expect(sparkOf(rig).visible).toBe(true);
+    // the pupil shrinks onto the wide white: half the eye reads as a lens, a quarter reads as panic
+    expect(pupilOf(rig).scale.x).toBeLessThan(0.6);
+    expect(pupilOf(rig).scale.x).toBeGreaterThan(0.3);
+    rig.dispose();
+  });
+
+  it('performs the panic on an upward launch, where no fall exists to earn it', () => {
+    const rig = new MagnoRig();
+    const rising = view({ velocity: { x: 3.94, y: 3.08 }, polarity: 'repel' });
+    rig.setCardFace('panic');
+    run(rig, rising, 300);
+    expect(rig.eyeState).toBe('panic');
+    // the gameplay panic would never fire here: the override owns the face
+    const plain = new MagnoRig();
+    run(plain, rising, 300);
+    expect(plain.eyeState).not.toBe('panic');
+    plain.dispose();
+    rig.dispose();
+  });
+
+  it('hands the face back: gameplay never shows the mouth, and the socket returns to its own scale', () => {
+    const rig = new MagnoRig();
+    const flying = view({ velocity: { x: 3.94, y: 3.08 }, snapTarget: { x: 0.55, y: 16.6 } });
+    rig.setCardFace('panic');
+    run(rig, flying, 300);
+    expect(mouthOf(rig).visible).toBe(true);
+    rig.setCardFace(null);
+    run(rig, flying, 300);
+    expect(mouthOf(rig).visible).toBe(false);
+    expect(sparkOf(rig).visible).toBe(false);
+    expect(eyeScaleOf(rig)).toBeLessThan(1.3);
+    rig.dispose();
+  });
+
   it('squints and darts the pupil at the surface failing under him', () => {
     const rig = new MagnoRig();
     const v = view({ state: 'attached', attachNormal: { x: 0, y: 1 }, visualAngle: 0 });
