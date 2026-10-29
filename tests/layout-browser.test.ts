@@ -111,7 +111,7 @@ function measureHud(): string[] {
   const problems: string[] = [];
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const parts = ['.hud .rail.show', '.hud .timer.show', '.hud .stars-track.show', '.hud .pause-btn', '.touch.on .flip-btn'];
+  const parts = ['.hud .rail.show', '.hud .timer.show', '.hud .stars-track.show', '.hud .pause-btn', '.touch.on .flip-btn', '.landscape-chip.show'];
   const boxes = parts.map((selector) => ({ selector, element: document.querySelector<HTMLElement>(selector) }));
   for (const { selector, element } of boxes) {
     if (!element) {
@@ -130,6 +130,22 @@ function measureHud(): string[] {
       if (a.left < b.right - 2 && b.left < a.right - 2 && a.top < b.bottom - 2 && b.top < a.bottom - 2) {
         problems.push(`hud: ${found[i]!.selector} overlaps ${found[j]!.selector}`);
       }
+    }
+  }
+  // P-MO-02's spacing law, on the surface where a mis-tap costs a run: the
+  // interactive targets of the play frame keep 24 px of undisturbed space
+  // between them. The panels are low-tempo surfaces whose buttons carry their
+  // own size, and every target in the game clears WCAG 2.5.8's 24 px floor
+  // outright — this is the thumb law on top of it, where it earns its keep.
+  const interactive = ['.hud .pause-btn', '.landscape-chip.show .chip-dismiss', '.touch.on .flip-btn']
+    .map((selector) => document.querySelector<HTMLElement>(selector))
+    .filter((e): e is HTMLElement => e !== null);
+  for (let i = 0; i < interactive.length; i++) {
+    for (let j = i + 1; j < interactive.length; j++) {
+      const a = interactive[i]!.getBoundingClientRect();
+      const b = interactive[j]!.getBoundingClientRect();
+      const gap = Math.max(Math.max(b.left - a.right, a.left - b.right), Math.max(b.top - a.bottom, a.top - a.bottom));
+      if (gap < 24 - 0.5) problems.push(`hud: two play-surface targets sit ${Math.round(gap)} px apart, too close for a thumb`);
     }
   }
   return problems;
@@ -268,15 +284,18 @@ describe.each(VIEWPORTS)('screens at $name ($width x $height)', ({ name, width, 
       await record({ label: 'reload screen', root: '.fatal', fits: true, fullScreen: true });
       await page!.evaluate(() => document.querySelector('.fatal')?.remove());
 
+      const tables = TABLES[locale as LocaleId];
       await callUi('showHud', true);
       await callUi('setTouchControls', true);
       await callUi('updateHud', HUD_STATE);
+      await callUi('landscapeChip.show', tables.landscapeHint);
       for (const issue of await page!.evaluate(measureHud)) found.push(`[${name} | ${locale}] ${issue}`);
+      await record({ label: 'landscape chip', root: '.landscape-chip.show', fits: true });
+      await callUi('landscapeChip.hide');
       await callUi('showHud', false);
       await callUi('setTouchControls', false);
       await callUi('updateHud', { ...HUD_STATE, showRail: false, timeMs: null, showStars: false });
 
-      const tables = TABLES[locale as LocaleId];
       await callUi('banner.show', 'PLAYGROUND OF GIANTS', tables.metropolisTagline.length > tables.playgroundTagline.length ? tables.metropolisTagline : tables.playgroundTagline);
       await record({ label: 'biome banner', root: '.biome-banner.show', fits: true });
       await callUi('banner.hide');

@@ -357,8 +357,9 @@ select:focus-visible {
 .icon-btn {
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
+  /* 48 px visual and hit (P-MO-02): every round control clears the thumb law at any interface scale. */
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: rgba(13, 17, 25, 0.55);
   border: 1px solid var(--panel-edge);

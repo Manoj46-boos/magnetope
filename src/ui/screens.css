@@ -589,6 +589,75 @@
   transform: none;
 }
 
+/* --------------------------------------------------------- landscape chip */
+
+.landscape-chip {
+  position: absolute;
+  top: calc(96px + var(--safe-t));
+  left: 50%;
+  transform: translate(-50%, -14px);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: min(70vw, 360px);
+  padding: 4px 4px 4px 14px;
+  border-radius: 99px;
+  background: rgba(13, 17, 25, 0.9);
+  border: 1px solid var(--panel-edge);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.35);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    transform var(--t-medium),
+    opacity var(--t-medium);
+}
+
+.landscape-chip.show {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+
+.landscape-chip p {
+  margin: 0;
+  padding: 0.45rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.chip-dismiss {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  opacity: 0.75;
+  pointer-events: auto;
+  transition: opacity var(--t-micro), transform var(--t-micro);
+}
+
+.chip-dismiss:hover {
+  opacity: 1;
+}
+
+.chip-dismiss:active {
+  transform: scale(0.92);
+}
+
+.chip-dismiss svg {
+  width: 20px;
+  height: 20px;
+}
+
+.reduced-motion .landscape-chip {
+  transform: translate(-50%, 0);
+}
+
 /* ------------------------------------------------------------------- ending */
 
 .ending {

@@ -5,6 +5,7 @@ import { SlowMoDirector } from '@/game/slowmo';
 const level = (over: Partial<OpenerLevel> = {}): OpenerLevel => ({
   establish: false,
   beat: true,
+  portrait: false,
   spawn: { x: 0, y: 0 },
   summit: { x: 4, y: 30 },
   follow: { x: 0, y: 0.6 },
@@ -279,5 +280,36 @@ describe('the slow-motion beat underneath the first catch', () => {
     director.disabled = true;
     expect(director.beat(0.5, 900)).toBe(false);
     expect(director.scale).toBe(1);
+  });
+});
+
+describe('the portrait variant of the establishing shot (P-MO-01)', () => {
+  it('opens on the same character portrait either way', () => {
+    const { opener } = rig({ establish: true, portrait: true });
+    const hero = run(opener, 0.1)!;
+    expect(hero.visibleHeight).toBeLessThan(4);
+    // The headroom cap keeps MAGNO inside his own portrait: the follow rest
+    // sits higher up the shaft in portrait, and the hero shot must not inherit it.
+    expect(hero.center.y).toBeLessThanOrEqual(0.6 + 0.01);
+  });
+
+  it('keeps the vista close enough that MAGNO still reads as the subject', () => {
+    const { opener } = rig({ establish: true, portrait: true });
+    const vista = run(opener, 1.55)!;
+    expect(vista.visibleHeight).toBeLessThanOrEqual(11 * 3.0 + 0.01);
+  });
+
+  it('still holds the whole climb when the climb fits the closer cap', () => {
+    const { opener } = rig({ establish: true, portrait: true, summit: { x: 2, y: 16 } });
+    const vista = run(opener, 1.55)!;
+    expect(vista.center.y + vista.visibleHeight / 2).toBeGreaterThanOrEqual(16);
+    expect(vista.center.y - vista.visibleHeight / 2).toBeLessThanOrEqual(-2 + 0.01);
+  });
+
+  it('composes the shaft, MAGNO above his own floor, when the climb outgrows the cap', () => {
+    const { opener } = rig({ establish: true, portrait: true });
+    const vista = run(opener, 1.55)!;
+    expect(vista.visibleHeight).toBeCloseTo(33, 1);
+    expect(vista.center.y - vista.visibleHeight / 2).toBeLessThanOrEqual(-2 + 0.01);
   });
 });

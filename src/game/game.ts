@@ -31,6 +31,7 @@ import { GameUi } from '@/ui/ui';
 import type { CoachDevice } from '@/ui/coach-overlay';
 import type { ClimbSummary } from '@/ui/ending-screen';
 import { Coach } from './coach';
+import { LandscapeHint } from './landscape-hint';
 import { GhostDirector, type FlipMoment } from './ghost-director';
 import { Opener } from './opener';
 import { GhostExchange } from './ghost-exchange';
@@ -104,6 +105,7 @@ export class Game {
   private readonly sessionLog = new SessionLog();
   private readonly telemetry: Telemetry;
   private readonly attempts: AttemptRecorder;
+  private readonly landscapeHint = new LandscapeHint();
   private readonly hudReveal: HudReveal;
   private coach = new Coach(false, () => undefined);
   private opener!: Opener;
@@ -419,12 +421,17 @@ export class Game {
     this.opener.beginLevel({
       establish: enteringBiome && !this.settings.reducedMotion,
       beat: id === order[0] && !this.save.data.seen.includes(FLAG.firstCatch),
+      portrait: this.renderer.cameraRig.portrait,
       spawn: level.spawn,
       summit: { x: level.summit.x, y: level.summit.y },
       follow: this.renderer.cameraRig.restFocus(level.spawn),
       followHeight: this.renderer.cameraRig.baseVisibleHeight,
     });
     if (enteringBiome && !this.settings.reducedMotion) this.spectacle.mark('establish');
+    if (this.landscapeHint.due(level.biome, this.renderer.cameraRig.portrait)) {
+      this.landscapeHint.spend();
+      this.ui.landscapeChip.show(t('landscapeHint'));
+    }
     this.audio.bind(sim);
     this.bindSimEvents(sim);
     this.ui.hideClear();
@@ -585,6 +592,7 @@ export class Game {
     this.lastClear = { summary, levelId: id, scrap: award.amount, doubled: false, friend, deltaAtFlip };
     this.consecutiveFalls = 0;
     this.attempts.finish('clear', summary.clearTimeMs, summary.stars);
+    this.landscapeHint.reset();
     // R-RT-04: the session's own tally, read back at the natural break.
     this.sessionLog.recordClear(summary.stars);
     if (deltaAtFlip !== null) this.sessionLog.recordDelta({ levelName: levelById(id).name, aheadMs: deltaAtFlip });
@@ -745,6 +753,7 @@ export class Game {
     const id = this.currentLevelId;
     this.attempts.finish('restart', this.sim?.run.timeMs ?? 0);
     const replay = this.phase === 'cleared';
+    if (!replay) this.landscapeHint.failed();
     this.phase = 'busy';
     this.ui.hideFall();
     this.ui.closeScreens();
@@ -863,6 +872,7 @@ export class Game {
     if (!isPlayable(ALL_LEVELS, this.save.data, levelId)) return;
     this.attempts.finish('leave', this.sim?.run.timeMs ?? 0);
     this.consecutiveFalls = 0;
+    this.landscapeHint.reset();
     this.bus.stop();
     this.startLevel(levelId);
     this.lastStamp = performance.now();
@@ -1022,7 +1032,11 @@ export class Game {
     const vv = window.visualViewport;
     const w = vv?.width ?? window.innerWidth;
     const h = vv?.height ?? window.innerHeight;
+    const wasPortrait = this.renderer.cameraRig.portrait;
     this.renderer.resize(w, h, window.devicePixelRatio || 1);
+    // The player answered the chip by turning the screen: the suggestion
+    // retires the moment it is taken (P-MO-06).
+    if (wasPortrait !== this.renderer.cameraRig.portrait) this.ui.landscapeChip.hide();
   }
 
   // -------------------------------------------------------------------- loop

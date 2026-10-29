@@ -143,6 +143,8 @@ const en = {
   setStratosphere: 'Stratosphere set',
   accessibility: 'Accessibility',
   uiScale: 'UI size',
+  landscapeHint: 'Landscape makes this climb easier',
+  hintDismiss: 'Hide',
 } as const;
 
 export type StringKey = keyof typeof en;
@@ -290,6 +292,8 @@ const de: Table = {
   setStratosphere: 'Stratosphären-Set',
   accessibility: 'Barrierefreiheit',
   uiScale: 'UI-Größe',
+  landscapeHint: 'Im Querformat gelingt der Aufstieg leichter',
+  hintDismiss: 'Ausblenden',
 };
 
 const es: Table = {
@@ -434,6 +438,8 @@ const es: Table = {
   setStratosphere: 'Set de la estratosfera',
   accessibility: 'Accesibilidad',
   uiScale: 'Tamaño de la interfaz',
+  landscapeHint: 'El modo horizontal facilita esta escalada',
+  hintDismiss: 'Ocultar',
 };
 
 const fr: Table = {
@@ -578,6 +584,8 @@ const fr: Table = {
   setStratosphere: 'Set de la stratosphère',
   accessibility: 'Accessibilité',
   uiScale: 'Taille de l’interface',
+  landscapeHint: 'Le mode paysage rend cette ascension plus facile',
+  hintDismiss: 'Masquer',
 };
 
 const it: Table = {
@@ -722,6 +730,8 @@ const it: Table = {
   setStratosphere: 'Set della stratosfera',
   accessibility: 'Accessibilità',
   uiScale: 'Dimensione interfaccia',
+  landscapeHint: 'In orizzontale questa salita è più facile',
+  hintDismiss: 'Nascondi',
 };
 
 const pt: Table = {
@@ -866,6 +876,8 @@ const pt: Table = {
   setStratosphere: 'Set da estratosfera',
   accessibility: 'Acessibilidade',
   uiScale: 'Tamanho da interface',
+  landscapeHint: 'Na horizontal esta subida fica mais fácil',
+  hintDismiss: 'Ocultar',
 };
 
 const tr: Table = {
@@ -1010,6 +1022,8 @@ const tr: Table = {
   setStratosphere: 'Stratosfer seti',
   accessibility: 'Erişilebilirlik',
   uiScale: 'Arayüz boyutu',
+  landscapeHint: 'Yatay modda bu tırmanış daha kolay',
+  hintDismiss: 'Gizle',
 };
 
 export const TABLES: Readonly<Record<LocaleId, Table>> = { en, de, es, fr, it, pt, tr };

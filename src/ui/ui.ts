@@ -3,6 +3,7 @@ import { LOCALES, pageLang, t, tf, tn, PSEUDO_ID, type LocaleId, type StringKey 
 import { DEFAULT_SETTINGS, type Settings } from '@/platform/settings';
 import { formatTime } from '@/game/progress';
 import { BiomeBanner } from './banner';
+import { LandscapeChip } from './landscape-chip';
 import { CoachOverlay } from './coach-overlay';
 import { el, esc } from './dom';
 import { ControlsScreen } from './controls-screen';
@@ -102,6 +103,7 @@ export class GameUi {
   readonly keysScreen: KeysScreen;
   readonly coach: CoachOverlay;
   readonly banner: BiomeBanner;
+  readonly landscapeChip: LandscapeChip;
   readonly ending: EndingScreen;
   private readonly loading: HTMLElement;
   private readonly loadingBar: HTMLElement;
@@ -144,6 +146,7 @@ export class GameUi {
     this.flashEl = this.layer('flash');
     this.coach = new CoachOverlay(this.root);
     this.banner = new BiomeBanner(this.root);
+    this.landscapeChip = new LandscapeChip(this.root);
     this.ending = new EndingScreen(this.root);
 
     this.hud = this.layer('hud');

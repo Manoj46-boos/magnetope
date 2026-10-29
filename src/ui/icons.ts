@@ -29,6 +29,7 @@ export const ICONS = {
   keyboard: svg('<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M7.5 14h9"/>'),
   sliders: svg('<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>'),
   ghost: svg('<path d="M6 20.5V11a6 6 0 0 1 12 0v9.5l-3-2-3 2-3-2z"/><circle cx="10" cy="11" r="1" fill="currentColor"/><circle cx="14" cy="11" r="1" fill="currentColor"/>'),
+  close: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
 } as const;
 
 /** MAGNO in a skin's colours, for the locker grid. Same shapes as the loading mark. */

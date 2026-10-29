@@ -26,6 +26,9 @@ const REDUCED_AMPLITUDE = 0.2;
 /** FOV pop (R-GF-01): +3° at the release, settling home over 400 ms. */
 const POP_DEG = 3;
 const POP_TAU = 0.115;
+/** Portrait framing (P-MO-01): 62% of the frame rides above MAGNO, so the dead sky band becomes the climb ahead. */
+const PORTRAIT_FRAMING_BIAS = 0.23;
+const LANDSCAPE_FRAMING_BIAS = 0.38;
 /** Catch settle (R-GF-04): a small dolly that eases onto the catch and back off. */
 const SETTLE_DOLLY = 0.03;
 const SETTLE_TAU = 0.09;
@@ -84,11 +87,19 @@ export class CameraRig {
   setLayout(layout: StageLayout): void {
     this.camera.aspect = layout.cssWidth / layout.cssHeight;
     this.baseDistance = cameraDistance(layout, CAMERA_FOV);
+    this.framingBias = layout.portrait ? PORTRAIT_FRAMING_BIAS : LANDSCAPE_FRAMING_BIAS;
+    this.portraitLayout = layout.portrait;
     this.camera.updateProjectionMatrix();
   }
 
+  /** Whether the visit is portrait: the climb doctrine (P-MO-01) and the landscape chip (P-MO-06) both read it. */
+  get portrait(): boolean {
+    return this.portraitLayout;
+  }
+
   /** The player's feet plane maps to this screen height fraction (0 bottom, 1 top). */
-  private readonly framingBias = 0.38;
+  private framingBias = LANDSCAPE_FRAMING_BIAS;
+  private portraitLayout = false;
 
   snapTo(target: Vec2): void {
     this.fx.snap(target.x);
@@ -166,7 +177,7 @@ export class CameraRig {
     if (this.shakes.length > 6) this.shakes.shift();
   }
 
-  update(target: Vec2, velocity: Vec2, dt: number, opts: { falling: boolean; slowMo: number; charge?: number; bounds: { minX: number; maxX: number } }): void {
+  update(target: Vec2, velocity: Vec2, dt: number, opts: { falling: boolean; slowMo: number; charge?: number; bounds: { minX: number; maxX: number }; goal?: Vec2 }): void {
     if (!this.ready) this.snapTo(target);
     this.time += dt;
 
@@ -195,7 +206,15 @@ export class CameraRig {
 
     const half = this.visibleHeight / 2;
     this.fx.update(clamp(target.x + this.lookAhead.x, opts.bounds.minX + 6, opts.bounds.maxX - 6), dt);
-    this.fy.update(target.y + this.lookAhead.y + half * (0.5 - this.framingBias) * 0.9, dt);
+    let fyTarget = target.y + this.lookAhead.y + half * (0.5 - this.framingBias) * 0.9;
+    if (this.portraitLayout && opts.goal && !opts.falling) {
+      const above = opts.goal.y - target.y;
+      // The approach shot (P-MO-01): once the summit is inside a frame of MAGNO,
+      // the gaze lifts to hold it in the upper third — never so far that MAGNO
+      // himself drops off the bottom of the climb he is making.
+      if (above > 0 && above < this.visibleHeight * 0.8) fyTarget = Math.max(fyTarget, opts.goal.y - this.visibleHeight * 0.42);
+    }
+    this.fy.update(fyTarget, dt);
     this.place(this.fx.value, this.fy.value, dt);
   }
 

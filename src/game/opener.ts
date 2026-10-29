@@ -17,6 +17,8 @@ export interface OpenerLevel {
   establish: boolean;
   /** This level attempt may still play the one-time first-catch beat. */
   beat: boolean;
+  /** The visit is portrait: the vista composes for the narrow frame (P-MO-01). */
+  portrait: boolean;
   spawn: Vec2;
   summit: Vec2;
   /** Where the follow camera comes to rest at the spawn; shots ease back to it exactly. */
@@ -39,6 +41,8 @@ const PAN_ZOOM = 2.1;
 const HERO_HOLD_MS = 500;
 /** A character portrait: at the follow camera's long lens this is the scale where MAGNO's face carries the frame. */
 const HERO_VISIBLE_METERS = 2.2;
+/** Headroom above MAGNO at that scale, capped so his face carries the frame in either orientation (P-MO-01). */
+const HERO_HEADROOM_MAX = 0.6;
 const VISTA_IN_MS = 1000;
 const VISTA_HOLD_MS = 200;
 const HOME_IN_MS = 700;
@@ -46,6 +50,8 @@ const HOME_IN_MS = 700;
 const SHOT_CLIMB_FACTOR = 1.7;
 const SHOT_MIN_HEIGHT = 1.7;
 const SHOT_MAX_HEIGHT = 4.2;
+/** The portrait vista stays closer (P-MO-01): a narrow frame pulled to landscape distance turns MAGNO into a smudge, so it composes the shaft instead of the whole climb. */
+const SHOT_PORTRAIT_MAX_HEIGHT = 3.0;
 const SHOT_CENTER_SHARE = 0.62;
 /** Metres of frame below MAGNO at the vista's widest, so he never falls out of his own opening shot. */
 const SHOT_BOTTOM_MARGIN = 2;
@@ -218,11 +224,11 @@ export class Opener {
    * framing. One continuous piece of camera work, interruptible at any frame.
    */
   private shotFraming(ms: number): Framing {
-    const { spawn, summit, follow, followHeight } = this.level!;
+    const { spawn, summit, follow, followHeight, portrait } = this.level!;
     const climb = Math.max(1, summit.y - spawn.y);
-    const vistaHeight = clamp(climb * SHOT_CLIMB_FACTOR, followHeight * SHOT_MIN_HEIGHT, followHeight * SHOT_MAX_HEIGHT);
+    const vistaHeight = clamp(climb * SHOT_CLIMB_FACTOR, followHeight * SHOT_MIN_HEIGHT, followHeight * (portrait ? SHOT_PORTRAIT_MAX_HEIGHT : SHOT_MAX_HEIGHT));
     const rise = Math.min(climb * SHOT_CENTER_SHARE, vistaHeight / 2 - SHOT_BOTTOM_MARGIN);
-    const hero = { center: { x: follow.x, y: follow.y }, height: HERO_VISIBLE_METERS };
+    const hero = { center: { x: follow.x, y: Math.min(follow.y, spawn.y + HERO_HEADROOM_MAX) }, height: HERO_VISIBLE_METERS };
     const vista = { center: { x: lerp(spawn.x, summit.x, 0.5), y: spawn.y + rise }, height: vistaHeight };
     const home = { center: { x: follow.x, y: follow.y }, height: followHeight };
 

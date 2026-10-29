@@ -886,6 +886,7 @@ export class SceneRenderer {
           slowMo: ctx.slowMo,
           charge: view.state === 'charging' ? view.charge01 : 0,
           bounds: sim.level.bounds,
+          goal: sim.level.summit,
         });
       }
 

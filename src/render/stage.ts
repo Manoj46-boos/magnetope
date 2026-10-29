@@ -17,7 +17,8 @@ export interface StageLayout {
   minVisibleHeight: number;
 }
 
-const WORLD_FRAME = { landscapeHeight: 8.6, portraitWidth: 7.6 };
+/** Portrait width is the climbing doctrine (P-MO-01): at 5 metres MAGNO reads at character scale, where 7.6 letterboxed him into a speck. */
+const WORLD_FRAME = { landscapeHeight: 8.6, portraitWidth: 5.0 };
 
 export function layoutStage(viewportWidth: number, viewportHeight: number): StageLayout {
   const w = Math.max(1, Math.floor(viewportWidth));
