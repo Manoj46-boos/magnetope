@@ -67,11 +67,13 @@ export const CARD_SKY = { top: { h: 206, s: 62, l: 20 }, horizon: { h: 28, s: 88
  * The panic family's ramp (rebuild PRD 1.4.3): deep indigo at the zenith, hot
  * coral at the horizon, an amber sun — every hue biased away from mint, the
  * saturation a fifth over the dusk grade it replaces, so a shrunken card still
- * reads lit against the shelf. The fall card wears the same ramp with the
- * horizon shifted to violet dusk, so the pair reads as siblings at a glance.
+ * reads lit against the shelf. The fall card wears the ramp with the zenith
+ * shifted to violet dusk and the horizon left coral, so the pair reads as
+ * siblings at a glance and the drop below him glows warm with where he came
+ * from — the blooper's own punchline light.
  */
 export const PANIC_SKY = { top: { h: 222, s: 68, l: 12 }, horizon: { h: 356, s: 92, l: 16 }, sun: { h: 45, s: 95, l: 28 } } as const;
-export const FALL_SKY = { top: { h: 228, s: 60, l: 13 }, horizon: { h: 258, s: 78, l: 15 }, sun: { h: 45, s: 95, l: 28 } } as const;
+export const FALL_SKY = { top: { h: 258, s: 68, l: 12 }, horizon: { h: 356, s: 92, l: 16 }, sun: { h: 45, s: 95, l: 28 } } as const;
 
 export type CardSky = typeof CARD_SKY | typeof PANIC_SKY | typeof FALL_SKY;
 
@@ -187,74 +189,114 @@ function panicLaunch(): VariantSpec {
 }
 
 /**
- * The blooper reel card: a flip that never connected, MAGNO windmilling with the
- * wide-eye panic the fall animation already owns, amber repel glow behind him,
- * the calm stack beside him for scale. The panic face rides the card too — the
- * fall earns it honestly, and the card grades it up so the pair matches.
+ * The blooper card (rebuild PRD 1.5): the panic launch's own mirror. MAGNO
+ * upside down at the upper-right thirds crossing, windmilling down the
+ * diagonal his launch climbed, the Tin Roof sheet that gave way under him
+ * poking its end into the top of the frame, the junk the flip knocked loose
+ * falling with him, and the pupil cast at the long drop below. The panic face
+ * rides the card because the fall earns it — the wide eye and the agape mouth
+ * are the blooper's whole read at 128 px.
  */
 function fallComedy(): VariantSpec {
-  const velocity = { x: 1.4, y: -12.5 };
+  // Under the rig's own fall-stretch bar (9 m/s down): the stretch deformation
+  // cancels the body's rotation, so a faster fall would render upright and
+  // stretched — the tumble the blooper needs lives just under it, where the
+  // lean a steep fall earns carries the body past vertical and holds it there.
+  const velocity = { x: -1.0, y: -8.5 };
   return {
     level: 'scrapyard-04',
-    framing: { center: { x: 0.25, y: 16.4 }, visibleHeight: 3.4, rollDeg: 5 },
+    framing: { center: { x: -0.4, y: 18.21 }, visibleHeight: 2.2, rollDeg: 6 },
     joy: 0,
-    subjectMargin: 0.55,
-    dress: JUNK_STACK,
-    altitude: 0.3,
+    subjectMargin: 0.5,
+    dress: FALL_DRESS,
+    altitude: 0.74,
     ambientSky: false,
     sky: FALL_SKY,
     face: 'panic',
-    key: 2.6,
+    key: 3.2,
     view: stagedView({
-      position: { x: -0.75, y: 16.45 },
+      position: { x: -0.14, y: 18.43 },
       velocity,
-      visualAngle: 2.35,
+      visualAngle: leanInto(velocity.x, velocity.y),
       polarity: 'repel',
+      snapTarget: THE_DROP,
       dropMeters: 9,
     }),
   };
 }
 
 /**
- * The ambience card: the whole Tin Roof shaft, summit beacon lit, drifting
- * clouds and backdrop ridges, MAGNO small on his beam up the left wall. The
- * world tour sells this one.
+ * The aspiration card (rebuild PRD 1.6): the Tin Roof shaft cropped in a third
+ * from its old wide framing, so the tower reads at 128 px as one shape instead
+ * of mush — the walls rising past both edges of the frame, the summit beacon
+ * and its gold light standing in the glint zone where every card in the family
+ * keeps its destinations. It steals the panic ramp so the lockup is unmistakable,
+ * and carries the launch vector in miniature: MAGNO mid-hop off the plank floor
+ * at the frame's lower left, the armed beam already reaching for the sheet above.
  */
 function towerScale(): VariantSpec {
-  const velocity = { x: -2.8, y: 3.4 };
+  const velocity = { x: 2.2, y: 4.2 };
   return {
     level: 'scrapyard-04',
-    framing: { center: { x: 0.4, y: 14.6 }, visibleHeight: 24.5, rollDeg: 0 },
+    framing: { center: { x: -3.0, y: 18.4 }, visibleHeight: 17.5, rollDeg: -3 },
     joy: 0,
-    subjectMargin: 1.2,
-    subject: { x: 4.7, y: 22 },
-    dress: [],
-    altitude: 0.69,
-    ambientSky: true,
-    sky: CARD_SKY,
+    subjectMargin: 5.5,
+    subject: { x: 0, y: 18.5 },
+    dress: TOWER_DRESS,
+    altitude: 0.58,
+    ambientSky: false,
+    sky: PANIC_SKY,
     face: null,
-    key: 2.6,
+    key: 3.4,
     view: stagedView({
-      position: { x: -3.6, y: 10.2 },
+      position: { x: -3.6, y: 17.2 },
       velocity,
-      visualAngle: leanInto(velocity.x, velocity.y),
+      visualAngle: -0.31,
+      polarity: 'repel',
       snapArmed: true,
-      snapEngaged: true,
-      snapTarget: { x: -4.3, y: 13.2 },
+      snapTarget: { x: 0.8, y: 19.2 },
     }),
   };
 }
 
-/** The hero and blooper cards share one junk pile: a barrel poking in from the edge, a crate, a tilted washer breaking the top, a locker above it. */
-const JUNK_STACK: PropPlacement[] = [
-  prop.barrel(1.85, 15.45),
-  prop.crate(0.95, 15.7, { w: 1.9, h: 1.6 }),
-  prop.washer(1.1, 17.45, { rot: 0.12 }),
-  prop.locker(0.95, 20.0, { rot: -0.08 }),
+/**
+ * The blooper's dressing: the junk the failed flip knocked loose, falling with
+ * him on its own tumbles — a barrel off the sheet above, a can, a plank — and
+ * the dark tops of the stack waiting in the frame's bottom band, the ground
+ * hint the drop needs. Tin Roof's own fourth floor, the sheet at y 19.2, plays
+ * the surface that gave way: it pokes into the top of the frame as level
+ * geometry, not dress. Every piece is the world's own kit; the card invents
+ * nothing.
+ */
+const FALL_DRESS: PropPlacement[] = [
+  prop.barrel(0.52, 18.9, { r: 0.24, rot: 2.4 }),
+  prop.can(0.3, 18.75, { r: 0.17, rot: 1.1 }),
+  prop.plank(-0.85, 18.5, 0.7, { rot: -0.5 }),
+  prop.can(-1.0, 18.05, { r: 0.16, rot: 0.9 }),
+  prop.crate(-0.55, 17.12, { w: 0.55, h: 0.55, rot: 0.25 }),
+  prop.can(0.45, 17.18, { r: 0.15, rot: -1.2 }),
 ];
 
 /** Where the panic launch is headed: the end of the girder staged inside the upper right of the tight frame, the bullseye's own anchor. */
 const DESTINATION = { x: 0.55, y: 16.6 };
+
+/** Where the blooper's gaze goes: the long drop under him, off-frame below, so the pupil casts down the frame without a beam ever arming. */
+const THE_DROP = { x: -0.6, y: 15.2 };
+
+/**
+ * The aspiration card's dressing: the shaft's own floors loaded with the junk
+ * a scrapyard tower is made of — a fridge and a barrel standing on the plank
+ * floor he left, a locker and crates settled on the sheet above — so the climb
+ * reads as a loaded heap to scale, not two bare walls with air between them.
+ * Everything rests on floors Tin Roof itself places; the card invents nothing.
+ */
+const TOWER_DRESS: PropPlacement[] = [
+  prop.barrel(-2.9, 15.05),
+  prop.fridge(-0.5, 16.15),
+  prop.crate(1.9, 20.3, { w: 1.5, h: 1.5 }),
+  prop.locker(3.3, 20.9),
+  prop.barrel(4.5, 20.0, { r: 0.55 }),
+];
 
 /**
  * The panic card's dressing: the destination girder poking its end into the

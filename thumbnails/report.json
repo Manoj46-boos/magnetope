@@ -24,31 +24,31 @@
       "failures": [],
       "contrast": 7.85,
       "dimmed": 5.58,
-      "at128": 7.34,
+      "at128": 7.33,
       "emotion": [
-        374,
-        420
+        372,
+        410
       ],
-      "arcBand": 57473,
-      "arc128": 6285
+      "arcBand": 56104,
+      "arc128": 6322
     },
     "fall-comedy": {
       "failures": [],
-      "contrast": 8.06,
-      "dimmed": 5.13,
-      "at128": 7.85,
+      "contrast": 9.55,
+      "dimmed": 6.22,
+      "at128": 9.42,
       "emotion": [
-        100,
-        204
+        441,
+        477
       ]
     },
     "tower-scale": {
       "failures": [],
-      "contrast": 1.41,
-      "dimmed": 1.37,
-      "at128": 1.39,
-      "arcBand": 98209,
-      "arc128": 16301
+      "contrast": 5.9,
+      "dimmed": 3.97,
+      "at128": 5.38,
+      "arcBand": 95311,
+      "arc128": 11570
     },
     "animated": {
       "failures": [],

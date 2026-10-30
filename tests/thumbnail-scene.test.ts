@@ -76,24 +76,49 @@ describe('the card compositions (R-TH-01, rebuild PRD 1.4)', () => {
     expect(new ThumbnailStage('tower-scale').step(0).face).toBeNull();
   });
 
-  it('keeps the fall card on the same corner so the pair reads as one brand', () => {
+  it('mirrors the panic diagonal: the launch enters lower-left, the blooper falls from upper-right, one brand', () => {
+    // rebuild PRD 1.5: the falling vector reads top-right to bottom-left, the
+    // launch's own mirror, so the pair forms one rotation — same game, opposite fate
+    const panic = centre('panic-launch');
     const fall = centre('fall-comedy');
-    expect(fall.x).toBeLessThan(0.45);
-    expect(fall.y).toBeGreaterThan(0.4);
+    expect(panic.x).toBeLessThan(0.45);
+    expect(panic.y).toBeGreaterThan(0.55);
+    expect(fall.x).toBeGreaterThan(0.55);
+    expect(fall.y).toBeLessThan(0.45);
   });
 
-  it('puts the ambience card on the climb itself, subject small and high', () => {
-    const tower = thumbnailSubjectBox('tower-scale');
-    const at = { x: tower.x + tower.w / 2, y: tower.y + tower.h / 2 };
-    expect(at.x).toBeGreaterThan(0.5);
-    expect(at.y).toBeLessThan(0.35);
-    expect(tower.w).toBeLessThan(0.15);
+  it('fills near half the blooper card with its tumbling subject', () => {
+    const { w } = thumbnailSubjectBox('fall-comedy');
+    expect(w).toBeCloseTo(0.45, 1);
+  });
+
+  it('stages the blooper as the flip that failed: falling fast, upside down, the drop already under him', () => {
+    const view = new ThumbnailStage('fall-comedy').step(0).view;
+    expect(view.velocity.y).toBeLessThan(-8);
+    expect(view.polarity).toBe('repel');
+    expect(view.snapEngaged).toBe(false);
+    // upside down: the lean a steep fall earns carries the body past vertical
+    expect(view.visualAngle).toBeGreaterThan(2.7);
+    // the pupil rides the drop: the gaze target sits well below him, and the
+    // failed flip arms no beam on the way down
+    expect(view.snapTarget!.y).toBeLessThan(view.position.y - 2);
+    // the fall is deep enough that the rig's own panic table would fire
+    expect(view.dropMeters).toBeGreaterThanOrEqual(7);
+  });
+
+  it('keeps the sheet that failed him inside the top of the blooper frame', () => {
+    const { framing } = new ThumbnailStage('fall-comedy').step(0);
+    // Tin Roof's fourth floor: the sheet at y 19.2 gives way under a stand, and
+    // its band rides the frame's top as the surface he fell off
+    expect(framing.center.y + framing.visibleHeight / 2).toBeGreaterThan(19.2);
   });
 
   it('grades the panic family: indigo zenith, coral horizon, violet for the fall sibling', () => {
     // the dusk grade keeps its burnt amber; the panic ramp biases to indigo and
-    // coral, the fall card to violet — and no band of any of them sits in the
-    // green hue window the Poki background rule lives in, whatever its lightness
+    // coral, the fall card shifts the zenith to violet dusk but keeps the
+    // family's coral horizon — the warm band the blooper falls into — and no
+    // band of any of them sits in the green hue window the Poki background
+    // rule lives in, whatever its lightness
     for (const band of [CARD_SKY.top, CARD_SKY.horizon, CARD_SKY.sun, PANIC_SKY.top, PANIC_SKY.horizon, PANIC_SKY.sun, FALL_SKY.top, FALL_SKY.horizon, FALL_SKY.sun]) {
       const mint = band.h > 140 && band.h < 180 && band.s > 40;
       expect(mint, `band ${JSON.stringify(band)} sits in the mint window`).toBe(false);
@@ -103,9 +128,50 @@ describe('the card compositions (R-TH-01, rebuild PRD 1.4)', () => {
     expect(PANIC_SKY.top.h).toBeLessThanOrEqual(230);
     expect(PANIC_SKY.horizon.h).toBeGreaterThanOrEqual(350);
     expect(PANIC_SKY.horizon.h).toBeLessThanOrEqual(362);
-    // the family lockup: the fall card is the panic ramp with one hue shifted
+    // the family lockup: the fall card is the panic ramp with the zenith
+    // shifted to violet dusk, the horizon and sun kept as the pair's constants
     expect(FALL_SKY.top.h).toBeGreaterThan(PANIC_SKY.top.h);
+    expect(FALL_SKY.horizon).toEqual(PANIC_SKY.horizon);
     expect(FALL_SKY.sun).toEqual(PANIC_SKY.sun);
+  });
+
+  it('crops the shaft a third in, so the tower stands taller than the frame itself', () => {
+    const { framing } = new ThumbnailStage('tower-scale').step(0);
+    // Tin Roof's walls run 0 to 28: both edges of the frame land inside the
+    // climb, so the tower rises past the top and the bottom of the card — the
+    // height read a 128 px crop needs, where the old wide framing read as mush
+    expect(framing.center.y - framing.visibleHeight / 2).toBeGreaterThan(0);
+    expect(framing.center.y + framing.visibleHeight / 2).toBeLessThan(28);
+  });
+
+  it('rides the summit beacon in the upper-right glint zone, where the family keeps its destinations', () => {
+    const { framing } = new ThumbnailStage('tower-scale').step(0);
+    // Tin Roof's summit: the beacon the whole climb is for
+    const at = {
+      x: 0.5 + (-0.4 - framing.center.x) / framing.visibleHeight,
+      y: 0.5 - (24.6 - framing.center.y) / framing.visibleHeight,
+    };
+    expect(at.x).toBeGreaterThan(0.55);
+    expect(at.y).toBeLessThan(0.2);
+  });
+
+  it('climbs in miniature: mid-hop on the vector, armed for the plank above', () => {
+    const view = new ThumbnailStage('tower-scale').step(0).view;
+    expect(view.state).toBe('airborne');
+    expect(view.polarity).toBe('repel');
+    // the hop climbs, and the beam is armed toward the next floor — the
+    // fling-and-snap loop told in one small figure
+    expect(view.velocity.y).toBeGreaterThan(2);
+    expect(view.snapArmed).toBe(true);
+    expect(view.snapEngaged).toBe(false);
+    expect(view.snapTarget!.y).toBeGreaterThan(view.position.y);
+  });
+
+  it('joins the family lockup: the wide card wears the panic ramp itself', () => {
+    const sky = new ThumbnailStage('tower-scale').sky;
+    expect(sky.top).toEqual(PANIC_SKY.top);
+    expect(sky.horizon).toEqual(PANIC_SKY.horizon);
+    expect(sky.sun).toEqual(PANIC_SKY.sun);
   });
 });
 
@@ -121,10 +187,11 @@ describe('the static cards hold their pose', () => {
     expect(held.blink).toBe(false);
   });
 
-  it('arms no beam on the launch and stages the blooper on a repel', () => {
+  it('arms no beam on the launch, stages the blooper on a repel, and flies the hop armed', () => {
     expect(new ThumbnailStage('panic-launch').step(0).view.snapEngaged).toBe(false);
     expect(new ThumbnailStage('fall-comedy').step(0).view.polarity).toBe('repel');
-    expect(new ThumbnailStage('tower-scale').step(0).view.snapEngaged).toBe(true);
+    expect(new ThumbnailStage('fall-comedy').step(0).view.snapEngaged).toBe(false);
+    expect(new ThumbnailStage('tower-scale').step(0).view.snapEngaged).toBe(false);
   });
 
   it('stages the launch and the falls dead straight, never at joy', () => {

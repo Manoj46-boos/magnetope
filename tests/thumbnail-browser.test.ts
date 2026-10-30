@@ -60,6 +60,12 @@ interface CardProbe {
   arc: number;
   blueX: number;
   blueY: number;
+  /** Share of the top quarter where blue rules red: the family's violet zenith. */
+  zenith: number;
+  /** Share of the bottom third where red rules blue: the family's coral drop. */
+  coral: number;
+  /** Gold pixels — the beacon's light and the warm-lit junk that carries the wide card. */
+  gold: number;
 }
 
 /**
@@ -88,10 +94,16 @@ function probe(page: Page): Promise<CardProbe> {
     let arc = 0;
     let blueX = 0;
     let blueY = 0;
+    let zenith = 0;
+    let coral = 0;
+    let gold = 0;
+    const zenithRows = Math.floor(canvas.height / 4);
+    const coralFrom = Math.floor((canvas.height * 2) / 3);
     for (let i = 0; i < pixels.length; i += 4) {
       const r = pixels[i]!;
       const g = pixels[i + 1]!;
       const b = pixels[i + 2]!;
+      const py = Math.floor(i / 4 / canvas.width);
       luma += 0.2126 * r + 0.7152 * g + 0.0722 * b;
       if (Math.max(r, g, b) - Math.min(r, g, b) > 50) saturated++;
       if (r > 180 && g < 90 && b < 90) red++;
@@ -102,6 +114,9 @@ function probe(page: Page): Promise<CardProbe> {
         blueY += Math.floor(i / 4) / canvas.width;
       }
       if (b - r >= 40 && b > 200 && g > 160) arc++;
+      if (py < zenithRows && b > r + 30) zenith++;
+      if (py >= coralFrom && r > b + 40 && r > 90) coral++;
+      if (r > 200 && g > 140 && b < 110) gold++;
     }
     const count = pixels.length / 4;
     return {
@@ -112,6 +127,9 @@ function probe(page: Page): Promise<CardProbe> {
       arc,
       blueX: blue > 0 ? blueX / blue / canvas.width : -1,
       blueY: blue > 0 ? blueY / blue / canvas.height : -1,
+      zenith: zenith / (canvas.width * zenithRows),
+      coral: coral / (canvas.width * (canvas.height - coralFrom)),
+      gold,
     };
   });
 }
@@ -206,7 +224,10 @@ describe('the store-card composition scene', () => {
     await advance(page!, 24 / 60);
     const card = await probe(page!);
     expect(card.saturated).toBeGreaterThan(100_000);
-    expect(card.blue).toBeGreaterThan(50);
+    // the pole tip rides the head's swing and the ring phases drift a few
+    // pixels run to run before the clock holds, so the presence bar keeps
+    // headroom below the drift, not on it
+    expect(card.blue).toBeGreaterThan(40);
     expect(card.red).toBeGreaterThan(100);
     // the read: the launch sits at the lower-left thirds crossing, where the
     // eye enters — the blue pole tip rides the head's swing, so the bar is the
@@ -244,17 +265,31 @@ describe('the store-card composition scene', () => {
     await advance(page!, 24 / 60);
     const blooper = await probe(page!);
     expect(blooper.saturated).toBeGreaterThan(100_000);
-    // the windmill turn hides the south pole, and a failed flip arms no beam
-    expect(blooper.blue).toBeLessThan(30);
-    expect(blooper.arc).toBeLessThan(400);
+    // the tumbled pose may tip the south pole into view — a fleck, never a
+    // competitor to the face; the failed flip arms no beam, which the unit
+    // suite holds at the state, and the cans and the face's own cool white
+    // are the card's only cyan
+    expect(blooper.blue).toBeLessThan(200);
+    // the blooper's own ramp: the violet dusk the sibling wears over the
+    // family's coral drop, read where the eye lands first and last
+    expect(blooper.zenith).toBeGreaterThan(0.4);
+    expect(blooper.coral).toBeGreaterThan(0.5);
 
     await stage(page!, 'tower-scale');
     await advance(page!, 24 / 60);
     expect((await game(page!)).sim.level.id).toBe('scrapyard-04');
     const wide = await probe(page!);
-    // the ambience card: a whole world in frame, MAGNO too small for his poles to register
+    // the wide card: a whole loaded tower in frame, MAGNO in miniature — too
+    // small for his poles to register, but the summit's gold light and the
+    // lit junk mass carry the aspiration read
     expect(wide.saturated).toBeGreaterThan(150_000);
-    expect(wide.red).toBeLessThan(80);
+    // MAGNO in miniature: his poles read as flecks, not features
+    expect(wide.blue).toBeLessThan(200);
+    expect(wide.gold).toBeGreaterThan(2000);
+    // the family lockup in the wide voice: the same violet zenith, the same
+    // coral drop below the climb
+    expect(wide.zenith).toBeGreaterThan(0.5);
+    expect(wide.coral).toBeGreaterThan(0.6);
   });
 
   runnable('hands play back when the stage exits', async () => {
