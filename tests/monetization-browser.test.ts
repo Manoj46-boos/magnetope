@@ -318,26 +318,26 @@ describe('the retry break', () => {
     expect((await probe()).calls).not.toContain('commercialBreak');
   });
 
-  runnable('signals one natural stop on the retry after the third fall in a row, once the session is open, and resets the count', async () => {
-    // The streak's moment lands inside the first minute: the session opens on play alone (R-MZ-03).
+  runnable('signals the streak retry at the moment it happens, and resets the count', async () => {
+    // P-MZ-01: no session guard, no floor — the streak is the moment, and the
+    // platform decides what it is worth.
     for (let i = 0; i < 3; i++) {
       await fallFar();
       if (i < 2) await retry();
     }
     await retry();
-    expect((await probe()).calls).not.toContain('commercialBreak');
-
-    await drive(61);
-    for (let i = 0; i < 3; i++) {
-      await fallFar();
-      if (i < 2) await retry();
-    }
-    await retry();
-    expect((await probe()).calls.filter((c) => c === 'commercialBreak')).toHaveLength(1);
+    expect((await probe()).calls.filter((c) => c === 'commercialBreak'), 'the third-fall streak signals on session-0').toHaveLength(1);
 
     await fallFar();
     await retry();
-    expect((await probe()).calls.filter((c) => c === 'commercialBreak')).toHaveLength(1);
+    expect((await probe()).calls.filter((c) => c === 'commercialBreak'), 'a lone fall after the reset is not the streak').toHaveLength(1);
+
+    for (let i = 0; i < 3; i++) {
+      await fallFar();
+      if (i < 2) await retry();
+    }
+    await retry();
+    expect((await probe()).calls.filter((c) => c === 'commercialBreak'), 'the next streak signals again — nothing was spent').toHaveLength(2);
   }, 180000);
 });
 
@@ -415,9 +415,8 @@ describe('the next-level break', () => {
     if (page) await begin();
   }, 60000);
 
-  runnable('signals one natural stop when the player moves on, once the session is open', async () => {
+  runnable('signals the next-level stop the moment the player moves on', async () => {
     await page!.evaluate(() => ((window as unknown as { __calls: string[] }).__calls.length = 0));
-    await drive(61);
     await page!.evaluate((id) => (window as unknown as { __game: any }).__game.startLevel(id), 'scrapyard-01');
     await clearLevel('scrapyard-01');
     await page!.locator('.clear-card .btn.primary').click();
@@ -426,14 +425,13 @@ describe('the next-level break', () => {
     });
     const state = await probe();
     expect(state.phase).toBe('play');
-    expect(state.calls.filter((c) => c === 'commercialBreak')).toHaveLength(1);
+    expect(state.calls.filter((c) => c === 'commercialBreak'), 'session-0, right after the clear — the stop rides (P-MZ-01)').toHaveLength(1);
     expect(state.calls).not.toContain('rewardedBreak');
   }, 120000);
 
-  runnable('measures the next-level break from the last break of any kind, and only past the floor (R-MZ-03)', async () => {
+  runnable('signals every next-level stop, whatever break came before it', async () => {
     await page!.keyboard.press('Escape');
     await page!.waitForFunction(() => (window as unknown as { __game: any }).__game.debug.phase === 'paused');
-    await drive(61);
     await page!.keyboard.press('Escape');
     await page!.waitForFunction(() => (window as unknown as { __game: any }).__game.debug.phase === 'play');
     expect((await probe()).calls.filter((c) => c === 'commercialBreak')).toHaveLength(1);
@@ -444,15 +442,14 @@ describe('the next-level break', () => {
     await page!.waitForFunction(() => (window as unknown as { __game: any }).__game.debug.sim.level.id === 'scrapyard-02', null, {
       timeout: 30000,
     });
-    expect((await probe()).calls.filter((c) => c === 'commercialBreak'), 'the resume break spends the floor').toHaveLength(1);
+    expect((await probe()).calls.filter((c) => c === 'commercialBreak'), 'the stop right after the resume break rides too').toHaveLength(2);
 
-    await drive(95);
     await clearLevel('scrapyard-02');
     await page!.locator('.clear-card .btn.primary').click();
     await page!.waitForFunction(() => (window as unknown as { __game: any }).__game.debug.sim.level.id === 'scrapyard-03', null, {
       timeout: 30000,
     });
-    expect((await probe()).calls.filter((c) => c === 'commercialBreak')).toHaveLength(2);
+    expect((await probe()).calls.filter((c) => c === 'commercialBreak'), 'and so does the next, seconds later — no floor exists (P-MZ-01)').toHaveLength(3);
   }, 180000);
 });
 

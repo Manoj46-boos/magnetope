@@ -757,8 +757,8 @@ export class Game {
     this.phase = 'busy';
     this.ui.hideFall();
     this.ui.closeScreens();
-    // The retry break, streak or replay, waits out its floor in the placement layer —
-    // the streak is the moment, the floor decides whether the SDK hears it.
+    // The retry break, streak or replay, always signals — the streak is the
+    // moment, and the platform's own system decides whether an ad fills it.
     if (replay || this.consecutiveFalls >= RETRY_AD_FALLS) {
       this.consecutiveFalls = 0;
       await this.ads.retryBreak();

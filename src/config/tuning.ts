@@ -108,15 +108,11 @@ export const TUNING = {
 
   /**
    * Monetization etiquette (R-MZ). The placement layer reads every number from
-   * here so the spacing between ads is tuning, not scattered judgement.
+   * here so the player-facing half of ad manners is tuning, not scattered
+   * judgement — ad frequency itself is the platform's own system and never
+   * ours (rebuild PRD 9.2, P-MZ-01).
    */
   ads: {
-    /** R-ON-01 tie-in: the session opens on play alone — no break rides the first minute. */
-    firstBreakMinMs: 60_000,
-    /** R-MZ-03: no two commercial breaks closer together than this in one session. */
-    breakFloorMs: 90_000,
-    /** The retry waits twice the floor: retry momentum is sacred (PRD 9.3). */
-    retryFloorMs: 180_000,
     /** R-MZ-06: at most one rewarded prompt per this window, whatever card carries it. */
     promptGapMs: 120_000,
     /** R-MZ-06: at most this many distinct rewarded placements in one session. */

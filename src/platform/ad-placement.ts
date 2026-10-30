@@ -9,14 +9,18 @@ import type { SdkBus } from './sdk-bus';
 export type PlacementKind = 'second-wind' | 'scrap-doubler' | 'locker-unlock';
 
 /**
- * The placement policy layer (R-MZ-01/03/06). Callers state intent — resume,
- * next level, retry, an offer to show — and this layer decides what reaches the
- * SDK, so no screen can be pushy by accident:
+ * The placement policy layer (R-MZ-01/03/06, rebuild PRD 9.2). Callers state
+ * intent — resume, next level, retry, an offer to show — and this layer passes
+ * every natural stop straight through to the SDK, because the platform owns ad
+ * frequency outright: “do not implement internal ad timers, rely on Poki’s
+ * system to manage ad frequency.” Not every call triggers an ad; the host
+ * decides when a player is ready, so the game’s whole job is to signal the
+ * stops — death-and-restart and next-level are the host’s own canonical
+ * placements — and stay out of the way.
  *
- * - The resume break always rides, because calling it on the pause-to-play
- *   transition is the host's own contract; the SDK decides what actually shows.
- * - The discretionary breaks wait for the session to open and then for their
- *   floors, measured from the last break of any kind.
+ * What the layer still governs is the player-facing half of ad manners, the
+ * part the platform leaves to the developer:
+ *
  * - Rewarded prompts share one clock: one prompt per gap window, however many
  *   cards pass. Declines and instant retries both count, because the player
  *   already saw the ask.
@@ -25,7 +29,6 @@ export type PlacementKind = 'second-wind' | 'scrap-doubler' | 'locker-unlock';
  */
 export class AdPlacement {
   private sessionMs = 0;
-  private lastBreakAtMs = Number.NEGATIVE_INFINITY;
   private lastPromptAtMs = Number.NEGATIVE_INFINITY;
   private readonly placements = new Set<PlacementKind>();
 
@@ -42,21 +45,17 @@ export class AdPlacement {
 
   /** The pause-to-play break (R-MZ-01): always called, whatever the clocks say. */
   async resumeBreak(): Promise<boolean> {
-    return this.runCommercial();
+    return this.bus.commercialBreak();
   }
 
-  /** The clear card's Next-level break: once the session is open, past the floor (R-MZ-03). */
+  /** The clear card's Next-level break (R-MZ-03): every natural stop is signaled — the platform decides what shows. */
   async advanceBreak(): Promise<boolean> {
-    if (!this.sessionOpen()) return false;
-    if (this.sessionMs - this.lastBreakAtMs < TUNING.ads.breakFloorMs) return false;
-    return this.runCommercial();
+    return this.bus.commercialBreak();
   }
 
-  /** The retry break: retry momentum is sacred, so it waits twice the floor (PRD 9.3). */
+  /** The retry break: death-and-restart is the platform's canonical placement, so it always rides (rebuild PRD 9.2). */
   async retryBreak(): Promise<boolean> {
-    if (!this.sessionOpen()) return false;
-    if (this.sessionMs - this.lastBreakAtMs < TUNING.ads.retryFloorMs) return false;
-    return this.runCommercial();
+    return this.bus.commercialBreak();
   }
 
   /** May this rewarded prompt be offered now? Showing the ask is what spends the window. */
@@ -71,18 +70,5 @@ export class AdPlacement {
   /** The locker's watch button, counted as the placement it is without touching the prompt clock. */
   noteWatched(): void {
     this.placements.add('locker-unlock');
-  }
-
-  /** True when a break may ride at all: the first minute of a session belongs to play alone. */
-  private sessionOpen(): boolean {
-    return this.sessionMs >= TUNING.ads.firstBreakMinMs;
-  }
-
-  private async runCommercial(): Promise<boolean> {
-    const shown = await this.bus.commercialBreak();
-    // A break that could not run (the bus was mid-ad) spends no floor — the next
-    // natural stop may still try.
-    if (shown) this.lastBreakAtMs = this.sessionMs;
-    return shown;
   }
 }

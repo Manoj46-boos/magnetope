@@ -65,13 +65,13 @@ A thousand players walk the campaign in level order under their own star policy 
 
 ## The placement map
 
-Breaks ride player intent, and the placement layer — not the screen that asks — holds every rule (R-MZ-03). The first 60 s of a session belong to play alone:
+Breaks ride player intent, and the placement layer — not the screen that asks — is the one voice that reaches the host SDK (R-MZ-03, rebuild PRD 9.2). Ad frequency is the platform’s own system by its published law — no internal ad timers, ours or anyone’s (P-MZ-01) — so the layer’s whole job is to signal every natural stop and let the host decide when a player is ready:
 
 | Moment | Rule |
 | --- | --- |
-| Pause, back to play | always called — the host’s own contract; the SDK decides what shows |
-| Clear card, Next | once ≥ 90 s past the last break of any kind |
-| The fall-streak retry | the same, at ≥ 180 s — retry momentum is sacred |
+| Pause, back to play | always called — the host’s own contract |
+| Clear card, Next | always signaled — a natural stop |
+| The fall-streak retry | always signaled — death-and-restart is the host’s canonical placement |
 | Menus, the ending, the first input | never |
 
-Rewarded prompts share one clock — at most one per 120 s, however many cards pass — and a session may see at most 3 distinct placements (R-MZ-06). Views stay unlimited; the value they pay is what the cap holds: Scrap from rewarded videos stops at 200 a day (R-MZ-10), and the doubler is earned, not given — runs under 25 s never see it (R-MZ-11).
+Rewarded prompts share one clock — at most one per 120 s, however many cards pass — and a session may see at most 3 distinct placements (R-MZ-06). This window is the player-facing half of ad manners, the part the platform leaves to the developer: it paces the asks, never the ads. Views stay unlimited; the value they pay is what the cap holds: Scrap from rewarded videos stops at 200 a day (R-MZ-10), and the doubler is earned, not given — runs under 25 s never see it (R-MZ-11). A rewarded video resets the host’s commercial clock — its own law, which is one more reason the game keeps no clock of its own to reset.
