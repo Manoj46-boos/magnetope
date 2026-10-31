@@ -62,6 +62,19 @@ describe('biome title card', () => {
     expect(banner.element.querySelector('img')).toBeNull();
     expect(banner.element.querySelectorAll('b')).toHaveLength(1);
   });
+
+  it('carries the wordmark itself on a fresh save\'s boot card (P-FT-02)', () => {
+    const banner = make();
+    banner.showWordmark('A game by Magnetope Studio');
+    expect(banner.visible).toBe(true);
+    // the lockup is real markup: the magnet letters, the ident as the O
+    expect(banner.element.querySelector('.lockup')).not.toBeNull();
+    expect(banner.element.querySelectorAll('.lockup > span')).toHaveLength(3);
+    expect(banner.element.querySelector('.lockup-o svg')).not.toBeNull();
+    expect(banner.element.textContent).toContain('A game by Magnetope Studio');
+    vi.advanceTimersByTime(2800);
+    expect(banner.visible).toBe(false);
+  });
 });
 
 describe('when a title card is owed', () => {

@@ -145,6 +145,7 @@ describe('opened from the pause menu', () => {
     setSetting,
     next: noop,
     retry: noop,
+    skipOpener: noop,
     secondWind: noop,
     doubleScrap: noop,
     shareFall: noop,

@@ -372,31 +372,33 @@ describe('the first levels stay whole under one thumb (R-AC-03)', () => {
     }
   });
 
-  it('finds a one-thumb clear of the third level, and the route never steers while held', async () => {
+  it('finds a one-thumb clear of the first three levels, and the routes never steer while held (P-FT-03)', async () => {
     const { loadRapier } = await import('@/sim/rapier');
     const { Simulation } = await import('@/sim/simulation');
     const { levelById } = await import('@/levels');
     const { solveLevel } = await import('../tools/planner');
     const { ReplayPlayer } = await import('@/sim/replay');
-    const level = levelById('scrapyard-02');
-    const result = await solveLevel(levelById('scrapyard-02'), { maxExpansions: 600, oneThumb: true });
-    expect(result.solved, 'the planner clears scrapyard-02 with a single thumb').toBe(true);
+    for (const id of ['scrapyard-00', 'scrapyard-01', 'scrapyard-02']) {
+      const level = levelById(id);
+      const result = await solveLevel(level, { maxExpansions: 600, oneThumb: true });
+      expect(result.solved, `${id}: the planner clears it with a single thumb`).toBe(true);
 
-    // The emitted route is the proof: replay it and hold the law on every tick.
-    const sim = new Simulation(await loadRapier(), level);
-    sim.magno.setAssist(true);
-    const player = new ReplayPlayer(result.recording!);
-    let heldWithTilt = 0;
-    while (!player.done && !sim.run.cleared) {
-      const frame = player.next();
-      if (frame.flipHeld || frame.flipDown || frame.flipUp) {
-        if (frame.tiltX !== 0 || frame.tiltY !== 0) heldWithTilt++;
+      // The emitted route is the proof: replay it and hold the law on every tick.
+      const sim = new Simulation(await loadRapier(), level);
+      sim.magno.setAssist(true);
+      const player = new ReplayPlayer(result.recording!);
+      let heldWithTilt = 0;
+      while (!player.done && !sim.run.cleared) {
+        const frame = player.next();
+        if (frame.flipHeld || frame.flipDown || frame.flipUp) {
+          if (frame.tiltX !== 0 || frame.tiltY !== 0) heldWithTilt++;
+        }
+        sim.step(frame);
       }
-      sim.step(frame);
+      expect(sim.run.cleared, `${id}: the one-thumb route clears when replayed`).toBe(true);
+      expect(heldWithTilt, `${id}: the route never steers on a tick the button is touched`).toBe(0);
+      sim.dispose();
     }
-    expect(sim.run.cleared, 'the one-thumb route clears when replayed').toBe(true);
-    expect(heldWithTilt, 'the route never steers on a tick the button is touched').toBe(0);
-    sim.dispose();
   });
 
   it('offers the one-thumb furniture in settings: the button layout, steering range and the assist', () => {
@@ -526,6 +528,21 @@ describe('the cognitive load laws (R-AC-08)', () => {
     const words = (ui.root.querySelector('.hud') as HTMLElement).textContent ?? '';
     expect(words.trim()).toMatch(/^[\d\s:.·]*$/);
   });
+
+  it('teaches the first minutes with no words at all: the coach hand is glyph-only (P-FT-10)', () => {
+    document.body.innerHTML = '';
+    const ui = buildUi();
+    for (const cue of ['launch', 'snap'] as const) {
+      for (const device of ['touch', 'keyboard', 'mouse'] as const) {
+        ui.coach.show({ cue, device, direction: { x: 0.4, y: -0.9 }, anchor: { x: 120, y: 240 } });
+        const text = ui.coach.root.textContent ?? '';
+        expect(text.trim(), `${cue}/${device}: the coach speaks in glyphs, not words`).toMatch(/^[^\p{L}\d]*$/u);
+        expect(ui.coach.root.querySelector('[data-i18n]'), `${cue}/${device}: no localized line rides the coach`).toBeNull();
+      }
+    }
+    ui.coach.hide();
+    expect(ui.coach.visible).toBe(false);
+  });
 });
 
 // ------------------------------------------------------------- shared setup
@@ -539,6 +556,7 @@ function buildUi(): GameUi {
     setSetting: noop,
     next: noop,
     retry: noop,
+    skipOpener: noop,
     secondWind: noop,
     doubleScrap: noop,
     shareFall: noop,

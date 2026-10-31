@@ -326,6 +326,7 @@ describe('inside the game menus', () => {
     setSetting,
     next: noop,
     retry: noop,
+    skipOpener: noop,
     secondWind: noop,
     doubleScrap: noop,
     shareFall: noop,

@@ -10,8 +10,8 @@ The clockwork a climb can promise is ordinal, and CI holds it on every level: th
 
 | Level | Par | Author | Route | Teach | Drill | Exam | Clockwork | Native | Fall | Props |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| scrapyard-00 First Steps | 40s | 32.9s | 10.9s | charge-launch | snap-catch | — | 0.26 · 0.26 · 0.38 · 0.87 | 1 snap + 3 launches | 6% ▁ | 22/260 |
-| scrapyard-01 Chimney | 55s | 45.4s | 15.2s | — | snap-catch | — | 0.01 · 0.07 · 0.49 · 0.92 | 6 snaps + 8 launches | 7% ▁ | 25/260 |
+| scrapyard-00 First Steps | 30s | 17.7s | 2.7s | snap-catch | snap-catch | — | 0.16 · 0.45 · 1.00 · 1.00 | 2 snaps + 2 launches | 6% ▁ | 15/260 |
+| scrapyard-01 Chimney | 35s | 28.7s | 6.1s | — | snap-catch | — | 0.16 · 0.70 · 0.39 · 0.70 | 1 snap + 3 launches | 7% ▁ | 20/260 |
 | scrapyard-02 Tire Pile | 60s | 49.5s | 13.7s | — | snap-catch | — | 0.03 · 0.08 · 0.88 · 0.88 | 4 snaps + 7 launches | 9% ▁ | 36/260 |
 | scrapyard-03 Long Jump | 60s | 49.5s | 8.6s | — | snap-catch | — | 0.11 · 0.20 · 0.99 · 0.99 | 3 snaps + 4 launches | 10% ▁ | 15/260 |
 | scrapyard-04 Tin Roof | 66s | 15.0s | 15.0s | weak-metal | snap-catch | bounce | 0.06 · 0.28 · 0.58 · 0.98 | 5 snaps + 7 launches | 12% ▂ | 30/260 |

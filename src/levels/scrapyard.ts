@@ -110,30 +110,28 @@ function shaft(spec: Shaft): PropPlacement[] {
   return [...props, ...(spec.extras ?? [])];
 }
 
-/** Session zero: a short shaft taught by gesture alone. Wide gaps keep it forgiving. */
+/** Session zero: a two-hop climb taught by gesture alone. One lesson — charge, fly, stick. */
 const tutorial = defineLevel({
   id: 'scrapyard-00',
   biome: 'scrapyard',
   index: 0,
   name: 'First Steps',
-  parSeconds: 40,
-  summit: { x: -0.4, y: 14.6, radius: 2.1 },
+  parSeconds: 30,
+  summit: { x: -4.1, y: 9.6, radius: 1.6 },
   props: shaft({
     leap: 0,
     seed: 20,
     seam: 1.0,
-    halfWidth: 5.6,
-    height: 17,
+    halfWidth: 5.0,
+    height: 12,
     floors: [
-      { y: 4.2, side: 'L', len: 5.0 },
-      { y: 8.2, side: 'R', len: 5.0 },
-      { y: 12.2, side: 'L', len: 5.0 },
+      { y: 4.2, side: 'L', len: 4.0 },
     ],
   }),
   guides: [
-    { x: -4.7, y: 1.6 },
-    { x: 4.7, y: 2.6 },
-    { x: -4.7, y: 6.0 },
+    { x: -4.4, y: 1.4 },
+    { x: 4.4, y: 2.6 },
+    { x: -4.4, y: 6.0 },
   ],
 });
 
@@ -142,20 +140,18 @@ const chimney = defineLevel({
   biome: 'scrapyard',
   index: 1,
   name: 'Chimney',
-  parSeconds: 55,
-  summit: { x: 0.2, y: 20.8 },
-  checkpoints: [{ x: -5, y: 9 }],
+  parSeconds: 35,
+  summit: { x: 4.15, y: 15, radius: 1.8 },
+  checkpoints: [{ x: -4.15, y: 9 }],
+  spawn: { x: -3.2, y: 0 },
   props: shaft({
     leap: 0,
-    seed: 37,
+    seed: 92,
+    seam: 1.0,
     halfWidth: 5.0,
-    height: 23,
-    floors: [
-      { y: 4.4, side: 'L', len: 4.0 },
-      { y: 8.8, side: 'R', len: 4.0 },
-      { y: 13.2, side: 'L', len: 4.0 },
-      { y: 17.6, side: 'R', len: 4.0 },
-    ],
+    height: 17,
+    floors: [{ y: 6.6, side: 'L', len: 3.0 }],
+    extras: [p.mattress(0, 0.3, 3.2)],
   }),
 });
 

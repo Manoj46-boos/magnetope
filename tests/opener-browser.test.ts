@@ -159,7 +159,10 @@ describe('the opener a first-time player actually gets', () => {
 
     await advance(page, 1.4);
     const vista = await camera(page);
-    expect(vista.extent).toBeGreaterThan(vista.follow * 2);
+    // The two-hop tutorial's climb is short enough that the vista rides its own
+    // floor (a seventeenth again wider than the follow shot) and still holds the
+    // whole climb — the taller biomes pull out to twice and beyond.
+    expect(vista.extent).toBeGreaterThan(vista.follow * 1.5);
 
     await advance(page, 1.5);
     const home = await camera(page);

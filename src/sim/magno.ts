@@ -80,6 +80,8 @@ export interface MagnoData {
   popped: boolean;
   chainTimes: number[];
   assist: boolean;
+  /** Launches made since the level began (P-FT-05): the first two may carry the on-ramp's aim magnetism. */
+  launches: number;
 }
 
 const FRICTION_FREE = 0.5;
@@ -89,6 +91,9 @@ const SPRINGY_RESTITUTION = 0.85;
 /** The fall assist at strength one: how much the aim cone still counts, and how hard a surface well below is shunned. */
 const ASSIST_CONE_WEIGHT = 0.25;
 const ASSIST_BELOW_BIAS = 0.4;
+/** The on-ramp's launch magnetism (P-FT-05): inside this cone of the nearest steel, and bent toward it by this share. */
+const LAUNCH_AIM_CONE_DEG = 25;
+const LAUNCH_AIM_NUDGE = 0.15;
 
 const freshData = (): MagnoData => ({
   state: 'airborne',
@@ -115,6 +120,7 @@ const freshData = (): MagnoData => ({
   popped: false,
   chainTimes: [],
   assist: true,
+  launches: 0,
 });
 
 export interface MagnoView {
@@ -891,14 +897,16 @@ export class MagnoController {
       x: surfVel.x + tangential.x + normal.x * power + tilt.x * tiltShare * power,
       y: surfVel.y + tangential.y + normal.y * power + tilt.y * tiltShare * power,
     };
-    body.setLinvel({ x: exit.x, y: exit.y, z: 0 }, true);
+    const bent = this.launchAim(exit, pose);
+    body.setLinvel({ x: bent.x, y: bent.y, z: 0 }, true);
 
     const mass = TUNING.body.mass;
-    this.physics.applyImpulseAt(bodyHandle, { x: -(exit.x - v.x) * mass * 0.25, y: -(exit.y - v.y) * mass * 0.25 }, point);
+    this.physics.applyImpulseAt(bodyHandle, { x: -(bent.x - v.x) * mass * 0.25, y: -(bent.y - v.y) * mass * 0.25 }, point);
 
     d.lastRepelCollider = d.attach ? d.attach.collider : -1;
     d.lastRepelAtMs = d.timeMs;
     d.repelLockUntilMs = d.timeMs + TUNING.repel.lockMs;
+    d.launches++;
     d.attach = null;
     d.lastContact = null;
     d.chargeMs = 0;
@@ -907,7 +915,37 @@ export class MagnoController {
     this.setFriction(FRICTION_FREE);
     this.setState('repelled');
     this.events.emit('detach', { reason: 'repel' });
-    this.events.emit('repel', { power: frac, speed: power, normal, point, direction: norm2(exit) });
+    this.events.emit('repel', { power: frac, speed: power, normal, point, direction: norm2(bent) });
+  }
+
+  /**
+   * The on-ramp's launch magnetism (P-FT-05): on the first two hops of the
+   * first three levels, a launch already pointing within the cone of the
+   * nearest magnetic surface bends a fixed share toward it. The throw keeps
+   * its speed and only its heading moves, so the assist closes the gap a thumb
+   * that cannot steer while it holds leaves, without ever choosing a target for
+   * the player. Every input here is state the launch already carried, so the
+   * simulation stays deterministic.
+   */
+  private launchAim(exit: Vec2, pose: Vec2): Vec2 {
+    const d = this.data;
+    if (d.launches >= 2 || !d.assist || !this.physics.level.onRamp?.launchAim) return exit;
+    const left = d.attach ? d.attach.collider : -1;
+    const exclude = new Set(this.excludedTargets());
+    if (left >= 0) exclude.add(left);
+    const dir = norm2(exit);
+    const cone = Math.cos(LAUNCH_AIM_CONE_DEG * DEG);
+    let best: SnapCandidate | null = null;
+    for (const c of this.physics.snapCandidates(pose, exclude)) {
+      const to = norm2({ x: c.point.x - pose.x, y: c.point.y - pose.y });
+      if (dot2(dir, to) < cone) continue;
+      if (!best || c.distance < best.distance) best = c;
+    }
+    if (!best) return exit;
+    const speed = Math.hypot(exit.x, exit.y);
+    const to = norm2({ x: best.point.x - pose.x, y: best.point.y - pose.y });
+    const aimed = norm2({ x: dir.x + (to.x - dir.x) * LAUNCH_AIM_NUDGE, y: dir.y + (to.y - dir.y) * LAUNCH_AIM_NUDGE });
+    return { x: aimed.x * speed, y: aimed.y * speed };
   }
 
   private releaseHold(reason: 'lost' | 'weak-failed'): void {

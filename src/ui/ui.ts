@@ -23,6 +23,7 @@ export interface UiHandlers {
   setSetting<K extends keyof Settings>(key: K, value: Settings[K]): void;
   next(): void;
   retry(): void;
+  skipOpener(): void;
   secondWind(): void;
   doubleScrap(): void;
   shareFall(): void;
@@ -124,6 +125,7 @@ export class GameUi {
   private readonly toastEl: HTMLElement;
   private readonly speedLines: HTMLElement;
   private readonly flashEl: HTMLElement;
+  private readonly skipChip: HTMLButtonElement;
   private assistValue: HTMLElement | null = null;
   private toggles = new Map<string, HTMLButtonElement>();
   private languageSelect!: HTMLSelectElement;
@@ -168,6 +170,15 @@ export class GameUi {
     this.fallCard = el('div', { class: 'fall-card', 'data-ui': true, role: 'status', 'aria-live': 'polite' });
     this.root.appendChild(this.fallCard);
 
+    // The opener's skip affordance (P-FT-01): visible from the shot's first frame,
+    // and any input at all does the same work without it. It sits above the HUD
+    // because the two never share a frame — the first input that wakes the HUD
+    // is the same one that retires the chip.
+    this.skipChip = el('button', { class: 'btn skip opener-skip', type: 'button', 'data-ui': true, 'data-nav': true }, ICONS.next);
+    this.skipChip.append(el('span', {}, t('skip')));
+    this.skipChip.addEventListener('click', () => this.handlers.skipOpener());
+    this.root.appendChild(this.skipChip);
+
     this.pauseModal = this.buildPause();
     this.clearModal = this.layer('modal', true);
     this.map = new MapScreen(this.root, this.host, handlers.map);
@@ -198,6 +209,18 @@ export class GameUi {
     const node = el('div', { class: `layer ${extra}`, 'data-ui': ui });
     this.root.appendChild(node);
     return node;
+  }
+
+  showSkipChip(): void {
+    this.skipChip.classList.add('show');
+  }
+
+  hideSkipChip(): void {
+    this.skipChip.classList.remove('show');
+  }
+
+  get skipChipVisible(): boolean {
+    return this.skipChip.classList.contains('show');
   }
 
   // ------------------------------------------------------------------ loading

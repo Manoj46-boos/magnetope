@@ -64,6 +64,14 @@ export const SPECTACLE_BEATS: readonly SpectacleBeat[] = [
     test: 'tests/spectacle-spacing.test.ts',
   },
   {
+    kind: 'practice-fall',
+    rule: 'recorded',
+    emotion: 'the game\'s best joke given away free in the second minute — falls become toys before they become threats',
+    composition: 'the scripted summit drop down the chimney: the celebration leap, the slow-motion tail, the mattress bounce, the limp get-up, the deadpan grade card with its share offer',
+    budget: 'the descent owns the frame; the grade card is the breathing space before the clear card',
+    test: 'tests/practice-fall.test.ts',
+  },
+  {
     kind: 'clear-card',
     rule: 'recorded',
     emotion: 'pride and release — the summit proven, the stamps landing one by one',

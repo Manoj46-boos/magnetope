@@ -56,6 +56,10 @@ interface FriendRun {
 type Phase = 'play' | 'paused' | 'cleared' | 'ending' | 'busy';
 
 const CLEAR_CARD_DELAY_MS = 1250;
+/** The practice fall's grade card holds the stage this long before the clear card follows it (P-FT-07). */
+const PRACTICE_FALL_CARD_MS = 5500;
+/** The practice fall's celebration leap (P-FT-07): where it starts from and the push that reads as MAGNO hopping off his own summit toward the soft base. */
+const PRACTICE_FALL_LEAP = { dx: -2.15, dy: 0.6, push: { x: -1.2, y: 1.5 } };
 const RETRY_AD_FALLS = 3;
 /** A lost graphics context that has not come back by then is not coming back. */
 const CONTEXT_GRACE_MS = 6000;
@@ -134,6 +138,10 @@ export class Game {
   private currentLevelId = '';
   private lastBiome: BiomeId | null = null;
   private hudShown = false;
+  /** True while the scripted practice descent owns the stage between summit and clear card (P-FT-07). */
+  private practiceFall = false;
+  /** The visit began on a save with nothing cleared: the boot card is the wordmark, not a biome (P-FT-02). */
+  private freshBoot = false;
   /** R-AN-06: the visit has had its first play input; the record is made once. */
   private inputRecorded = false;
   private watchdog: FrameWatchdog | null = null;
@@ -169,6 +177,7 @@ export class Game {
       setSetting: (key, value) => this.setSetting(key, value),
       next: () => void this.advance(),
       retry: () => void this.restart(),
+      skipOpener: () => this.skipOpenerShot(),
       secondWind: () => void this.secondWind(),
       doubleScrap: () => void this.doubleScrap(),
       shareFall: () => void this.shareHighlight(this.lastFall),
@@ -284,9 +293,10 @@ export class Game {
     // R-AN-09: the visit's own label — first-time or returning, with the locale,
     // device class and tier it booted on — so every number can be read per segment.
     // The pipe-separated words are the channel's own alphabet: no key=value pairs.
+    this.freshBoot = Object.keys(this.save.data.stars).length === 0;
     this.telemetry.record(
       'boot',
-      Object.keys(this.save.data.stars).length === 0 ? 'fresh' : 'return',
+      this.freshBoot ? 'fresh' : 'return',
       `${getLocale()}|${this.touchMode?.touch ? 'touch' : 'desktop'}|${tier}`,
     );
 
@@ -325,6 +335,7 @@ export class Game {
           this.telemetry.record('input', 'first', String(Math.round(this.telemetry.ageMs / 1000)));
         }
         this.opener.noteInput();
+        this.ui.hideSkipChip();
         if (!this.hudShown) {
           this.hudShown = true;
           this.ui.showHud(true);
@@ -405,6 +416,7 @@ export class Game {
     this.lastClear = null;
     this.lastFlip = null;
     this.scripted = null;
+    this.practiceFall = false;
 
     this.ghosts.begin(id, this.save.data.ghosts[id], this.save.data.friends[id]);
     this.attempts.begin(id);
@@ -427,6 +439,8 @@ export class Game {
       follow: this.renderer.cameraRig.restFocus(level.spawn),
       followHeight: this.renderer.cameraRig.baseVisibleHeight,
     });
+    this.ui.hideSkipChip();
+    if (enteringBiome && !this.settings.reducedMotion) this.ui.showSkipChip();
     if (enteringBiome && !this.settings.reducedMotion) this.spectacle.mark('establish');
     if (this.landscapeHint.due(level.biome, this.renderer.cameraRig.portrait)) {
       this.landscapeHint.spend();
@@ -448,9 +462,15 @@ export class Game {
 
   /** Shows the title card when a new biome begins and clears it on a retry, so a restart never repeats it. */
   private announceBiome(biome: BiomeId): void {
+    // The fresh save's first frame sells the game itself: the wordmark over the
+    // live first level (P-FT-02), the world already moving behind it.
+    const boot = this.lastBiome === null && this.freshBoot;
     const card = biomeAnnouncement(this.lastBiome, biome);
     this.lastBiome = biome;
-    if (card) {
+    if (boot) {
+      this.ui.banner.showWordmark(t('studioCredit'));
+      this.audio.biomeCall();
+    } else if (card) {
       this.ui.banner.show(card.name, t(card.tagline));
       // R-AU-01/03: the announcement is the motif, re-harmonized in the biome's own key.
       this.audio.biomeCall();
@@ -471,10 +491,11 @@ export class Game {
     const on = sim.events.on.bind(sim.events);
     this.simUnsubscribe.push(
       on('slowMo', (e) => {
-        // R-SM-06: a fall straight after a staged moment stays at full speed.
-        if (!this.spectacle.clear) return;
+        // R-SM-06: a fall straight after a staged moment stays at full speed — unless
+        // the fall is the staged moment, which the practice descent is by authorship.
+        if (!this.spectacle.clear && !this.practiceFall) return;
         if (this.slowMo.request(e.heightMeters)) {
-          this.spectacle.mark('slow-mo');
+          this.spectacle.mark(this.practiceFall ? 'practice-fall' : 'slow-mo');
           this.ui.hideFall();
         }
       }),
@@ -518,6 +539,13 @@ export class Game {
   private onFall(sim: Simulation, report: FallReport): void {
     this.slowMo.release();
     this.consecutiveFalls++;
+    if (this.practiceFall) {
+      this.practiceFall = false;
+      // P-FT-07: the session-0 funnel's delight checkpoint — the first fall went
+      // on record as a grade, once per save.
+      this.telemetry.record('fall', 'first', 'graded');
+      this.clearTimer = PRACTICE_FALL_CARD_MS;
+    }
     const level = sim.level;
     this.attempts.fall(report.heightMeters, sim.magno.view.position, report.grade);
     this.save.update((s) => {
@@ -601,7 +629,20 @@ export class Game {
     this.input.setEnabled(false);
     this.slowMo.release();
     this.ui.coach.hide();
-    this.clearTimer = CLEAR_CARD_DELAY_MS;
+    if (this.sim && this.practiceFallDue(this.sim)) this.beginPracticeFall(this.sim);
+    else this.clearTimer = CLEAR_CARD_DELAY_MS;
+  }
+
+  /** The practice fall (P-FT-07): once per save, the second level's summit hands the stage to the scripted descent before the clear card. */
+  private practiceFallDue(sim: Simulation): boolean {
+    return sim.level.id === order[1] && !this.save.data.seen.includes(FLAG.practiceFall);
+  }
+
+  private beginPracticeFall(sim: Simulation): void {
+    this.practiceFall = true;
+    this.markSeen(FLAG.practiceFall);
+    const { summit } = sim.level;
+    sim.practiceDrop({ x: summit.x + PRACTICE_FALL_LEAP.dx, y: summit.y + PRACTICE_FALL_LEAP.dy }, PRACTICE_FALL_LEAP.push);
   }
 
   private presentClear(): void {
@@ -663,6 +704,12 @@ export class Game {
     if (!this.openerCamera) return;
     this.openerCamera = false;
     this.renderer.releaseCamera();
+  }
+
+  /** The skip chip's own click: the same handback any input performs, minus the gameplay edge. */
+  private skipOpenerShot(): void {
+    this.ui.hideSkipChip();
+    this.opener.noteInput();
   }
 
   private beginEnding(): void {
@@ -1101,6 +1148,7 @@ export class Game {
       } else if (this.openerCamera) {
         this.renderer.releaseCamera();
         this.openerCamera = false;
+        this.ui.hideSkipChip();
       }
     }
 

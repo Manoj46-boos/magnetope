@@ -157,6 +157,7 @@ describe('level clear card on the last level', () => {
     setSetting: noop,
     next: noop,
     retry: noop,
+    skipOpener: noop,
     secondWind: noop,
     doubleScrap: noop,
     shareFall: noop,

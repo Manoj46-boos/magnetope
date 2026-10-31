@@ -6,6 +6,7 @@ export const FLAG = {
   coach: 'coach',
   charge: 'hud.charge',
   firstCatch: 'opener.first-catch',
+  practiceFall: 'fall.practice',
 } as const;
 
 const RAIL_GAIN_METERS = 1.5;

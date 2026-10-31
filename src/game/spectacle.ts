@@ -11,7 +11,7 @@
 
 export const SPECTACLE_SPACING_MS = 20_000;
 
-export type BeatKind = 'establish' | 'first-catch' | 'slow-mo' | 'ending';
+export type BeatKind = 'establish' | 'first-catch' | 'slow-mo' | 'practice-fall' | 'ending';
 
 export class SpectacleLedger {
   private clockMs = 0;

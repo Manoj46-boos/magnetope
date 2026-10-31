@@ -570,6 +570,15 @@
   text-transform: uppercase;
 }
 
+/* The boot card's wordmark (P-FT-02): the brand lockup at the title's own scale. */
+.biome-banner .lockup {
+  font-size: clamp(2rem, 7vw, 3.6rem);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
 .biome-banner small {
   font-size: clamp(0.85rem, 2.4vw, 1.1rem);
   font-weight: 600;
@@ -590,6 +599,35 @@
 }
 
 /* --------------------------------------------------------- landscape chip */
+
+/* The opener's skip chip (P-FT-01): the affordance for the shot any input
+   already dismisses, sitting where the ending's own skip lives. */
+.opener-skip {
+  position: absolute;
+  top: calc(var(--safe-t) + 14px);
+  right: calc(var(--safe-r) + 14px);
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 0.95rem;
+  background: rgba(9, 12, 18, 0.55);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition:
+    opacity var(--t-medium),
+    transform var(--t-medium);
+}
+
+.opener-skip.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+.reduced-motion .opener-skip {
+  transform: none;
+}
 
 .landscape-chip {
   position: absolute;

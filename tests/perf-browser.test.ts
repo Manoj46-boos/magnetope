@@ -184,6 +184,10 @@ describe(`the game's own stalls`, () => {
     await page.evaluate((route: unknown) => {
       const game = (window as unknown as GameWindow).__game;
       game.debug.holdClock(true);
+      // The link budget measures the standard clear transition; the practice
+      // fall's own end-to-end ride (grade card, clear card, next level) is the
+      // ftue suite's case, spectacle and all.
+      (game.debug as unknown as { save: { data: { seen: string[] } } }).save.data.seen.push('fall.practice');
       game.debug.startLevel('scrapyard-01');
       game.debug.autoplay(route);
       for (let i = 0; i < 4000 && game.phase !== 'cleared'; i++) game.debug.advance(1 / 60);

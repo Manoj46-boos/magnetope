@@ -247,6 +247,7 @@ describe('clear card and pause menu', () => {
     setSetting: noop,
     next: noop,
     retry: noop,
+    skipOpener: noop,
     secondWind: noop,
     doubleScrap: noop,
     shareFall: noop,

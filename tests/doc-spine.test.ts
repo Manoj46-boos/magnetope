@@ -105,7 +105,7 @@ describe('the spectacle table (R-SM-07)', () => {
   });
 
   it('carries every beat kind the ledger knows', () => {
-    const ledgerKinds = ['establish', 'first-catch', 'slow-mo', 'ending'] as const;
+    const ledgerKinds = ['establish', 'first-catch', 'slow-mo', 'practice-fall', 'ending'] as const;
     const carried = new Set(SPECTACLE_BEATS.map((b) => b.kind));
     for (const kind of ledgerKinds) expect(carried, `${kind} has no beat row`).toContain(kind);
   });

@@ -111,4 +111,8 @@ export const SINGLE_CHANNEL_CUES: readonly { cue: string; reason: string }[] = [
     cue: 'snap window open',
     reason: 'quiet by design so the engage lands — the feel table carries the same call',
   },
+  {
+    cue: 'the next unlock dangled',
+    reason: 'the clear card\'s own line, written where the eyes already are — the fanfare the card rides is its audio witness',
+  },
 ];

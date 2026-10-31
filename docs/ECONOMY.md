@@ -56,8 +56,8 @@ A thousand players walk the campaign in level order under their own star policy 
 
 | Law | Verdict |
 | --- | --- |
-| First look free inside 180 s, median | 109 s |
-| Second look inside 15 min, median | 248 s |
+| First look free inside 180 s, median | 75 s |
+| Second look inside 15 min, median | 213 s |
 | Every level reachable with zero ads | 3 h for the slowest honest player |
 | The shelf on top — the collector’s run | 18 h |
 | Over-accumulation under 2% of sims | 0.0% |

@@ -239,6 +239,23 @@ export class Simulation {
     this.events.emit('respawn', { reason });
   }
 
+  /**
+   * Stages the practice descent (rebuild PRD Volume II, P-FT-07): MAGNO is
+   * placed at the point with the given push, airborne and unarmed, the climb
+   * already behind him. The drop is scripted the way a celebration leap off the
+   * summit reads — one push, no input, whatever the fall machinery finds on the
+   * way down is the show.
+   */
+  practiceDrop(at: Vec2, push: Vec2): void {
+    const body = this.physics.magnoBody;
+    body.setTranslation({ x: at.x, y: at.y, z: 0 }, true);
+    body.setLinvel({ x: push.x, y: push.y, z: 0 }, true);
+    body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    body.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
+    this.magno.reset();
+    this.falls.reset();
+  }
+
   snapshot(): SimSnapshot {
     return {
       physics: this.physics.snapshot(),

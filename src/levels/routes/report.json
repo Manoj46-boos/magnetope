@@ -1,31 +1,23 @@
 {
   "scrapyard-00": {
-    "clearSeconds": 10.9,
-    "macros": 5,
-    "slipRate": 0.29,
-    "worstHop": 0.71,
+    "clearSeconds": 2.7,
+    "macros": 2,
+    "slipRate": 0,
+    "worstHop": 1,
     "perHop": [
       1,
-      1,
-      1,
-      1,
-      0.71
+      1
     ]
   },
   "scrapyard-01": {
-    "clearSeconds": 15.2,
-    "macros": 8,
-    "slipRate": 0.2,
-    "worstHop": 0.88,
+    "clearSeconds": 6.1,
+    "macros": 3,
+    "slipRate": 0.12,
+    "worstHop": 0.92,
     "perHop": [
-      1,
-      1,
-      1,
       0.96,
-      0.96,
-      1,
-      1,
-      0.88
+      0.92,
+      1
     ]
   },
   "scrapyard-02": {

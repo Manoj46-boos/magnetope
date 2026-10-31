@@ -129,10 +129,11 @@ describe('the on-ramp a first-time player actually rides', () => {
     await page.context().close();
   });
 
-  runnable('tapers the boosts: full to five, half to ten, gone at eleven', async () => {
+  runnable('tapers the boosts: widest to three, stepping down to five, half to ten, gone at eleven', async () => {
     const page = await freshPlayer();
     const expectations: Array<{ id: string; catchWindow: number; assist: number | null; radius: number }> = [
-      { id: 'scrapyard-00', catchWindow: 1.25, assist: 1.5, radius: 5.625 },
+      { id: 'scrapyard-00', catchWindow: 1.6, assist: 2.2, radius: 7.2 },
+      { id: 'scrapyard-03', catchWindow: 1.425, assist: 1.85, radius: 6.4125 },
       { id: 'scrapyard-04', catchWindow: 1.25, assist: 1.5, radius: 5.625 },
       { id: 'scrapyard-05', catchWindow: 1.125, assist: 1.25, radius: 5.0625 },
       { id: 'scrapyard-09', catchWindow: 1.125, assist: 1.25, radius: 5.0625 },

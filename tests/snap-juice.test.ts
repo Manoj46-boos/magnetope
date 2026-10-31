@@ -175,9 +175,12 @@ describe('the snap burst fires when MAGNO sticks to a steel surface', () => {
     await page!.keyboard.press('Space');
     await page!.waitForTimeout(400);
 
-    // Charge a flip: hold space, release to launch.
+    // Charge a flip: hold space, release to launch. The charge caps and holds
+    // at full, so the hold is padded past it — under worker load the fixed
+    // stepper clamps its frame time and a short hold would land mid-charge,
+    // and the whole sequence's trajectory with it.
     await page!.keyboard.down('Space');
-    await page!.waitForTimeout(500);
+    await page!.waitForTimeout(1600);
     await page!.keyboard.up('Space');
     // MAGNO is now airborne. Wait for him to travel toward the next surface.
     await page!.waitForTimeout(700);
@@ -207,16 +210,29 @@ describe('the snap burst fires when MAGNO sticks to a steel surface', () => {
     // answer distance, not visibility. So the case polls the aftermath until
     // the rig reads settled — the field lines go quiet only once he is
     // holding on, and a whiffed flight keeps them loud — and a real wash
-    // shows up as no frame ever reading again.
+    // shows up as no frame ever reading again. One attempt is not a verdict
+    // (the launch case below carries the same law): a slowed run can spend
+    // the whole window mid-flight, so the flip is thrown again from wherever
+    // the last one parked him.
     let readable = 0;
     let bestRed = 0;
     let bestBlue = 0;
-    for (let frame = 0; frame < 12 && readable < 2; frame++) {
-      const read = await readFrame(page!);
-      bestRed = Math.max(bestRed, read.red);
-      bestBlue = Math.max(bestBlue, read.blue);
-      if (read.cyan < 140 && read.red > 25 && read.blue > 25) readable++;
-      await page!.waitForTimeout(300);
+    for (let attempt = 0; attempt < 3 && readable < 2; attempt++) {
+      if (attempt > 0) {
+        await page!.keyboard.down('Space');
+        await page!.waitForTimeout(1600);
+        await page!.keyboard.up('Space');
+        await page!.waitForTimeout(700);
+        await page!.keyboard.press('Space');
+        await page!.waitForTimeout(150);
+      }
+      for (let frame = 0; frame < 12 && readable < 2; frame++) {
+        const read = await readFrame(page!);
+        bestRed = Math.max(bestRed, read.red);
+        bestBlue = Math.max(bestBlue, read.blue);
+        if (read.cyan < 140 && read.red > 25 && read.blue > 25) readable++;
+        await page!.waitForTimeout(300);
+      }
     }
     expect(readable, `the poles read through the snap aftermath (best red ${bestRed}, best blue ${bestBlue})`).toBeGreaterThanOrEqual(2);
     expect(errors).toEqual([]);
