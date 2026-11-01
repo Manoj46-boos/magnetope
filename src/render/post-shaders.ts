@@ -69,12 +69,12 @@ varying vec2 vUv;
 
 vec3 gradeLut(vec3 c) {
   c = clamp(c, 0.0, 1.0);
-  float blue = c.b * 15.0;
+  float blue = c.b * 31.0;
   float slice0 = floor(blue);
-  float slice1 = min(slice0 + 1.0, 15.0);
-  vec2 inSlice = vec2(c.r * 15.0 + 0.5, c.g * 15.0 + 0.5);
-  vec3 a = texture2D(tLut, vec2((slice0 * 16.0 + inSlice.x) / 256.0, inSlice.y / 16.0)).rgb;
-  vec3 b = texture2D(tLut, vec2((slice1 * 16.0 + inSlice.x) / 256.0, inSlice.y / 16.0)).rgb;
+  float slice1 = min(slice0 + 1.0, 31.0);
+  vec2 inSlice = vec2(c.r * 31.0 + 0.5, c.g * 31.0 + 0.5);
+  vec3 a = texture2D(tLut, vec2((slice0 * 32.0 + inSlice.x) / 1024.0, inSlice.y / 32.0)).rgb;
+  vec3 b = texture2D(tLut, vec2((slice1 * 32.0 + inSlice.x) / 1024.0, inSlice.y / 32.0)).rgb;
   return mix(a, b, blue - slice0);
 }
 

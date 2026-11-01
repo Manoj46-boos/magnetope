@@ -16,14 +16,23 @@ export const NEUTRAL_GRADE: BiomeGrade = { contrast: 1, saturation: 1, shadow: [
 
 /**
  * One grade per biome, following the temperature journey of the art bible:
- * rust and teal at the bottom, cool silence at the top.
+ * rust and teal at the bottom, cool silence at the top. The saturation column
+ * is the §4.1 retune (rebuild PRD Volume IV) — the flat 1.15-everywhere grade
+ * was the panel's "color muting" finding, and each biome now carries its own
+ * committed loudness, loudest in the neon city and deliberately muted at the
+ * top of the climb, where the Stratosphere's silence is desaturation.
  */
 export const GRADES: Readonly<Record<BiomeId, BiomeGrade>> = {
-  scrapyard: { contrast: 1.15, saturation: 1.15, shadow: [-0.02, 0.008, 0.025], highlight: [0.035, 0.015, -0.025], bloom: 0.42 },
-  suburbia: { contrast: 1.08, saturation: 1.18, shadow: [0.006, 0.016, 0.022], highlight: [0.015, 0.015, -0.005], bloom: 0.32 },
-  metropolis: { contrast: 1.18, saturation: 1.15, shadow: [-0.015, -0.015, 0.035], highlight: [0.032, -0.012, 0.03], bloom: 0.46 },
-  playground: { contrast: 1.15, saturation: 1.18, shadow: [0.016, 0.008, 0.018], highlight: [0.018, 0.012, -0.012], bloom: 0.30 },
-  stratosphere: { contrast: 1.18, saturation: 1.15, shadow: [-0.015, 0.006, 0.038], highlight: [-0.018, 0.02, 0.035], bloom: 0.48 },
+  // Dusk amber over teal shadow (the hero pair, §1.4.3): +15% saturation.
+  scrapyard: { contrast: 1.18, saturation: 1.3, shadow: [-0.025, 0.004, 0.035], highlight: [0.04, 0.02, -0.03], bloom: 0.42 },
+  // Morning optimism: laundry-line pastels over green, +10% — the softest lift.
+  suburbia: { contrast: 1.1, saturation: 1.28, shadow: [0.004, 0.014, 0.02], highlight: [0.02, 0.016, -0.008], bloom: 0.32 },
+  // Neon night, the loudest biome at +25%: cyan sky, warm windows.
+  metropolis: { contrast: 1.22, saturation: 1.4, shadow: [-0.02, -0.02, 0.045], highlight: [0.04, 0.005, 0.012], bloom: 0.46 },
+  // Bright noon toy-plastic, +20%: yellow highlights, cool shade.
+  playground: { contrast: 1.18, saturation: 1.38, shadow: [0.01, 0.008, 0.015], highlight: [0.035, 0.025, -0.02], bloom: 0.30 },
+  // The drop: silence by desaturation — the only biome graded below neutral.
+  stratosphere: { contrast: 1.18, saturation: 0.9, shadow: [-0.012, 0.005, 0.036], highlight: [-0.014, 0.016, 0.03], bloom: 0.48 },
 };
 
 /**
@@ -33,14 +42,14 @@ export const GRADES: Readonly<Record<BiomeId, BiomeGrade>> = {
  * light, not as paint. Only the composition scene ever applies it.
  */
 export const CARD_GRADE: BiomeGrade = {
-  contrast: 1.24,
-  saturation: 1.28,
+  contrast: 1.32,
+  saturation: 1.5,
   shadow: [-0.018, 0.004, 0.03],
   highlight: [0.02, 0.012, -0.028],
   bloom: 0.52,
 };
 
-export const LUT_SIZE = 16;
+export const LUT_SIZE = 32;
 export const LUT_WIDTH = LUT_SIZE * LUT_SIZE;
 
 const clamp01 = (x: number): number => Math.min(1, Math.max(0, x));
@@ -66,8 +75,10 @@ export function applyGrade(grade: BiomeGrade, rgb: readonly [number, number, num
 }
 
 /**
- * Bakes a grade into a 256 x 16 strip of 16 blue slices, the layout the final
- * pass samples with two fetches: x = blue * 16 + red, y = green. RGBA8.
+ * Bakes a grade into a 1024 x 32 strip of 32 blue slices, the layout the final
+ * pass samples with two fetches: x = blue * 32 + red, y = green. RGBA8. The
+ * 32-step grid is the §4.1 retune's own need: at saturation 1.4 the 16-step
+ * grid quantised a full five levels off the reference curve.
  */
 export function buildGradeLut(grade: BiomeGrade): Uint8Array {
   const data = new Uint8Array(LUT_WIDTH * LUT_SIZE * 4);

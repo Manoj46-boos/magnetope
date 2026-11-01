@@ -1122,5 +1122,8 @@ function applyMagnoRim(material: MeshStandardMaterial): void {
          }`,
       );
   };
+  // The character law's own marker (P-AR-04): the warm rim is a contract, and
+  // the audit reads it off the material rather than re-parsing the shader.
+  (material as { __magnoRim?: boolean }).__magnoRim = true;
   material.needsUpdate = true;
 }

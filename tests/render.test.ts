@@ -1,8 +1,9 @@
-import { Group, Mesh, Scene } from 'three';
+import { Group, Mesh, MeshStandardMaterial, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
 import { PROPS } from '@/config/props';
 import { CameraRig } from '@/render/camera-rig';
 import { cosmeticById } from '@/config/cosmetics';
+import type { SkinLook } from '@/config/cosmetics';
 import { blinkLook } from '@/render/blink-look';
 import { MagnoRig, skinFromLook } from '@/render/magno-rig';
 import { ParticleSystem, RingPool } from '@/render/particles';
@@ -411,6 +412,33 @@ describe('MAGNO rig', () => {
     expect(rig.eyeState).toBe('home');
     expect(pupilOf(rig).position.y).toBeGreaterThan(0.01);
     rig.dispose();
+  });
+
+  it('carries a warm rim light in every biome — the character law of the art bible (P-AR-04)', () => {
+    // The law is composition-level: MAGNO is the brightest object on screen by
+    // contract, in every biome, whatever the sun is doing. Its machine leg is
+    // this one: the body and the ring carry the rim patch, warm white, and no
+    // skin or biome turns it off. The pole materials are their own emissive
+    // story and the socket stays matte by design — the rim separates the body
+    // from the world, the poles carry the brand.
+    const rig = new MagnoRig(skinFromLook({ id: 'classic', body: '#546e7a', ring: '#e53935', tip: '#0c1118', socket: '#546e7a', pupil: '#0a0a0a', eye: '#f5e6d3' } as SkinLook));
+    const patched: Array<MeshStandardMaterial> = [];
+    rig.root.traverse((node) => {
+      const material = (node as Mesh).material;
+      if (material instanceof MeshStandardMaterial && (material as { __magnoRim?: boolean }).__magnoRim) patched.push(material);
+    });
+    expect(patched.length).toBeGreaterThanOrEqual(2);
+    rig.dispose();
+
+    // The classic skin too — the default player's rig, the one a fresh save meets.
+    const classic = new MagnoRig();
+    let classicRim = 0;
+    classic.root.traverse((node) => {
+      const material = (node as Mesh).material;
+      if (material instanceof MeshStandardMaterial && (material as { __magnoRim?: boolean }).__magnoRim) classicRim++;
+    });
+    expect(classicRim).toBeGreaterThanOrEqual(2);
+    classic.dispose();
   });
 
   it('breathes while settled', () => {

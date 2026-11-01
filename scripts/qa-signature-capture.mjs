@@ -120,7 +120,10 @@ if (devUp) {
   await devPage.waitForSelector('.fall-card.open', { timeout: 10000 });
   await devPage.screenshot({ path: join(OUT, '04-fall-grade-comedy.png') });
   console.log('  04 the fall card mid-grade (R-GF-07)');
-  await devPage.locator('.fall-card .actions .btn').first().click();
+  // The card closes itself the moment MAGNO lands (game.ts: the attached state
+  // hides it), which can beat a GUI click on a slow frame. Take the button
+  // through the page's own click path while the taking is good.
+  await devPage.evaluate(() => document.querySelector('.fall-card .actions .btn').click());
   await devPage.waitForTimeout(700);
 
   // The wordless ending (R-SM-05): the film runs sixty seconds and its credits

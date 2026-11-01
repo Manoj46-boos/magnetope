@@ -6,11 +6,11 @@ One committed palette per biome, in HSL as the art bible writes them, with the d
 
 | Biome | Dominant | Accent | Sky top | Horizon | Fog | Sun | Grade (contrast · saturation · bloom) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| scrapyard | 18° 78% 46% | 140° 55% 36% | 14° 70% 38% | 28° 88% 62% | 22° 60% 48% (0.18) | 32° 96% 70% at 18° | 1.15 · 1.15 · 0.42 |
-| suburbia | 105° 48% 48% | 14° 70% 50% | 200° 65% 62% | 140° 45% 82% | 140° 35% 86% (0.12) | 48° 88% 88% at 48° | 1.08 · 1.18 · 0.32 |
-| metropolis | 256° 60% 28% | 42° 100% 55% | 244° 55% 14% | 256° 50% 28% | 248° 50% 18% (0.22) | 42° 100% 58% at 6° | 1.18 · 1.15 · 0.46 |
-| playground | 35° 8% 58% | 320° 85% 56% | 200° 60% 62% | 190° 50% 78% | 190° 30% 72% (0.1) | 50° 35% 96% at 65° | 1.15 · 1.18 · 0.3 |
-| stratosphere | 202° 70% 42% | 42° 90% 62% | 210° 75% 18% | 40° 90% 60% | 205° 60% 22% (0.05) | 40° 90% 70% at 10° | 1.18 · 1.15 · 0.48 |
+| scrapyard | 18° 78% 46% | 140° 55% 36% | 14° 70% 38% | 28° 88% 62% | 22° 60% 48% (0.18) | 32° 96% 70% at 18° | 1.18 · 1.3 · 0.42 |
+| suburbia | 105° 48% 48% | 14° 70% 50% | 200° 65% 62% | 140° 45% 82% | 140° 35% 86% (0.12) | 48° 88% 88% at 48° | 1.1 · 1.28 · 0.32 |
+| metropolis | 256° 60% 28% | 42° 100% 55% | 244° 55% 14% | 256° 50% 28% | 248° 50% 18% (0.22) | 42° 100% 58% at 6° | 1.22 · 1.4 · 0.46 |
+| playground | 35° 8% 58% | 320° 85% 56% | 200° 60% 62% | 190° 50% 78% | 190° 30% 72% (0.1) | 50° 35% 96% at 65° | 1.18 · 1.38 · 0.3 |
+| stratosphere | 202° 70% 42% | 42° 90% 62% | 210° 75% 18% | 40° 90% 60% | 205° 60% 22% (0.05) | 40° 90% 70% at 10° | 1.18 · 0.9 · 0.48 |
 
 ## The beat treatments
 
@@ -28,5 +28,5 @@ How each biome dresses the climb’s clockwork — establish, twist, escalate, r
 
 - **The poles** — MAGNO’s red north (#e53935) and blue south (#1e88e5) are the only red-and-blue pair on screen, whatever the biome: magnetism is the game’s identity and it keeps its colours.
 - **The effect palette** — attract reads cyan, repel amber; bright skies take deeper colours with normal blending so the lines never wash out.
-- **The store card’s own grade** — contrast 1.24, saturation 1.28, bloom 0.52: stronger than any biome because the tile is shrunk to a phone row.
+- **The store card’s own grade** — contrast 1.32, saturation 1.5, bloom 0.52: stronger than any biome because the tile is shrunk to a phone row.
 - **Contrast between biomes is total** — the Scrapyard’s burnt orange against Suburbia’s lawn green is a biome shift the player feels in their bones; within a biome the gamut is narrow on purpose.

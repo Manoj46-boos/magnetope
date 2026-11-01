@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GRADES, LUT_SIZE, LUT_WIDTH, NEUTRAL_GRADE, applyGrade, buildGradeLut, sampleGradeLut } from '@/render/grade';
+import { CARD_GRADE, GRADES, LUT_SIZE, LUT_WIDTH, NEUTRAL_GRADE, applyGrade, buildGradeLut, sampleGradeLut } from '@/render/grade';
 import { PROFILES } from '@/render/quality';
 
 const SWATCHES: Array<[number, number, number]> = [
@@ -15,10 +15,10 @@ const SWATCHES: Array<[number, number, number]> = [
 const biomes = Object.keys(GRADES) as Array<keyof typeof GRADES>;
 
 describe('colour grading tables', () => {
-  it('lays out 16 blue slices of 16 x 16 texels in a 256 x 16 strip', () => {
-    expect(LUT_WIDTH).toBe(256);
-    expect(LUT_SIZE).toBe(16);
-    expect(buildGradeLut(NEUTRAL_GRADE)).toHaveLength(256 * 16 * 4);
+  it('lays out 32 blue slices of 32 x 32 texels in a 1024 x 32 strip', () => {
+    expect(LUT_WIDTH).toBe(1024);
+    expect(LUT_SIZE).toBe(32);
+    expect(buildGradeLut(NEUTRAL_GRADE)).toHaveLength(1024 * 32 * 4);
   });
 
   it('leaves every colour alone when the grade is neutral', () => {
@@ -58,6 +58,46 @@ describe('colour grading tables', () => {
     expect(warmth('scrapyard')).toBeGreaterThan(warmth('suburbia'));
     expect(warmth('stratosphere')).toBeLessThan(0);
     expect(warmth('scrapyard')).toBeGreaterThan(0.03);
+  });
+
+  it('carries the §4.1 saturation retune: loud where the biome is loud, silent at the top (P-AR-01)', () => {
+    // The panel's "color muting" finding was a flat grade; the retune gives
+    // each biome its own committed loudness, and the ordering is the law.
+    expect(GRADES.scrapyard.saturation).toBe(1.3);
+    expect(GRADES.suburbia.saturation).toBe(1.28);
+    expect(GRADES.metropolis.saturation).toBe(1.4);
+    expect(GRADES.playground.saturation).toBe(1.38);
+    // The Stratosphere's silence is desaturation: the only biome below neutral.
+    expect(GRADES.stratosphere.saturation).toBe(0.9);
+    expect(GRADES.stratosphere.saturation).toBeLessThan(1);
+    // The loudest three, in the PRD's own order (+15 < +20 < +25).
+    expect(GRADES.scrapyard.saturation).toBeLessThan(GRADES.playground.saturation);
+    expect(GRADES.playground.saturation).toBeLessThan(GRADES.metropolis.saturation);
+    for (const biome of biomes) if (biome !== 'stratosphere') expect(GRADES[biome].saturation).toBeGreaterThan(1.2);
+  });
+
+  it('steers each biome\'s highlights toward its signature warm pole and its shadow toward the deep one', () => {
+    // §4.1's hue pairs, read as the grade's own tint: the highlight of every
+    // warm biome sits warm of neutral, the Stratosphere's sits cool, and the
+    // metropolis sky (its shadow) carries the neon night's blue.
+    const highlight: [number, number, number] = [0.85, 0.85, 0.85];
+    const shadow: [number, number, number] = [0.12, 0.12, 0.12];
+    const warmthAt = (biome: keyof typeof GRADES, at: [number, number, number]): number => {
+      const [r, , b] = applyGrade(GRADES[biome], at);
+      return r - b;
+    };
+    for (const biome of ['scrapyard', 'suburbia', 'metropolis', 'playground'] as const) {
+      expect(warmthAt(biome, highlight)).toBeGreaterThan(0.02);
+    }
+    expect(warmthAt('metropolis', shadow)).toBeLessThan(0);
+    expect(warmthAt('stratosphere', highlight)).toBeLessThan(0);
+  });
+
+  it('keeps the card above every biome in contrast and saturation, as its own law demands', () => {
+    for (const biome of biomes) {
+      expect(CARD_GRADE.contrast).toBeGreaterThan(GRADES[biome].contrast);
+      expect(CARD_GRADE.saturation).toBeGreaterThan(GRADES[biome].saturation);
+    }
   });
 
   it('pushes contrast where the biome asks for it', () => {

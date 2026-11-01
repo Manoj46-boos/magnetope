@@ -409,9 +409,12 @@ export function skylineFor(biome: BiomeId, spec: LayerSpec, rng: Rng): Skyline {
   if (spec.hero) {
     // The hero rides the near silhouette layer — the haze is heavy enough at
     // the middle depth that nothing reads there — and keeps inside the
-    // 24-degree lens's frame at that depth, in front of its own ridge.
+    // 24-degree lens's frame at that depth, in front of its own ridge. The
+    // spread is a ninth of the frame either side of the centre line (Volume
+    // IV, P-AR-03): the law is visibility from level 1, and the old ±16 in
+    // world units could park the water tower at the frame's very edge.
     skyline.hero ??= [];
-    LANDMARKS[biome](skyline.hero, rng.range(-16, 16), spec.height);
+    LANDMARKS[biome](skyline.hero, rng.range(-9, 9), spec.height);
   }
   return skyline;
 }
