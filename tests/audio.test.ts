@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AudioDirector } from '@/audio/director';
 import { EventEnvelope, EVENT_WEIGHTS } from '@/audio/intensity';
 import { AD_DUCK_DB, AudioEngine, BUS_DB, MASTER, MIX_HIERARCHY, STINGER_DUCK_DB, ceilingCurve, fromDb } from '@/audio/engine';
@@ -19,6 +19,9 @@ import { Driver, floor, makeLevel } from './helpers/harness';
 class ParamStub {
   value = 0;
   lastTarget: number | null = null;
+  /** The last setTargetAtTime's whole argument list, so a release's pace can
+   * be asserted, not just its destination (P-AU-02's own leg). */
+  lastRamp: { value: number; time: number; tau: number } | null = null;
   setValueAtTime(v: number): void {
     this.value = v;
   }
@@ -28,8 +31,9 @@ class ParamStub {
   linearRampToValueAtTime(v: number): void {
     this.value = v;
   }
-  setTargetAtTime(v: number): void {
+  setTargetAtTime(v: number, time = 0, tau = 0.01): void {
     this.lastTarget = v;
+    this.lastRamp = { value: v, time, tau };
   }
 }
 
@@ -135,6 +139,67 @@ describe('AudioEngine lifecycle', () => {
     expect(() => engine.unlock()).not.toThrow();
     expect(engine.audible).toBe(false);
     expect(() => playAttach(engine, 'body', 1)).not.toThrow();
+  });
+
+  it('re-fades the bed over 600 ms after an ad, and never snaps back (P-AU-02)', () => {
+    const { engine } = setup();
+    engine.unlock();
+    const music = engine.bus('music')!.gain as unknown as ParamStub;
+    vi.useFakeTimers();
+
+    // The way in: the duck's own pace, a twelfth of a second.
+    engine.setAdDuck(true);
+    expect(music.lastRamp!.tau).toBeCloseTo(0.12, 3);
+    expect(engine.musicTargetDb).toBeLessThanOrEqual(BUS_DB.music + AD_DUCK_DB);
+    expect(engine.musicTargetDb).toBe(MIX_HIERARCHY.adDuck.floorDb);
+
+    // The way out: a 600 ms re-fade, not the duck's pace and not a snap.
+    engine.setAdDuck(false);
+    expect(music.lastRamp!.tau, 'the release must run at the re-fade pace').toBeCloseTo(0.6, 3);
+    expect(engine.musicTargetDb).toBe(BUS_DB.music);
+
+    // And after the re-fade has had its time, the bed is simply back: an
+    // untap inside that window still holds the slow pace, one past it does not.
+    vi.advanceTimersByTime(650);
+    engine.setStingerDuck(false);
+    expect(music.lastRamp!.tau).toBeCloseTo(0.08, 3);
+    vi.useRealTimers();
+  });
+
+  it('a fresh duck inside the release window cancels the 600 ms timer, so the pace follows the ad, not a race', () => {
+    const { engine } = setup();
+    engine.unlock();
+    const music = engine.bus('music')!.gain as unknown as ParamStub;
+    vi.useFakeTimers();
+    engine.setAdDuck(true);
+    vi.advanceTimersByTime(200);
+    engine.setAdDuck(false);
+    expect(music.lastRamp!.tau).toBeCloseTo(0.6, 3);
+    engine.setAdDuck(true);
+    expect(music.lastRamp!.tau).toBeCloseTo(0.12, 3);
+    expect(engine.musicTargetDb).toBe(MIX_HIERARCHY.adDuck.floorDb);
+    vi.useRealTimers();
+  });
+
+  it('answers the first input in sound once per session, and a repeat input is not answered twice (P-AU-01)', () => {
+    const { engine, fake } = setup();
+    engine.unlock();
+    const director = new AudioDirector(engine);
+    const before = fake.nodes.length;
+    fake.raw.currentTime = 0.1;
+
+    director.firstInputHandshake();
+    // The voice is a noise burst and a sub tone: at least one of each opened.
+    const made = fake.nodes.slice(before);
+    expect(made.filter((n) => n.kind === 'bufferSource').length).toBeGreaterThanOrEqual(1);
+    expect(made.filter((n) => n.kind === 'oscillator').length).toBeGreaterThanOrEqual(1);
+
+    // The handshake spends once: a second input, a minute later, adds nothing.
+    const spent = fake.nodes.length;
+    fake.raw.currentTime = 60;
+    director.firstInputHandshake();
+    director.firstInputHandshake();
+    expect(fake.nodes.length).toBe(spent);
   });
 
   it('builds the buses at the mix levels of the design', () => {

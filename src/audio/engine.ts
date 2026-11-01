@@ -8,6 +8,10 @@ const AD_MUSIC_FLOOR_DB = -24;
 /** The bed moves at the ad's pace (0.12 s) and the stinger's quicker side-chain (0.08 s). */
 const AD_DUCK_TAU_S = 0.12;
 const STINGER_DUCK_TAU_S = 0.08;
+/** The give-back after an ad (Vol V, P-AU-02): a 600 ms re-fade, never a
+ * snap-back. The duck may attack at the ad's own pace; the way out is the
+ * law, because the way out is what the player hears as "the game is back". */
+const AD_RELEASE_TAU_S = 0.6;
 const VOICE_TAIL_S = 0.04;
 
 /**
@@ -76,7 +80,7 @@ export const MIX_HIERARCHY = {
     { bus: 'ui', targetDb: BUS_DB.ui, role: 'the verdicts: stingers, stamps, ticks, the cards' },
     { bus: 'chirp', targetDb: BUS_DB.chirp, role: 'MAGNO\'s twelve words, six under the bed and quiet under stingers' },
   ] as readonly MixRow[],
-  adDuck: { db: AD_DUCK_DB, tauS: AD_DUCK_TAU_S, floorDb: AD_MUSIC_FLOOR_DB, law: 'the bed ducks around any ad, and to a floor, so midrolls never fight the game' },
+  adDuck: { db: AD_DUCK_DB, tauS: AD_DUCK_TAU_S, floorDb: AD_MUSIC_FLOOR_DB, releaseTauS: AD_RELEASE_TAU_S, law: 'the bed ducks around any ad, and to a floor, so midrolls never fight the game; the give-back is a 600 ms re-fade, never a snap' },
   stingerDuck: { db: STINGER_DUCK_DB, tauS: STINGER_DUCK_TAU_S, law: 'a stinger side-chains the bed for its whole length, never stacked' },
   monitoring: { gain: MASTER.gain, ceilingDb: MASTER.ceilingDb, law: 'the master\'s own knob and the true-peak ceiling everything hangs under' },
 } as const;
@@ -106,6 +110,9 @@ export class AudioEngine {
   private musicOn = true;
   private ducked = false;
   private stingerDucked = false;
+  /** True from the duck's release until the re-fade has had its 600 ms. */
+  private wasDucked = false;
+  private releaseTimer: ReturnType<typeof setTimeout> | null = null;
   private appliedMusicDb: number | null = null;
   private voiceEnds: number[] = [];
   private readonly maxVoices: number;
@@ -243,6 +250,22 @@ export class AudioEngine {
   /** Music dips 6 dB, and to a floor of -24 dB, around any ad so midrolls never fight the game. */
   setAdDuck(active: boolean): void {
     this.ducked = active;
+    if (active) {
+      this.wasDucked = false;
+      if (this.releaseTimer !== null) {
+        clearTimeout(this.releaseTimer);
+        this.releaseTimer = null;
+      }
+    } else {
+      // The release keeps the ad's own pace on tap for the next 600 ms of
+      // re-fade, then the bed is simply back and an untap moves at the
+      // stinger's pace again.
+      this.wasDucked = true;
+      this.releaseTimer = setTimeout(() => {
+        this.releaseTimer = null;
+        if (!this.ducked) this.wasDucked = false;
+      }, Math.round(AD_RELEASE_TAU_S * 1000));
+    }
     this.applyMusicGain();
   }
 
@@ -259,7 +282,10 @@ export class AudioEngine {
     if (this.ducked) db = Math.min(db + AD_DUCK_DB, AD_MUSIC_FLOOR_DB);
     if (this.stingerDucked) db += STINGER_DUCK_DB;
     this.appliedMusicDb = db;
-    bus.gain.setTargetAtTime(this.musicOn ? fromDb(db) : 0, this.ctx.currentTime, this.ducked ? AD_DUCK_TAU_S : STINGER_DUCK_TAU_S);
+    // The way in runs at the duck's own pace; the way out is a 600 ms re-fade
+    // (P-AU-02), so the bed never snaps back over whatever the ad left behind.
+    const tau = this.ducked ? AD_DUCK_TAU_S : this.stingerDucked ? STINGER_DUCK_TAU_S : this.wasDucked ? AD_RELEASE_TAU_S : STINGER_DUCK_TAU_S;
+    bus.gain.setTargetAtTime(this.musicOn ? fromDb(db) : 0, this.ctx.currentTime, tau);
   }
 
   /** R-AU-09's own probe: the level the mix has decided on for the bed, in dB, whatever the clock is doing. */

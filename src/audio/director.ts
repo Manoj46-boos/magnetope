@@ -41,6 +41,7 @@ import {
   playStarStamp,
   playStress,
   playTick,
+  playUnlockHandshake,
   type ChirpName,
 } from './recipes';
 
@@ -91,6 +92,8 @@ export class AudioDirector {
   private stingerUntil = 0;
   /** The clear verdict the card is about to spend: its stars, its par, its ghost. */
   private verdict: { stars: number; underPar: boolean; ghost: boolean } | null = null;
+  /** The handshake spends once per session; repeat inputs are answered by the game, not the tic. */
+  private handshaken = false;
 
   constructor(private readonly engine: AudioEngine) {
     this.music = new MusicPlayer(engine);
@@ -195,6 +198,19 @@ export class AudioDirector {
   /** R-AU-01/03: the biome card's own spelling of the motif — the re-harmonized announce. */
   biomeCall(): void {
     this.stinger('biome-enter', 1.4, () => playBiomeCall(this.engine, this.music.motifHz));
+  }
+
+  /**
+   * The first input's answer (Vol V, P-AU-01): the audio handshake. Called
+   * from the input path the moment the engine is unlocked — the player's
+   * first action is answered in sound, once per session. Safe any time after:
+   * the gate spends on the first call and the voice is a no-op while the
+   * context is still suspended, which the unlock path has already handled.
+   */
+  firstInputHandshake(): void {
+    if (this.handshaken) return;
+    this.handshaken = true;
+    playUnlockHandshake(this.engine);
   }
 
   /**

@@ -343,6 +343,8 @@ export class Game {
     this.input.events.on('activity', ({ device }) => {
       this.touchMode?.noteActivity(device);
       this.audioEngine.unlock();
+      // The first input's answer in sound (P-AU-01): the handshake, once per session.
+      this.audio.firstInputHandshake();
       if (this.phase === 'play' && !this.ui.modalOpen) {
         this.bus.onPlayerInput();
         if (!this.inputRecorded) {

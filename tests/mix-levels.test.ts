@@ -115,6 +115,69 @@ describe('the mix of a real run, measured offline', () => {
     expect(Math.abs(before(open) - before(ducked))).toBeLessThan(0.5);
   });
 
+  run('the bed re-fades in over 600 ms after the ad, never a snap-back (P-AU-02)', async () => {
+    // The watched bus is the music bed's own gain node, read every 16 ms
+    // slice. After the ad ends at t=10 the bed must travel from the floor to
+    // its -18 dB home on the release's own time constant — a step back to
+    // full level inside one slice is the snap the law forbids.
+    const r = await render({
+      scenario: { kind: 'route', levelId: 'scrapyard-03' },
+      seconds: 16,
+      mute: ['sfx', 'amb', 'ui', 'chirp'],
+      adBetween: [6, 10],
+      watch: 'music',
+    });
+    const slices = r.watchedDb;
+    const end = Math.round(10 / 0.016);
+    const floor = slices[end - 5]!;
+    const home = -18;
+
+    // No slice inside the first 100 ms of release may sit within 2 dB of home.
+    for (let i = end; i < end + 6; i++) {
+      expect(slices[i]!, `slice ${i} snapped back: ${(slices[i] ?? 0).toFixed(1)} dB`).toBeLessThan(home - 2);
+    }
+    // The curve is a setTargetAtTime toward home: the travelled share of the
+    // floor-to-home distance is 1 - e^(-t/tau). Read the pace at +300 ms and
+    // +600 ms, where roughly a third and roughly two thirds have spent.
+    const at = (ms: number): number => slices[end + Math.round(ms / 16)] ?? 0;
+    const travelled = (ms: number): number => (at(ms) - floor) / (home - floor);
+    expect(travelled(300), `after 300 ms only ${(100 * travelled(300)).toFixed(0)}% of the return had spent`).toBeGreaterThan(0.25);
+    expect(travelled(600), `after 600 ms only ${(100 * travelled(600)).toFixed(0)}% of the return had spent`).toBeGreaterThan(0.5);
+    expect(travelled(600), 'the release is a re-fade, not a crawl').toBeLessThan(0.95);
+    // And the bed is home, not still travelling, by the second second.
+    expect(Math.abs(at(2000) - home)).toBeLessThan(1.5);
+  });
+
+  run('the first input is answered in sound: the handshake speaks on the sfx bus (P-AU-01)', async () => {
+    // The world's answer to the player's first action, on the effects bus
+    // with everything else muted so the voice is read alone. The shape the
+    // law wants: a sound at the input's own moment, roughly the launch
+    // family's weight (the player's push, not MAGNO's voice). The once-per-
+    // session gate is the director's own leg, held by the unit suite; a
+    // render here is one session by construction.
+    const spec = (at: number | undefined) =>
+      ({
+        scenario: { kind: 'route', levelId: 'scrapyard-03' },
+        seconds: 8,
+        mute: ['music', 'amb', 'ui', 'chirp'] as BusName[],
+        flatMaster: true,
+        handshakeAt: at,
+      }) satisfies RenderSpec;
+    // The route's own voices are spent on the sfx bus too, so the handshake
+    // is measured against the same route without one.
+    const bare = await render(spec(undefined));
+    const withIt = await render(spec(0.5));
+    const around = (r: RenderReport): number => r.perSecondDb.slice(0, 2).reduce((s, db) => s + db, 0) / 2;
+    const gain = around(withIt) - around(bare);
+    expect(gain, `the handshake added ${gain.toFixed(2)} dB over the bare route`).toBeGreaterThan(1);
+
+    // The single-frame peak rides the shared noise buffer, so a take's luck
+    // moves it; the energy above is the law, this is only the sanity rail.
+    const peak = withIt.samplePeakDb - bare.samplePeakDb;
+    expect(peak).toBeGreaterThan(0.3);
+    expect(peak).toBeLessThan(12);
+  });
+
   run('side-chains the bed three under for the length of a stinger, then gives it back (R-AU-05/07)', async () => {
     const spec = (call: 'biome' | 'none') =>
       ({

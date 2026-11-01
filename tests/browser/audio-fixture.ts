@@ -48,6 +48,8 @@ export interface RenderSpec {
   adBetween?: [from: number, to: number];
   /** Record this bus's gain each slice, for the mix's own audits. */
   watch?: BusName;
+  /** Fire the first-input handshake here, in seconds — and never again after. */
+  handshakeAt?: number;
 }
 
 export interface RenderReport extends Loudness {
@@ -103,6 +105,9 @@ async function render(spec: RenderSpec): Promise<RenderReport> {
   for (let k = 0; k < stops.length; k++) {
     await stops[k];
     const t = (k + 1) * SLICE_SECONDS;
+    // The handshake fires here the way the game fires it: on the slice the
+    // first input lands, once, whatever else the render is doing.
+    if (spec.handshakeAt !== undefined && t >= spec.handshakeAt && t < spec.handshakeAt + SLICE_SECONDS) director.firstInputHandshake();
     if (player) {
       while (simTicks < Math.floor(t * SIM_HZ)) {
         sim.step(t >= fallAt || player.done ? IDLE_INPUT : player.next());
@@ -209,6 +214,7 @@ async function renderWavSpec(spec: RenderSpec): Promise<string> {
   for (let k = 0; k < stops.length; k++) {
     await stops[k];
     const t = (k + 1) * SLICE_SECONDS;
+    if (spec.handshakeAt !== undefined && t >= spec.handshakeAt && t < spec.handshakeAt + SLICE_SECONDS) director.firstInputHandshake();
     if (player) {
       while (simTicks < Math.floor(t * SIM_HZ)) {
         sim.step(t >= fallAt || player.done ? IDLE_INPUT : player.next());

@@ -234,6 +234,21 @@ export function playSnapWhiff(engine: AudioEngine): void {
   noiseBurst(g, engine, 'bandpass', 1800, 700, 2, 0.1, 0.5);
 }
 
+/**
+ * The first input's own answer (Vol V, P-AU-01): the audio handshake. The
+ * browser held the context suspended until the player acted, so the first
+ * action is owed a sound — a small launch thunk, the world saying it heard
+ * them. It is the player's push, not MAGNO's voice, so it rides the sfx bus
+ * at the bottom of the launch family's range: felt once at the start of a
+ * session and never again, because a handshake that repeats is a tic.
+ */
+export function playUnlockHandshake(engine: AudioEngine): void {
+  const g = open(engine, 'sfx', 0.3, 0.6);
+  if (!g) return;
+  noiseBurst(g, engine, 'bandpass', 900, 320, 1.4, 0.16, 1.3);
+  tone(g, 'sine', 96, 44, 0.12, 0.18, 0.9, takeTiming(0.01));
+}
+
 /** The UI class's shared peak: every verdict voice lands in the same window (R-AU-08), measured on the offline renders. */
 export function playTick(engine: AudioEngine, pitch = 2000, bus: BusName = 'ui', gain = 2.5): void {
   const g = open(engine, bus, 0.05, gain);

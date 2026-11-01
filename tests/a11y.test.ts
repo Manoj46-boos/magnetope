@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { TUNING } from '@/config/tuning';
 import { SlowMoDirector } from '@/game/slowmo';
-import { AUDIO_WITNESSES, CHIRP_WITNESSES, CUE_ROWS, SINGLE_CHANNEL_CUES, VISUAL_WITNESSES } from '@/game/cue-table';
+import { AUDIO_WITNESSES, CHIRP_WITNESSES, CUE_ROWS, HAPTIC_WITNESSES, SINGLE_CHANNEL_CUES, VISUAL_WITNESSES } from '@/game/cue-table';
 import { setLanguage, t, isPseudo, PSEUDO_ID, pseudoTable } from '@/locale';
 import { TABLES, type StringKey } from '@/locale/strings';
 import { FlashGuard } from '@/render/flash-guard';
@@ -227,6 +227,27 @@ describe('every gameplay-critical cue speaks two senses (R-AC-04)', () => {
       const audioKnown = row.audio in AUDIO_WITNESSES || CHIRP_WITNESSES.includes(row.audio as never);
       expect(audioKnown, `${row.cue}: audio witness "${row.audio}" is a real voice`).toBe(true);
     }
+  });
+
+  it('registers the touch haptics as a third sense, never a stand-in (P-AU-03)', () => {
+    const withHand = CUE_ROWS.filter((r) => r.haptic !== undefined);
+    // Volume III's one haptic cue is on the table by name; the list stays
+    // short the way the single-channel one does, because a buzz that is not
+    // a stand-in for sight and sound is a decision, not a default.
+    expect(withHand.length).toBeGreaterThanOrEqual(1);
+    expect(withHand.length).toBeLessThanOrEqual(3);
+    for (const row of withHand) {
+      expect(HAPTIC_WITNESSES, `${row.cue}: haptic witness "${row.haptic}" exists`).toHaveProperty(row.haptic!);
+      // The third sense rides on a row that already speaks two: it adds a
+      // hand, it never excuses a missing eye or ear.
+      expect(VISUAL_WITNESSES, `${row.cue}: the hand does not replace the eye`).toHaveProperty(row.visual);
+      const audioKnown = row.audio in AUDIO_WITNESSES || CHIRP_WITNESSES.includes(row.audio as never);
+      expect(audioKnown, `${row.cue}: the hand does not replace the ear`).toBe(true);
+    }
+    // The witness is no-op safe: a host with no vibrator spends nothing.
+    const witness = HAPTIC_WITNESSES['the full-charge tap'] as (vibrate: unknown) => boolean;
+    expect(witness(null)).toBe(false);
+    expect(witness(() => true)).toBe(true);
   });
 
   it('keeps the single-channel list short, justified and honest', () => {
