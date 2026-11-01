@@ -70,6 +70,12 @@ export const CUE_ROWS: readonly CueRow[] = [
     audio: 'gust lead',
   },
   {
+    cue: 'the save window is open',
+    event: 'snapArm',
+    visual: 'field lines',
+    audio: 'snap voice',
+  },
+  {
     cue: 'weak metal about to give',
     event: 'crumbleWarn',
     visual: 'the rig',
@@ -107,10 +113,6 @@ export const CUE_ROWS: readonly CueRow[] = [
  * new single-channel cue is a conscious decision, never an accident.
  */
 export const SINGLE_CHANNEL_CUES: readonly { cue: string; reason: string }[] = [
-  {
-    cue: 'snap window open',
-    reason: 'quiet by design so the engage lands — the feel table carries the same call',
-  },
   {
     cue: 'the next unlock dangled',
     reason: 'the clear card\'s own line, written where the eyes already are — the fanfare the card rides is its audio witness',

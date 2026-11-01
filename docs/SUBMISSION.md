@@ -101,7 +101,7 @@ These cannot be finished by building more code; each needs a person, a device or
 
 1. **Play it.** All 70 levels and the ending have been verified by bots and tests, never by a human. The form is `docs/VERDICTS.md` (section 14); `docs/ROADMAP.md` lists the known weak levels.
 2. **Five external playtesters** with screen recordings, focusing on the first 90 seconds, the first fall and the first ad moment (section 15).
-3. **Device matrix** (section 13): at least one phone, one tablet and a low-end laptop — the one-thumb question (section 8) and the tier floors ride on it.
+3. **Device matrix** (section 13): at least one phone, one tablet and a low-end laptop — the one-thumb question (section 8), the tier floors and the full-charge vibration tap on real hardware (the feel pass's host stub proves the call; only a hand on Android proves the feel) ride on it, and so does the earned kick's weight: the number is the law's, the feel is the player's.
 4. **Poki SDK names.** `measure(category, what, action)` matches Poki's public Game Events guide (checked in session 7). Re-check once a developer account exists, in case the SDK has moved on. The channel's own law (its alphabet and its two-numeric-values budget) was verified against the live SDK script itself in session 28 and is enforced by the suite.
 5. **Native review** of the six non-English locales.
 6. **Agreement terms.** The PRD recommends the exclusive five-year revenue share; read the actual contract before signing.

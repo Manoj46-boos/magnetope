@@ -17,6 +17,19 @@ export const MAX_STREAKS = 18;
 const POINTS = 6;
 const VERTS_PER_STREAK = POINTS * 2;
 
+/** The flight moment's floor (P-GF-03): below this airspeed the air is calm whatever the player is doing. */
+const SPEED_FLOOR_MPS = 8;
+/** The span above the floor over which the ramp fills: a full-power launch lands mid-ramp, a long fall tops it out. */
+const SPEED_SPAN_MPS = 12;
+
+/**
+ * The airspeed share of the streak budget (P-GF-03): flight thickens the air by
+ * the same density law the gust rides, so a fast launch or a long fall lights
+ * the streaks even on a windless level. Visual only — the gust's own voice and
+ * physical push are untouched.
+ */
+export const airspeedShare = (speed: number): number => clamp((speed - SPEED_FLOOR_MPS) / SPEED_SPAN_MPS, 0, 1);
+
 interface Streak {
   x: number;
   y: number;

@@ -44,3 +44,37 @@ describe('auto-align assist on the way down', () => {
     expect(snapSide(await fallPastBoth({ assist: true, height: 9 }))).toBe(snapSide(await fallPastBoth({ assist: false, height: 9 })));
   });
 });
+
+describe('the widened band telegraphs itself (P-GF-04)', () => {
+  /** Runs the last pick's verdict the way a frame reads it: through the view. */
+  const assistLive = (d: Driver): boolean => d.view.snapAssist;
+
+  it('publishes the open band while the armed snap is being assisted', async () => {
+    const d = await fallPastBoth({ assist: true, height: 2.4 });
+    d.press().tick(2);
+    expect(d.view.snapTarget, 'an assisted target is live').not.toBeNull();
+    expect(assistLive(d)).toBe(true);
+  });
+
+  it('keeps the telegraph off with the assist off, on the same fall', async () => {
+    const d = await fallPastBoth({ assist: false, height: 2.4 });
+    d.press().tick(2);
+    expect(d.view.snapTarget).not.toBeNull();
+    expect(assistLive(d)).toBe(false);
+  });
+
+  it('lowers the flag the moment the hand opens, so the pulse never outlives the offer', async () => {
+    const d = await fallPastBoth({ assist: true, height: 2.4 });
+    d.press().tick(2);
+    expect(assistLive(d)).toBe(true);
+    d.release().tick(2);
+    expect(assistLive(d)).toBe(false);
+  });
+
+  it('never raises it while flight is deliberate: high above the floor the band is closed', async () => {
+    const d = await fallPastBoth({ assist: true, height: 9 });
+    d.press().tick(2);
+    expect(d.view.snapTarget).not.toBeNull();
+    expect(assistLive(d)).toBe(false);
+  });
+});

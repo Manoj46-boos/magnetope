@@ -151,6 +151,7 @@ function stagedView(over: Partial<MagnoView>): MagnoView {
     grounded: false,
     chaining: false,
     dropMeters: 0,
+    snapAssist: false,
     ...over,
   };
 }
@@ -328,6 +329,12 @@ export interface ThumbnailFrame {
   blink: boolean;
   /** The card's own face for this frame; null leaves the rig to the view. */
   face: CardFace | null;
+  /**
+   * The ident's voice beat this frame crossed (P-GF-06), named in the audio
+   * map's own vocabulary; null on a still. One per row of the 1.4.4 timeline:
+   * the hook, the launch, the catch, the settle.
+   */
+  beat: 'hook' | 'launch' | 'catch' | 'settle' | null;
 }
 
 /** Position on a quadratic bend from `a` to `c`, bowing out through `b`. */
@@ -354,6 +361,9 @@ export class ThumbnailStage {
   private phaseMs = 0;
   private flashed = false;
   private blinked = false;
+  /** Voice-beat latches (P-GF-06): the hook and the launch speak on their segment's first frame, once each. */
+  private spokeHook = false;
+  private spokeLaunch = false;
 
   constructor(variant: ThumbnailVariant, ident = false) {
     this.spec = SPECS[variant];
@@ -404,7 +414,7 @@ export class ThumbnailStage {
     this.phaseMs += dtMs;
     if (!this.ident) {
       const { framing, joy, view, face } = this.spec;
-      return { framing, view, joy, flash: 0, blink: false, face };
+      return { framing, view, joy, flash: 0, blink: false, face, beat: null };
     }
     return this.identFrame(this.phaseMs);
   }
@@ -418,15 +428,21 @@ export class ThumbnailStage {
     if (ms < IDENT_HOOK_MS) {
       // The hook: MAGNO tumbles in from off-frame below and left, the body
       // unwinding as he rises, the panic eye already wide (rebuild PRD 1.4.4).
+      // Its voice beat is the segment's own first frame, once, wherever the
+      // caller's clock started (P-GF-06) — a capture at step 0 and the game
+      // loop at step 1/60 both land inside the tumble's opening.
       const e = easeOut(clamp01(ms / IDENT_HOOK_MS));
       const from = { x: fly.x - 2.4, y: fly.y - 2.8 };
       const at = bend(from, { x: fly.x - 0.9, y: fly.y + 0.6 }, fly, e);
+      const hook = !this.spokeHook;
+      if (hook) this.spokeHook = true;
       return {
         framing: spec.framing,
         joy: 0,
         flash: 0,
         blink: false,
         face: 'panic',
+        beat: hook ? 'hook' : null,
         view: stagedView({
           position: at,
           velocity: spec.view.velocity,
@@ -442,6 +458,8 @@ export class ThumbnailStage {
       // the flash peaks, so the catch frame is the energy's crest, not its
       // onset — and the flash itself fires exactly on the two-second mark,
       // never before and never again.
+      const launch = !this.spokeLaunch;
+      if (launch) this.spokeLaunch = true;
       const engaged = ms >= IDENT_CATCH_MS - 100;
       const e = easeOut(clamp01((ms - IDENT_HOOK_MS) / (IDENT_CATCH_MS - IDENT_HOOK_MS)));
       const at = bend(fly, { x: (fly.x + target.x) / 2 + 0.9, y: (fly.y + target.y) / 2 + 1.1 }, { x: target.x - 0.35, y: target.y - 0.75 }, e);
@@ -451,6 +469,7 @@ export class ThumbnailStage {
         flash: 0,
         blink: false,
         face: 'panic',
+        beat: launch ? 'launch' : null,
         view: stagedView({
           position: at,
           velocity: spec.view.velocity,
@@ -476,6 +495,7 @@ export class ThumbnailStage {
       flash,
       blink,
       face: null,
+      beat: flash > 0 ? 'catch' : blink ? 'settle' : null,
       view: stagedView({
         position: at,
         velocity: { x: 0, y: 0 },

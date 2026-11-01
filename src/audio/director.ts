@@ -58,6 +58,9 @@ export interface AudioFrame {
   slowMo: boolean;
 }
 
+/** The staged beats the store frame and the opener speak (P-GF-06, 3.4): the ident's Cooper timeline, plus the idle ladder's hop. */
+export type StagedBeat = 'hook' | 'launch' | 'catch' | 'settle' | 'hop';
+
 const PROXIMITY_INTERVAL = 0.1;
 /** R-AU-06: the same word twice inside this window is machine-gun fire, not speech. */
 const CHIRP_REPEAT_S = 2;
@@ -250,9 +253,39 @@ export class AudioDirector {
     playTick(this.engine);
   }
 
+  /**
+   * The store frame and the first five seconds speak the game's own voices
+   * (P-GF-06, 3.4): the ident's hook, launch, catch and settle, and the idle
+   * ladder's hop, answer in the same material voices a catch in play does, so
+   * the card and the game are one continuous sensory promise.
+   */
+  stagedBeat(beat: StagedBeat): void {
+    const e = this.engine;
+    switch (beat) {
+      case 'hook':
+        playImpact(e, 'wood', 7);
+        this.chirp('uh-oh');
+        break;
+      case 'launch':
+        playRepel(e, 1);
+        this.chirp('whee');
+        break;
+      case 'catch':
+        playSnapEngage(e);
+        this.chirp('whee', true);
+        break;
+      case 'settle':
+        playAttach(e, 'beam', 0.3);
+        break;
+      case 'hop':
+        playImpact(e, 'rubber', 5);
+        this.chirp('focused');
+        break;
+    }
+  }
+
   /** Score cues of the ending film. From the seat, the film is through-composed: the cues are the score (R-AU-12). */
-  endingCue(cue: 'seat' | 'bloom' | 'pullback' | 'credits'): void {
-    const motif = this.music.motifHz;
+  endingCue(cue: 'seat' | 'bloom' | 'pullback' | 'credits'): void {    const motif = this.music.motifHz;
     if (cue === 'seat') {
       playCoreSeat(this.engine);
       this.quietFor(1.9);

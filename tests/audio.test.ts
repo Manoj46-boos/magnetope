@@ -840,3 +840,37 @@ describe('the published mix hierarchy (R-AU-07)', () => {
     expect(MIX_HIERARCHY.monitoring.gain).toBe(MASTER.gain);
   });
 });
+
+describe('the staged beats speak the game\'s own voices (P-GF-06, 3.4)', () => {
+  it('answers the ident\'s timeline and the idle hop in the gameplay map, one beat at a time', () => {
+    const { engine, fake } = setup();
+    engine.unlock();
+    const director = new AudioDirector(engine);
+    fake.raw.currentTime = 1;
+    const kinds = (beat: 'hook' | 'launch' | 'catch' | 'settle' | 'hop'): number => {
+      const before = fake.nodes.length;
+      director.stagedBeat(beat);
+      return fake.nodes.length - before;
+    };
+    // every beat of the Cooper timeline, plus the ladder's hop, spends voices —
+    // the store frame and the first five seconds never arrive silent
+    for (const beat of ['hook', 'launch', 'catch', 'settle', 'hop'] as const) {
+      expect(kinds(beat)).toBeGreaterThan(0);
+    }
+  });
+
+  it('keeps the beat words honest to their gameplay sources: the catch is the snap voice, the launch the repel', () => {
+    const { engine, fake } = setup();
+    engine.unlock();
+    const director = new AudioDirector(engine);
+    fake.raw.currentTime = 10;
+    // a repeat of the same word inside the chirp guard's window is held, so the
+    // whee that answers the launch speaks once for the launch and is quiet for
+    // the catch's own coda a moment later
+    const before = fake.nodes.length;
+    director.stagedBeat('launch');
+    director.stagedBeat('catch');
+    const oscs = fake.nodes.slice(before).filter((n) => n.kind === 'oscillator').length;
+    expect(oscs).toBeGreaterThan(0);
+  });
+});

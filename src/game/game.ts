@@ -13,6 +13,7 @@ import { TouchMode, readPointerEnvironment } from '@/platform/device';
 import { FaultGuard } from '@/platform/fault-guard';
 import { AdPlacement } from '@/platform/ad-placement';
 import { SdkBus } from '@/platform/sdk-bus';
+import { vibrateCharge, type VibrateFn } from '@/platform/haptics';
 import type { Settings } from '@/platform/settings';
 import { SaveStore } from '@/platform/storage';
 import { AttemptRecorder, Telemetry } from '@/platform/telemetry';
@@ -81,6 +82,8 @@ export interface GameDeps {
   sdk?: PlatformSdk;
   save?: SaveStore;
   clock?: () => Date;
+  /** The host's vibrate entry point (the game layer never reads `window` itself). */
+  nav?: VibrateFn | null;
 }
 
 /**
@@ -95,6 +98,8 @@ export class Game {
   private readonly ads: AdPlacement;
   private readonly sdk: PlatformSdk;
   private readonly clock: () => Date;
+  /** The vibrate channel for the full-charge tap; null where the host has none. */
+  private readonly nav: VibrateFn | null;
   private readonly audioEngine = new AudioEngine();
   private readonly audio = new AudioDirector(this.audioEngine);
   private readonly slowMo = new SlowMoDirector();
@@ -116,6 +121,10 @@ export class Game {
   private openerCamera = false;
   /** True while the composition scene owns the frame: no opener, no player input, pause cycles included. */
   private thumbnailActive = false;
+  /** The ident beat last spoken, so a beat fires once and never twice in a row (P-GF-06). */
+  private lastThumbBeat: 'hook' | 'launch' | 'catch' | 'settle' | null = null;
+  /** Every staged beat the audio map has been asked to speak (P-GF-06), for the browser suite. */
+  readonly stagedBeats: string[] = [];
   private renderer!: SceneRenderer;
   private contextGuard!: ContextGuard;
   private contextTimer = -1;
@@ -161,6 +170,7 @@ export class Game {
     this.exchange = new GhostExchange(this.save, (id) => this.onFriendChanged(id));
     this.sdk = deps.sdk ?? createPlatformSdk();
     this.clock = deps.clock ?? (() => new Date());
+    this.nav = deps.nav ?? (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function' ? null : navigator.vibrate.bind(navigator));
     this.bus = new SdkBus(this.sdk);
     this.ads = new AdPlacement(this.bus);
     this.telemetry = new Telemetry({
@@ -214,7 +224,12 @@ export class Game {
 
     this.opener = new Opener({
       hop: () => {
-        if (!this.settings.reducedMotion) this.renderer.attentionHop();
+        // R-AC-02 calms the travel, and with it the hop's own voice (P-GF-06):
+        // the two ride one effect, so the beat never sounds alone.
+        if (this.settings.reducedMotion) return;
+        this.renderer.attentionHop();
+        this.stagedBeats.push('hop');
+        this.audio.stagedBeat('hop');
       },
       firstCatch: () => {
         // The presentation beat halves its dive for the reduced-motion player, same law as a fall's.
@@ -532,6 +547,12 @@ export class Game {
       on('summit', (summary) => {
         this.opener.mark('clear');
         this.onSummit(summary);
+      }),
+      on('chargeLevel', (e) => {
+        // P-GF-02: only the topped-out meter taps the hand, and only where the
+        // last input was a finger — a keyboard or mouse player never meets the
+        // call, and a host without vibrate spends nothing on it.
+        if (e.level === TUNING.repel.chargeLevels && this.input.device === 'touch') vibrateCharge(this.nav);
       }),
     );
   }
@@ -1190,6 +1211,19 @@ export class Game {
     });
     if (filming) this.ui.ending.render(this.endingDirector!.frame);
 
+    // The store frame's voice beats (P-GF-06): the ident's timeline answered in
+    // the game's own event→voice map, read on every frame the stage is live.
+    if (this.thumbnailActive) {
+      const beat = this.renderer.thumbBeat;
+      if (beat && beat !== this.lastThumbBeat) {
+        this.lastThumbBeat = beat;
+        this.stagedBeats.push(beat);
+        this.audio.stagedBeat(beat);
+      }
+    } else if (this.lastThumbBeat !== null) {
+      this.lastThumbBeat = null;
+    }
+
     this.audio.update({
       running: this.phase === 'play' && sim.run.started,
       timeScale: this.slowMo.scale,
@@ -1270,6 +1304,8 @@ export class Game {
       save: this.save,
       telemetry: this.telemetry,
       openerLog: this.opener.log,
+      /** The staged voice beats the audio map has been asked to speak (P-GF-6), for the browser suite. */
+      stagedBeats: this.stagedBeats,
       slowScale: () => this.slowMo.scale,
       /** R-AU-09: the level the mix has decided on for the bed, and whether any voice may sound. */
       musicDb: () => this.audioEngine.musicTargetDb,

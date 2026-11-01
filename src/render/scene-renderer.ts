@@ -54,7 +54,7 @@ import { ThumbnailStage, cardDressProp, type ThumbnailVariant } from './thumbnai
 import { PROFILES, type QualityProfile, type QualityTier } from './quality';
 import { ResolutionGovernor, layoutStage } from './stage';
 import { Vfx } from './vfx';
-import { WindStreaks } from './wind-streaks';
+import { WindStreaks, airspeedShare } from './wind-streaks';
 
 /** MAGNO and effects are drawn just in front of the prop faces so geometry never hides them. */
 const ACTOR_Z = PROP_DEPTH / 2 + 0.2;
@@ -147,6 +147,8 @@ export class SceneRenderer {
   private beacon: Group | null = null;
   private endingStage: EndingStage | null = null;
   private thumbnail: ThumbnailStage | null = null;
+  /** The last voice beat the ident crossed on a frame; cleared when the stage is torn down. */
+  private identBeat: 'hook' | 'launch' | 'catch' | 'settle' | null = null;
   private thumbnailDress: Group | null = null;
   private dressGuideStart = -1;
   /** Light, sky and bloom lift that carries the staged catch flash onto the captured card; the shell's own flash veil is a DOM layer the capture's photo mode hides. */
@@ -167,7 +169,8 @@ export class SceneRenderer {
   private readonly glowMaterial: MeshBasicMaterial;
   private readonly tetherMaterial: MeshStandardMaterial;
   private readonly tetherGeometry = new BoxGeometry(TETHER_WIDTH, 1, TETHER_WIDTH);
-  private readonly windStreaks: WindStreaks;
+  /** The gust and flight streaks, public like the camera rig for the layers and suites that read them. */
+  readonly windStreaks: WindStreaks;
   private time = 0;
   private cssWidth = 1;
   private cssHeight = 1;
@@ -701,6 +704,7 @@ export class SceneRenderer {
   exitThumbnail(): void {
     if (!this.thumbnail) return;
     this.thumbnail = null;
+    this.identBeat = null;
     const dress = this.thumbnailDress;
     if (dress) {
       this.scene.remove(dress);
@@ -929,9 +933,17 @@ export class SceneRenderer {
     this.post.render(this.scene, camera);
   }
 
+  /** The staged beat the ident crossed on this frame, or null (P-GF-06); the audio layer names it in the game's own voices. */
+  get thumbBeat(): 'hook' | 'launch' | 'catch' | 'settle' | null {
+    return this.thumbnail && this.identBeat !== null ? this.identBeat : null;
+  }
+
   /** One staged frame of the composition scene: the stage owns camera, pose and field lines. */
   private frameThumbnail(ctx: FrameContext): void {
     const staged = this.thumbnail!.step(ctx.dt * 1000);
+    // The ident's own voice beat rides the frame (P-GF-06): spoken once, on the
+    // beat's first frame, so the store frame answers in the game's voices.
+    if (staged.beat) this.identBeat = staged.beat;
     // The ident's catch flash rides the sky grade, the key light and the bloom, decaying
     // on the shell veil's own curve: the post pipeline tone maps nothing, so the renderer's
     // exposure knob cannot reach the captured pixels.
@@ -1107,18 +1119,25 @@ export class SceneRenderer {
     }
   }
 
-  /** Streaks follow the gust the audio hears: the present push, plus the forecast so they show a moment early. */
+  /**
+   * Streaks follow the gust the audio hears — the present push plus the forecast
+   * so they show a moment early — and flight thickens them by its own ramp
+   * (P-GF-03): whichever is stronger wins, so a fast launch or a long fall lights
+   * the air even where the level has no weather at all.
+   */
   private animateWind(sim: Simulation, view: MagnoView, clockMs: number, dt: number): void {
     const wind = sim.level.wind;
-    if (!wind) return;
     const camera = this.cameraRig.camera;
     const halfH = Math.tan((camera.fov * DEG) / 2) * camera.position.z;
-    const present = Math.abs(windAcceleration(sim.level, clockMs, view.position.y)) / Math.abs(wind.strength || 1);
-    const ahead = gustForecast(sim.level, clockMs, view.position.y);
+    const gust = wind
+      ? Math.max(Math.abs(windAcceleration(sim.level, clockMs, view.position.y)) / Math.abs(wind.strength || 1), gustForecast(sim.level, clockMs, view.position.y) * 0.6)
+      : 0;
+    const flight = airspeedShare(Math.hypot(view.velocity.x, view.velocity.y));
+    const direction: 1 | -1 = wind ? (wind.strength >= 0 ? 1 : -1) : view.velocity.x >= 0 ? 1 : -1;
     this.windStreaks.update(
       dt,
       { cx: camera.position.x, cy: camera.position.y, halfW: halfH * camera.aspect, halfH },
-      { intensity: clamp(Math.max(present, ahead * 0.6), 0, 1), direction: wind.strength >= 0 ? 1 : -1 },
+      { intensity: clamp(Math.max(gust, flight), 0, 1), direction },
     );
   }
 

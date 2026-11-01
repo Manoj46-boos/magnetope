@@ -139,6 +139,7 @@ describe('the rig follows the anticipation', () => {
       grounded: false,
       chaining: false,
       dropMeters: 3,
+      snapAssist: false,
       ...extra,
     }) as MagnoView;
 

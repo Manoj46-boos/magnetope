@@ -8,6 +8,7 @@ import { MagnoRig, skinFromLook } from '@/render/magno-rig';
 import { ParticleSystem, RingPool } from '@/render/particles';
 import { PALETTES } from '@/render/palette';
 import { buildPropParts } from '@/render/prop-mesh';
+import { FieldLines } from '@/render/field-lines';
 import { layoutStage } from '@/render/stage';
 import type { MagnoView } from '@/sim/magno';
 import { createSim, makeLevel } from './helpers/harness';
@@ -81,6 +82,7 @@ const view = (overrides: Partial<MagnoView> = {}): MagnoView => ({
   grounded: false,
   chaining: false,
   dropMeters: 0,
+  snapAssist: false,
   ...overrides,
 });
 
@@ -730,5 +732,48 @@ describe('flickering signs', () => {
         }
       }
     }
+  });
+});
+
+describe('the assist telegraph on the pull beam (P-GF-04)', () => {
+  /** A view in a fall with its target picked, the way a save looks when it is being offered. */
+  const falling = (extra: Partial<MagnoView>): MagnoView =>
+    view({
+      state: 'airborne',
+      velocity: { x: 0, y: -12 },
+      snapArmed: true,
+      snapTarget: { x: 3, y: 4 },
+      ...extra,
+    });
+
+  /** The pull beam's uniforms after one settled frame: width and alpha, the two the pulse spends. */
+  const beam = (lines: FieldLines, view: MagnoView) => {
+    lines.update(view, { x: 0, y: 0 }, 0, 1 / 60);
+    const uniforms = (lines.objects[1]!.material as unknown as { uniforms: Record<string, { value: number }> }).uniforms;
+    return { width: uniforms.uWidth!.value, alpha: uniforms.uAlpha!.value };
+  };
+
+  it('breathes the beam while the widened band is open, still by half a second in', () => {
+    const lines = new FieldLines(12, 0);
+    const widths: number[] = [];
+    for (let i = 0; i < 40; i++) widths.push(beam(lines, falling({ snapAssist: true })).width);
+    // the pulse swings the beam's width through a full triangle wave: the
+    // offered window reads as breathing, not as a steady line
+    expect(Math.max(...widths)).toBeGreaterThan(Math.min(...widths) * 1.4);
+    expect(Math.max(...widths)).toBeGreaterThan(0.06);
+  });
+
+  it('holds the beam steady on the same fall when the band is closed', () => {
+    const lines = new FieldLines(12, 0);
+    const widths: number[] = [];
+    for (let i = 0; i < 40; i++) widths.push(beam(lines, falling({ snapAssist: false })).width);
+    // no target-side pulse: the widths differ only by the beam's own arc jitter
+    expect(Math.max(...widths)).toBeLessThan(Math.min(...widths) * 1.05);
+  });
+
+  it('stays quiet with no target to telegraph, whatever the band', () => {
+    const lines = new FieldLines(12, 0);
+    expect(beam(lines, falling({ snapAssist: true, snapTarget: null })).alpha).toBe(0);
+    expect(beam(lines, falling({ snapAssist: true, snapArmed: false })).alpha).toBe(0);
   });
 });

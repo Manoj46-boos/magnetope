@@ -272,6 +272,29 @@ describe('the ident timeline (R-TH-10, rebuild PRD 1.4.4)', () => {
     expect(blinks[0]!.phase).toBeGreaterThanOrEqual(IDENT_CATCH_MS + 560);
     expect(blinks[0]!.phase).toBeLessThan(IDENT_CATCH_MS + 700 + FRAME);
   });
+
+  it('names each of its four voice beats exactly once, on the beat\'s own first frame (P-GF-06)', () => {
+    const frames = identRun(IDENT_MS);
+    const beats = frames.filter(({ frame }) => frame.beat !== null);
+    expect(beats.map(({ frame }) => frame.beat)).toEqual(['hook', 'launch', 'catch', 'settle']);
+    // the hook owns its frame: the tumble-in's first step, not somewhere inside it
+    expect(beats[0]!.phase).toBeLessThanOrEqual(FRAME);
+    // the launch fires as the hook hands off, at the half-second mark
+    expect(beats[1]!.phase).toBeGreaterThanOrEqual(IDENT_HOOK_MS);
+    expect(beats[1]!.phase).toBeLessThanOrEqual(IDENT_HOOK_MS + FRAME);
+    // the catch is the flash's own frame, and the settle rides the blink
+    expect(beats[2]!.frame.flash).toBe(1);
+    expect(beats[3]!.frame.blink).toBe(true);
+  });
+
+  it('holds its silence between beats, and the still never speaks at all', () => {
+    const frames = identRun(IDENT_MS);
+    const silent = frames.filter(({ frame }) => frame.beat === null);
+    // three seconds carry four frames of speech: the rest is the composition's own quiet
+    expect(silent.length).toBe(frames.length - 4);
+    const still = new ThumbnailStage('panic-launch', false);
+    for (let i = 0; i < 10; i++) expect(still.step(FRAME).beat).toBeNull();
+  });
 });
 
 describe('staged dress props', () => {

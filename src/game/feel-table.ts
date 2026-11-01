@@ -24,7 +24,8 @@ export type GameBeatName =
   | 'retry'
   | 'ending cue'
   | 'ad break'
-  | 'reward toast';
+  | 'reward toast'
+  | 'store ident';
 
 export interface FeelRow {
   event: SimEventName | GameBeatName;
@@ -91,7 +92,7 @@ export const FEEL_ROWS: readonly FeelRow[] = [
   {
     event: 'chargeLevel',
     transition: 'attached → charging, meter crossing a segment',
-    juice: 'the meter segment punches through, the rig coils tighter, the shiver holds at full charge',
+    juice: 'the meter segment punches through, the rig coils tighter, the shiver holds at full charge; on touch the full meter also taps the hand (P-GF-02)',
     audio: ['playChargeLevel'],
     budget: 'rig only',
   },
@@ -105,7 +106,7 @@ export const FEEL_ROWS: readonly FeelRow[] = [
   {
     event: 'snapArm',
     transition: 'aim layer, no state change',
-    juice: 'the snap reticle reads the candidate; quiet by design so the engage lands',
+    juice: 'the snap reticle reads the candidate; while the widened catch band is open the pull beam pulses at 2 Hz, telegraphing the generosity (P-GF-04)',
     audio: [],
     budget: 'free',
   },
@@ -264,7 +265,7 @@ export const FEEL_GAME_BEATS: readonly FeelRow[] = [
     transition: 'first input → first catch',
     juice: 'the scripted first launch, the attention hop, the half-speed first catch, the nudge ladder — the ninety-second contract',
     audio: [],
-    budget: 'the opener owns the frame until it hands the camera back',
+    budget: 'the hop beat speaks the game\'s own impact voice (P-GF-06); the opener owns the frame until it hands the camera back',
   },
   {
     event: 'biome card',
@@ -328,5 +329,12 @@ export const FEEL_GAME_BEATS: readonly FeelRow[] = [
     juice: 'the toast names the earned look and where to wear it',
     audio: ['playTick'],
     budget: 'the toast',
+  },
+  {
+    event: 'store ident',
+    transition: 'the card timeline, beat by beat',
+    juice: 'the hook, the launch, the catch flash, the settle — the same Cooper timeline the still frame performs',
+    audio: ['playImpact', 'playRepel', 'playSnapEngage', 'playAttach'],
+    budget: 'the game\'s own event→voice map, spent on the store frame (P-GF-06)',
   },
 ];

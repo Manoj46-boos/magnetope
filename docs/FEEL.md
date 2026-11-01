@@ -14,9 +14,9 @@ MAGNO lives in five states — airborne, attached, charging, repelled, recoverin
 | --- | --- | --- | --- | --- |
 | attach | airborne → attached | squash inside 120 ms, an arrival-speed burst, the caught surface lit by a squashed cyan patch; a snap catch adds the white snap-line ring and the ident flash, then the wobble spends the flight momentum inside three cycles | playAttach, playTick | one particle burst inside the tier ceiling; rig springs, 100-230 bytes a frame |
 | detach | attached → airborne (lost, weak-failed) | nothing staged — the losing itself is the beat, and the fall tracker picks the story up | — | free |
-| chargeLevel | attached → charging, meter crossing a segment | the meter segment punches through, the rig coils tighter, the shiver holds at full charge | playChargeLevel | rig only |
+| chargeLevel | attached → charging, meter crossing a segment | the meter segment punches through, the rig coils tighter, the shiver holds at full charge; on touch the full meter also taps the hand (P-GF-02) | playChargeLevel | rig only |
 | repel | charging → repelled → airborne | full power earns the freeze: hit-stop, the camera lunge along the flight vector, the +3° lens pop, the origin burst with its white-hot core, and the rig stretching out of its coil; the charge dolly pays itself back | playRepel | the release stack: one burst, one ring, the freeze and camera springs, all inside the release frame |
-| snapArm | aim layer, no state change | the snap reticle reads the candidate; quiet by design so the engage lands | — | free |
+| snapArm | aim layer, no state change | the snap reticle reads the candidate; while the widened catch band is open the pull beam pulses at 2 Hz, telegraphing the generosity (P-GF-04) | — | free |
 | snapEngage | airborne → attached (snap) | the catch relief stack: squash, glow patch, ring, ident flash, camera settle, momentum carried through the friction ramp | playSnapEngage, playAttach | see attach; the ident veil rides ~50 ms |
 | snapWhiff | airborne, the snap spent on nothing | none stacked — a whiff must not dress itself as a catch | playSnapWhiff | free |
 | impact | any → hard landing scrambles the rig | dust at the contact, the shake grammar scaled by speed, the scramble wobble through its window | playImpact | dust burst; the freeze only if a slow-mo beat is live |
@@ -43,7 +43,7 @@ MAGNO lives in five states — airborne, attached, charging, repelled, recoverin
 | Beat | Transition | Juice stack | Audio map | Budget |
 | --- | --- | --- | --- | --- |
 | boot | cold page → world | the loading film, then the world with the opener already moving — no menu before the game | — | the opener sequence |
-| opener | first input → first catch | the scripted first launch, the attention hop, the half-speed first catch, the nudge ladder — the ninety-second contract | — | the opener owns the frame until it hands the camera back |
+| opener | first input → first catch | the scripted first launch, the attention hop, the half-speed first catch, the nudge ladder — the ninety-second contract | — | the hop beat speaks the game's own impact voice (P-GF-06); the opener owns the frame until it hands the camera back |
 | biome card | one biome → the next | the establishing shot: the hero silhouette in its sky, the name and its one-line promise | playBiomeCall | a staged beat, recorded by the ledger |
 | clear card | cleared → next level | the stamps land one by one, the par ghost verdict, the next-level path — the breathing space the ledger banks on | playStarStamp, playParCall, playGhostSet, playFanfare | the card |
 | star stamp | each earned star | the stamp punch, each star a step up the motif's own shape | playStarStamp | free |
@@ -53,6 +53,7 @@ MAGNO lives in five states — airborne, attached, charging, repelled, recoverin
 | ending cue | the film's four beats | seat, bloom, pullback, credits — the wordless homecoming | playCoreSeat, playBloomSwell, playPullbackPad, playFanfare | the film owns the frame |
 | ad break | a natural stop → the host's ad | the bed ducks before the break, breathes out so no music tail crosses it, and returns clean | setAdDuck | never mid-run |
 | reward toast | a reward path crossed | the toast names the earned look and where to wear it | playTick | the toast |
+| store ident | the card timeline, beat by beat | the hook, the launch, the catch flash, the settle — the same Cooper timeline the still frame performs | playImpact, playRepel, playSnapEngage, playAttach | the game's own event→voice map, spent on the store frame (P-GF-06) |
 
 ## The discipline
 

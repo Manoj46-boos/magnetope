@@ -51,6 +51,34 @@ describe('the release camera beats', () => {
     expect(late).toBeLessThan(0.055);
   });
 
+  it('spends the earned kick only where it was earned: the full-charge release punches a quarter deeper than the game it upgrades', () => {
+    // The measured lunge over the first frames, the same idiom the R-GF-01 law
+    // above reads: peak distance from the resting camera while the kick decays.
+    const lunge = (meters: number): number => {
+      const kicked = cameraAtRest();
+      const control = cameraAtRest();
+      kicked.kick({ x: meters, y: 0 });
+      let peak = 0;
+      for (let i = 0; i < 6; i++) {
+        stepCamera(kicked);
+        stepCamera(control);
+        peak = Math.max(peak, kicked.camera.position.distanceTo(control.camera.position));
+      }
+      return peak;
+    };
+    // What the law changed: 1.375 m of punch, read through the same decay the
+    // kick has always spent itself on, against the 1.1 m the settled game
+    // carried before P-GF-05 earned its raise.
+    const earned = lunge(1.375);
+    const settled = lunge(1.1);
+    expect(earned).toBeGreaterThan(1.0);
+    expect(earned / settled).toBeGreaterThan(1.2);
+    // The same release throws the same punch every time: the kick is spent,
+    // never banked — a third launch reads the same as the first.
+    const first = lunge(1.375);
+    expect(Math.abs(first - earned)).toBeLessThan(0.02);
+  });
+
   it('pops the lens three degrees wide and settles it back inside 400 ms (R-GF-01)', () => {
     const rig = cameraAtRest();
     rig.pop();

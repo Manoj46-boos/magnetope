@@ -179,6 +179,7 @@ export class FieldLines {
     this.beam.material.blending = fxTheme.blending;
 
     this.writeBeam(view, head);
+    this.assistTelegraph(view);
   }
 
   private writeLoops(head: Vec2, axis: number, expand: number): void {
@@ -248,6 +249,21 @@ export class FieldLines {
     (uniforms.uWidth as { value: number }).value = view.snapEngaged ? 0.05 : 0.026;
     (uniforms.uColor as { value: Color }).value.copy(fxTheme.attract);
     (uniforms.uCore as { value: Color }).value.copy(fxTheme.attractCore);
+  }
+
+  /**
+   * The assist telegraph (P-GF-04): while the widened catch band is open, the
+   * beam itself breathes — a 2 Hz triangle wave on the pull beam's width, so a
+   * player falling with the hand closed sees the save being offered. The pulse
+   * rides the beam the snap ray already draws; it is presentation, and it stops
+   * the moment the pick stops being assisted.
+   */
+  private assistTelegraph(view: MagnoView): void {
+    if (!view.snapAssist || !view.snapTarget || !(view.snapArmed || view.snapEngaged)) return;
+    const wave = 1 + 0.9 * Math.abs((((this.time * 2) % 1) - 0.5) * 2 - 1);
+    const uniforms = this.beam.material.uniforms;
+    (uniforms.uWidth as { value: number }).value *= wave;
+    (uniforms.uAlpha as { value: number }).value = Math.min(1, (uniforms.uAlpha as { value: number }).value + 0.2);
   }
 
   dispose(): void {

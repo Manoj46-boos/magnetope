@@ -94,6 +94,7 @@ const POSE: MagnoView = {
   grounded: false,
   chaining: false,
   dropMeters: 0,
+  snapAssist: false,
 };
 
 /** One pose for every branch of the arm, eye and aura logic. */

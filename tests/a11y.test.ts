@@ -95,6 +95,7 @@ describe('polarity reads by shape, not hue alone (R-AC-01)', () => {
     grounded: true,
     chaining: false,
     dropMeters: 0,
+    snapAssist: false,
   });
 
   /** Drives the loops until the shape morph settles, then measures how wide and tall the four loops stand. */

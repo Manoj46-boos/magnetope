@@ -1,6 +1,6 @@
 import { Scene } from 'three';
 import { describe, expect, it } from 'vitest';
-import { MAX_STREAKS, WindStreaks, type WindView } from '@/render/wind-streaks';
+import { MAX_STREAKS, WindStreaks, airspeedShare, type WindView } from '@/render/wind-streaks';
 
 const VIEW: WindView = { cx: 0, cy: 10, halfW: 8, halfH: 6 };
 const GALE = { intensity: 1, direction: 1 } as const;
@@ -128,6 +128,30 @@ describe('wind streaks', () => {
     streaks.setTint([0.3, 0.4, 0.5], true);
     const bright = (streaks.mesh.material as { blending: number }).blending;
     expect(dusk).not.toBe(bright);
+  });
+
+  it('ramps with airspeed: calm below 8 m/s, filling to full by 20 m/s (P-GF-03)', () => {
+    expect(airspeedShare(0)).toBe(0);
+    expect(airspeedShare(8)).toBe(0);
+    expect(airspeedShare(14)).toBeCloseTo(0.5, 5);
+    expect(airspeedShare(20)).toBe(1);
+    expect(airspeedShare(30)).toBe(1);
+    // monotone between the anchors, so no speed band lights the sky backwards
+    for (let v = 8; v <= 20; v += 0.25) {
+      expect(airspeedShare(v + 0.25)).toBeGreaterThanOrEqual(airspeedShare(v));
+    }
+  });
+
+  it('spends the airspeed ramp on the streak count, never past the 18 the budget allows', () => {
+    // the flight moment shares the gust law: 12 m/s (a half share) draws half
+    // the ceiling the same gust strength would, and the cap holds either way
+    const atShare = (intensity: number): number => {
+      const streaks = make();
+      blow(streaks, 2, { intensity, direction: 1 });
+      return streaks.alive;
+    };
+    expect(atShare(0.5)).toBe(Math.round(MAX_STREAKS * 0.5));
+    expect(atShare(1)).toBe(MAX_STREAKS);
   });
 
   it('removes itself from the scene on dispose', () => {

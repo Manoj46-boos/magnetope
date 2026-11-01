@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TouchMode, followsActivity, readPointerEnvironment, startsInTouchMode, type PointerEnvironment } from '@/platform/device';
+import { CHARGE_VIBRATE_MS, vibrateCharge, vibrateSupported, type VibrateFn } from '@/platform/haptics';
 
 /**
  * Poki forces the touch layout on tablets, but the primary player (PRD 3.3) is on a school
@@ -102,5 +103,30 @@ describe('a player on a tablet or phone', () => {
     mode.noteActivity('touch');
     mode.noteActivity('mouse');
     expect(mode.touch).toBe(true);
+  });
+});
+
+describe('the full-charge vibration cue (P-GF-02)', () => {
+  it('taps for ten milliseconds on the host that can vibrate', () => {
+    const calls: Array<number | number[]> = [];
+    const vibrate: VibrateFn = (pattern) => (calls.push(pattern), true);
+    expect(vibrateSupported(vibrate)).toBe(true);
+    expect(vibrateCharge(vibrate)).toBe(true);
+    expect(calls).toEqual([CHARGE_VIBRATE_MS]);
+    expect(CHARGE_VIBRATE_MS).toBe(10);
+  });
+
+  it('is a silent no-op where the host has no vibrate at all', () => {
+    expect(vibrateSupported(undefined)).toBe(false);
+    expect(vibrateSupported(null)).toBe(false);
+    expect(vibrateCharge(undefined)).toBe(false);
+    expect(vibrateCharge(null)).toBe(false);
+  });
+
+  it('treats a host that throws on vibrate the same as one without it', () => {
+    const vibrate: VibrateFn = () => {
+      throw new DOMException('denied', 'NotAllowedError');
+    };
+    expect(vibrateCharge(vibrate)).toBe(false);
   });
 });

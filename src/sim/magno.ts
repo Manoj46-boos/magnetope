@@ -146,6 +146,8 @@ export interface MagnoView {
   /** True when three surfaces were caught inside the chain window (drives the second music layer). */
   chaining: boolean;
   dropMeters: number;
+  /** True while the widened catch band is open (the assist telegraph, P-GF-04). */
+  snapAssist: boolean;
 }
 
 const CHAIN_WINDOW_MS = 6000;
@@ -155,6 +157,12 @@ export class MagnoController {
   readonly events = new Emitter<MagnoEvents>();
   data: MagnoData = freshData();
   private contacts: SurfaceContact[] = [];
+  /**
+   * The last pick's call on the widened catch band (P-GF-04): whether the
+   * on-ramp's save window was open the last time a target was chosen. Published
+   * in the view so the field lines can telegraph the generosity.
+   */
+  private snapAssistLive = false;
 
   constructor(private readonly physics: PhysicsWorld) {
     const p = this.physics.magnoBody.translation();
@@ -177,6 +185,7 @@ export class MagnoController {
     this.unlockRotation();
     this.data = { ...freshData(), assist: this.data.assist };
     this.data.peakY = this.physics.magnoBody.translation().y;
+    this.snapAssistLive = false;
   }
 
   /** Three snap catches inside the last six seconds; the streak ends by itself once they age out. */
@@ -212,6 +221,7 @@ export class MagnoController {
       grounded: d.grounded,
       chaining: this.chainStreak(),
       dropMeters: Math.max(0, d.peakY - t.y),
+      snapAssist: this.snapAssistLive,
     };
   }
 
@@ -600,6 +610,7 @@ export class MagnoController {
     const impactSoon =
       falling && this.physics.castDistance(pose, { x: 0, y: -1 }, Math.abs(this.physics.magnoBody.linvel().y) * 0.3 + 0.4) < Infinity;
     const assisting = d.assist && impactSoon;
+    this.snapAssistLive = assisting;
     const strength = assisting ? (this.physics.level.onRamp?.assist ?? 1) : 1;
     const coneWeight = assisting ? Math.max(0, 1 - (1 - ASSIST_CONE_WEIGHT) * strength) : 1;
     // The on-ramp's extra reach is a training wheel for saves: while flight is
@@ -638,6 +649,10 @@ export class MagnoController {
       if ((previous?.collider ?? -1) !== (s.target?.collider ?? -1)) {
         this.events.emit('snapArm', { target: s.target ? s.target.point : null });
       }
+    } else {
+      // A closed hand carries no target, so the last pick's verdict goes stale
+      // here rather than telegraphing a window that is no longer being offered.
+      this.snapAssistLive = false;
     }
 
     if (input.flipUp && s.armed) {

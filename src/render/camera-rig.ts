@@ -18,8 +18,12 @@ export type ShakeKind = keyof typeof SHAKE;
 const SHAKE_HZ = 10;
 const MAX_ROLL = 1.2 * DEG;
 
-/** Release kick (R-GF-01): the camera punches along the flight vector and gives it back well inside 300 ms. */
-const KICK_METERS = 1.1;
+/**
+ * Release kick (R-GF-01): the camera punches along the flight vector and gives it back well inside 300 ms.
+ * The full-power release spends it at its earned amplitude (P-GF-05) — 25% deeper than the settled
+ * game ever gets — because a kick that fires at every strength is shake that means nothing.
+ */
+const KICK_METERS = 1.375;
 const KICK_TAU = 0.07;
 /** Kicks and shakes keep a fifth of their amplitude under reduced motion (R-AC-02: at most 20%). */
 const REDUCED_AMPLITUDE = 0.2;
