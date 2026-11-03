@@ -1,6 +1,7 @@
 import { AudioDirector } from '@/audio/director';
 import { AudioEngine } from '@/audio/engine';
 import { COSMETICS, DEFAULT_FIELD_ID, DEFAULT_SKIN_ID, cosmeticById, gradeRank, isGrade, setOf } from '@/config/cosmetics';
+import { withMercy } from '@/config/mercy';
 import { TUNING } from '@/config/tuning';
 import { FixedStepper } from '@/core/stepper';
 import { BackGuard } from '@/input/back-button';
@@ -39,7 +40,7 @@ import { GhostExchange } from './ghost-exchange';
 import { HighlightStrip, type FallHighlight } from './highlights';
 import { FLAG, HudReveal } from './hud-reveal';
 import { claimEarned, claimSpotlight, completesSet, equip, nextDangle, purchase, unlockByReward } from './locker';
-import { buildMap, isPlayable, nextPlayableId, resumeLevelId } from './map-model';
+import { buildMap, isPlayable, nextPlayableId, nextWant, resumeLevelId } from './map-model';
 import { biomeAnnouncement, scrapForClear, totalStars } from './progress';
 import { deliverShareCard, renderDuelCard, renderShareCard, type DuelCardSpec, type ShareCardSpec } from './share-card';
 import { EndingDirector } from './ending';
@@ -140,6 +141,8 @@ export class Game {
   private lastStamp = 0;
   private rafId = 0;
   private consecutiveFalls = 0;
+  /** P-LD-05: consecutive failed attempts at the current level; the mercy's own streak, spent by startLevel, zeroed by a clear. */
+  private mercyStreak = 0;
   private clearTimer = -1;
   private lastClear: { summary: RunSummary; levelId: string; scrap: number; doubled: boolean; friend: FriendRun | null; deltaAtFlip: number | null } | null = null;
   private lastFall: FallHighlight | null = null;
@@ -420,7 +423,12 @@ export class Game {
 
   private startLevel(id: string): void {
     this.teardownSim();
-    const level = levelById(id);
+    const shipped = levelById(id);
+    // P-LD-05: the attempt plays the level widened by the mercy its streak has
+    // earned, inside the on-ramp only; past ten the shipped level is what plays.
+    if (id !== this.currentLevelId) this.mercyStreak = 0;
+    const level = withMercy(shipped, this.mercyStreak);
+    if (level !== shipped) this.telemetry.record('mercy', id, String(this.mercyStreak));
     this.currentLevelId = id;
     const sim = new Simulation(this.rapier, level);
     this.sim = sim;
@@ -562,6 +570,7 @@ export class Game {
   private onFall(sim: Simulation, report: FallReport): void {
     this.slowMo.release();
     this.consecutiveFalls++;
+    this.mercyStreak++;
     if (this.practiceFall) {
       this.practiceFall = false;
       // P-FT-07: the session-0 funnel's delight checkpoint — the first fall went
@@ -642,6 +651,10 @@ export class Game {
     if (award.amount > 0) this.telemetry.record('scrap', 'earn', String(award.amount));
     this.lastClear = { summary, levelId: id, scrap: award.amount, doubled: false, friend, deltaAtFlip };
     this.consecutiveFalls = 0;
+    // P-LD-05's taper-back: the clear zeroes the mercy streak, so the next
+    // level's first attempt plays at the ramp's own strength — mercy never
+    // becomes the norm, and a level that cleared on mercy does not carry it forward.
+    this.mercyStreak = 0;
     this.attempts.finish('clear', summary.clearTimeMs, summary.stars);
     this.landscapeHint.reset();
     // R-RT-04: the session's own tally, read back at the natural break.
@@ -675,6 +688,11 @@ export class Game {
     // R-EC-04: the next unlock, rotating; the dangle reader's own numerator (R-AN-04).
     const dangle = nextDangle(this.save.data, this.clock(), this.sessionLog.clearCount);
     if (dangle) this.telemetry.record('dangle', dangle.id, 'shown');
+    // P-LD-06: no clear card is ever terminal — when the shelf is empty the
+    // card dangles the next want anyway: the star gate being climbed, then
+    // the ghost still standing. Only the ending's card is allowed to want
+    // nothing, and that card is the film.
+    const want = nextWant(ALL_LEVELS, this.save.data, dangle ? { name: dangle.name, scrapToGo: dangle.scrapToGo } : null);
     this.phase = 'cleared';
     this.ui.hideFall();
     this.ui.showClear({
@@ -702,6 +720,7 @@ export class Game {
       // R-RT-07: the player's own ghost, at the flip; R-EC-04: the next unlock, rotating.
       ghostDelta: clear.deltaAtFlip !== null ? { aheadMs: Math.round(clear.deltaAtFlip) } : null,
       dangle,
+      want,
     });
     this.claimRewards();
     this.flushTelemetry();

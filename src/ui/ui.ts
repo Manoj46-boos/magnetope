@@ -2,6 +2,7 @@ import type { InputManager } from '@/input/input';
 import { LOCALES, pageLang, t, tf, tn, PSEUDO_ID, type LocaleId, type StringKey } from '@/locale';
 import { DEFAULT_SETTINGS, type Settings } from '@/platform/settings';
 import { formatTime } from '@/game/progress';
+import type { Want } from '@/game/map-model';
 import { BiomeBanner } from './banner';
 import { LandscapeChip } from './landscape-chip';
 import { CoachOverlay } from './coach-overlay';
@@ -58,6 +59,9 @@ export interface ClearCardData {
   ghostDelta: { aheadMs: number } | null;
   /** The next visible unlock, nearest first and rotating (R-EC-04). */
   dangle: { name: string; scrapToGo: number } | null;
+  /** P-LD-06: what the card dangles when the shelf is empty — the gate, then
+   * the ghost — so no clear card is ever terminal. */
+  want: Want | null;
 }
 
 export interface FallCardData {
@@ -464,6 +468,7 @@ export class GameUi {
       ${data.friend ? `<p class="duel-tag ${data.friend.beaten ? 'won' : ''}">${esc(this.duelLine(data.friend))}</p>` : ''}
       ${data.ghostDelta ? `<p class="ghost-tag ${data.ghostDelta.aheadMs >= 0 ? 'ahead' : ''}">${esc(this.ghostLine(data.ghostDelta))}</p>` : ''}
       ${data.dangle ? `<p class="dangle-tag">${esc(this.dangleLine(data.dangle))}</p>` : ''}
+      ${!data.dangle && data.want ? `<p class="dangle-tag">${esc(this.wantLine(data.want))}</p>` : ''}
       <div class="banner">${t('levelClear')}</div>
       <div class="stars">${[0, 1, 2].map(() => `<div class="slot">${ICONS.starOutline}</div>`).join('')}</div>
       <div class="facts">
@@ -524,6 +529,16 @@ export class GameUi {
   /** R-EC-04: the dangle, in the locale's own grouping so the Scrap stays neutral (R-EC-12). */
   private dangleLine(dangle: NonNullable<ClearCardData['dangle']>): string {
     return dangle.scrapToGo === 0 ? tf('dangleReady', { n: dangle.name }) : tf('dangleAway', { n: dangle.name, s: tn(dangle.scrapToGo) });
+  }
+
+  /**
+   * P-LD-06: the want the card dangles when the shelf has nothing — the star
+   * gate being climbed, then the ghost still standing — in the locale's own
+   * grouping, the same line-class the dangle speaks.
+   */
+  private wantLine(want: NonNullable<ClearCardData['want']>): string {
+    if (want.kind === 'star-gate') return tf('wantGate', { n: want.name, s: tn(want.toGo) });
+    return tf('wantGhost', { n: want.name });
   }
 
   hideClear(): void {

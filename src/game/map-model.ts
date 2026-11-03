@@ -93,3 +93,37 @@ export function nextPlayableId(levels: readonly LevelDef[], save: MapSave, curre
   const next = ordered[index + 1];
   return next && next.state !== 'locked' ? next.id : null;
 }
+
+/** One want the clear card can dangle, whatever the shelf is doing (P-LD-06). */
+export interface Want {
+  /** The line's own key, so the locale can speak it and the UI never guesses. */
+  kind: 'shelf' | 'star-gate' | 'ghost-chase';
+  /** The want's own name: the look, the biome, or the level. */
+  name: string;
+  /** The number the line counts to: scrap to go, stars to go, or the ghost's own margin. */
+  toGo: number;
+}
+
+/**
+ * The clear card's own law (P-LD-06): no clear card is ever terminal. The
+ * shelf's dangle leads; when the shelf is empty the card dangles the next
+ * want anyway — the star gate the player is climbing toward, and past the
+ * last gate, the ghost still standing on a level they have already cleared.
+ * Only the ending, whose card is the film, has nothing left to want.
+ */
+export function nextWant(
+  levels: readonly LevelDef[],
+  save: MapSave,
+  shelf: { name: string; scrapToGo: number } | null,
+): Want | null {
+  if (shelf) return { kind: 'shelf', name: shelf.name, toGo: shelf.scrapToGo };
+  const biomes = buildMap(levels, save);
+  const gate = biomes.find((b) => !b.unlocked && b.starsToGo > 0);
+  if (gate) return { kind: 'star-gate', name: BIOME_NAMES[gate.id], toGo: gate.starsToGo };
+  const ghost = biomes
+    .flatMap((b) => b.nodes)
+    .filter((n) => n.state === 'cleared' && !n.hasGhost)
+    .sort((a, b) => a.index - b.index)[0];
+  if (ghost) return { kind: 'ghost-chase', name: ghost.name, toGo: 0 };
+  return null;
+}
