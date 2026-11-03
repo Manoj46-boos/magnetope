@@ -83,17 +83,19 @@
     ]
   },
   "scrapyard-06": {
-    "clearSeconds": 12.4,
-    "macros": 6,
-    "slipRate": 0.78,
-    "worstHop": 0.54,
+    "clearSeconds": 15.8,
+    "macros": 8,
+    "slipRate": 0.36,
+    "worstHop": 0.79,
     "perHop": [
-      0.79,
-      0.79,
-      0.54,
-      0.88,
       1,
-      0.75
+      0.96,
+      1,
+      1,
+      0.79,
+      0.96,
+      1,
+      0.88
     ]
   },
   "scrapyard-07": {
@@ -208,23 +210,21 @@
     ]
   },
   "suburbia-01": {
-    "clearSeconds": 19.5,
-    "macros": 12,
-    "slipRate": 0.23,
-    "worstHop": 0.83,
+    "clearSeconds": 17.1,
+    "macros": 10,
+    "slipRate": 0.4,
+    "worstHop": 0.75,
     "perHop": [
       1,
       1,
       1,
+      0.88,
       1,
       1,
+      0.92,
       1,
-      0.96,
       1,
-      1,
-      0.83,
-      1,
-      0.96
+      0.75
     ]
   },
   "suburbia-02": {
@@ -458,23 +458,24 @@
     ]
   },
   "suburbia-14": {
-    "clearSeconds": 25.5,
-    "macros": 12,
-    "slipRate": 0.34,
-    "worstHop": 0.75,
+    "clearSeconds": 25.3,
+    "macros": 13,
+    "slipRate": 0.23,
+    "worstHop": 0.83,
     "perHop": [
-      1,
-      1,
-      1,
-      0.75,
-      1,
-      1,
-      0.96,
       0.96,
       1,
       1,
+      0.96,
       1,
-      0.96
+      1,
+      0.83,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
     ]
   },
   "metropolis-01": {
@@ -741,18 +742,19 @@
     ]
   },
   "playground-03": {
-    "clearSeconds": 19.4,
-    "macros": 7,
-    "slipRate": 0.84,
-    "worstHop": 0.29,
+    "clearSeconds": 16.5,
+    "macros": 8,
+    "slipRate": 0.61,
+    "worstHop": 0.63,
     "perHop": [
       1,
       1,
       0.96,
       1,
-      0.29,
-      0.96,
-      0.58
+      0.63,
+      0.92,
+      1,
+      0.71
     ]
   },
   "playground-04": {
@@ -842,10 +844,10 @@
     ]
   },
   "playground-08": {
-    "clearSeconds": 48.7,
-    "macros": 25,
-    "slipRate": 0.87,
-    "worstHop": 0.67,
+    "clearSeconds": 44.5,
+    "macros": 23,
+    "slipRate": 0.9,
+    "worstHop": 0.54,
     "perHop": [
       1,
       1,
@@ -853,67 +855,65 @@
       1,
       1,
       1,
-      0.96,
-      1,
-      0.67,
-      0.79,
-      0.67,
-      0.96,
-      1,
-      0.96,
+      0.88,
       1,
       0.88,
       1,
+      0.67,
       1,
-      0.79,
       1,
       1,
-      0.75,
-      0.96,
-      0.88,
+      1,
+      0.63,
+      1,
+      0.54,
+      0.83,
+      1,
+      1,
+      0.67,
       1
     ]
   },
   "playground-09": {
-    "clearSeconds": 31.7,
-    "macros": 17,
-    "slipRate": 0.93,
-    "worstHop": 0.58,
+    "clearSeconds": 28.4,
+    "macros": 16,
+    "slipRate": 0.9,
+    "worstHop": 0.54,
     "perHop": [
       1,
       1,
-      0.75,
-      1,
-      0.58,
-      1,
-      1,
-      0.75,
-      1,
-      1,
+      0.67,
       1,
       0.71,
-      0.75,
+      0.83,
+      0.79,
+      0.71,
       1,
+      0.92,
+      0.96,
       1,
-      0.58,
-      0.71
+      0.92,
+      1,
+      0.54,
+      1
     ]
   },
   "playground-10": {
-    "clearSeconds": 28.8,
-    "macros": 10,
-    "slipRate": 0.82,
-    "worstHop": 0.46,
+    "clearSeconds": 26.8,
+    "macros": 11,
+    "slipRate": 0.23,
+    "worstHop": 0.88,
     "perHop": [
       1,
       1,
       1,
-      0.79,
       0.88,
-      0.71,
-      0.46,
       1,
-      0.79,
+      0.96,
+      1,
+      0.92,
+      1,
+      1,
       1
     ]
   },
@@ -936,10 +936,10 @@
     ]
   },
   "playground-12": {
-    "clearSeconds": 31.4,
-    "macros": 16,
-    "slipRate": 0.88,
-    "worstHop": 0.63,
+    "clearSeconds": 22.8,
+    "macros": 11,
+    "slipRate": 0.71,
+    "worstHop": 0.5,
     "perHop": [
       1,
       1,
@@ -947,15 +947,10 @@
       0.92,
       1,
       1,
-      1,
-      0.75,
-      1,
-      0.71,
-      1,
-      0.75,
-      0.63,
-      0.71,
+      0.83,
       0.79,
+      1,
+      0.5,
       0.96
     ]
   },
@@ -986,10 +981,10 @@
     ]
   },
   "playground-14": {
-    "clearSeconds": 32.6,
-    "macros": 17,
-    "slipRate": 0.76,
-    "worstHop": 0.54,
+    "clearSeconds": 41.3,
+    "macros": 20,
+    "slipRate": 0.59,
+    "worstHop": 0.71,
     "perHop": [
       1,
       1,
@@ -998,14 +993,17 @@
       1,
       1,
       1,
-      0.92,
+      0.96,
       1,
       1,
-      0.54,
+      0.83,
+      0.83,
       1,
       0.88,
-      0.92,
-      0.83,
+      1,
+      1,
+      1,
+      1,
       1,
       1
     ]
@@ -1049,35 +1047,33 @@
     ]
   },
   "stratosphere-03": {
-    "clearSeconds": 21.6,
-    "macros": 9,
-    "slipRate": 0.75,
-    "worstHop": 0.5,
+    "clearSeconds": 16.2,
+    "macros": 6,
+    "slipRate": 0.73,
+    "worstHop": 0.33,
     "perHop": [
       1,
       1,
+      0.88,
       1,
-      1,
-      1,
-      0.5,
-      1,
-      1,
-      0.5
+      0.33,
+      0.92
     ]
   },
   "stratosphere-04": {
-    "clearSeconds": 23.2,
-    "macros": 7,
-    "slipRate": 0.81,
-    "worstHop": 0.58,
+    "clearSeconds": 26.2,
+    "macros": 8,
+    "slipRate": 0.41,
+    "worstHop": 0.67,
     "perHop": [
-      0.88,
       0.96,
-      0.71,
       1,
-      0.88,
-      0.58,
-      0.63
+      0.92,
+      1,
+      1,
+      1,
+      0.67,
+      1
     ]
   },
   "stratosphere-05": {
@@ -1181,10 +1177,10 @@
     ]
   },
   "stratosphere-10": {
-    "clearSeconds": 33.8,
-    "macros": 15,
-    "slipRate": 0.86,
-    "worstHop": 0.38,
+    "clearSeconds": 29.4,
+    "macros": 12,
+    "slipRate": 0.68,
+    "worstHop": 0.71,
     "perHop": [
       0.88,
       1,
@@ -1192,15 +1188,12 @@
       1,
       1,
       1,
-      0.75,
-      0.96,
+      0.71,
       1,
-      0.38,
       1,
-      0.88,
+      1,
       0.79,
-      1,
-      1
+      0.75
     ]
   },
   "stratosphere-11": {

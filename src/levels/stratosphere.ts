@@ -141,7 +141,9 @@ const dishArray = defineLevel({
   name: 'Dish Array',
   parSeconds: 100,
   gravityScale: 0.58,
-  wind: { strength: 1.4, gustPeriod: 7, fromY: 8 },
+  // P-LD-01 retune: the array's gusts breathe on a 9-second period at 1.2 —
+  // the same weather, read for longer, so the dish hops meet their wing.
+  wind: { strength: 1.2, gustPeriod: 9, fromY: 8 },
   bounds: { minX: -22, maxX: 22 },
   summit: { x: 0, y: 58.4 },
   checkpoints: [{ x: -4.7, y: 27.8 }],
@@ -171,13 +173,16 @@ const debrisField = defineLevel({
   props: [
     ...shaft(9, 90),
     pod('R', 2.6, 9),
-    drift(-3.6, 14.0, 7.2, 9),
-    drift(3.6, 25.5, -7.2, 9, 0.4),
-    drift(-3.6, 37.0, 7.2, 9, 0.2),
+    // P-LD-01 retune: the debris crosses on an 11-second drift, not a 9 —
+    // the same travel, read for longer, so a par player's hop meets the
+    // plate where it is, not where it was.
+    drift(-3.6, 14.0, 7.2, 11),
+    drift(3.6, 25.5, -7.2, 11, 0.4),
+    drift(-3.6, 37.0, 7.2, 11, 0.2),
     wing('L', 43.0, 9),
-    drift(3.6, 54.0, -7.2, 9, 0.6),
-    drift(-3.6, 65.0, 7.2, 9),
-    drift(3.6, 76.0, -7.2, 9, 0.3),
+    drift(3.6, 54.0, -7.2, 11, 0.6),
+    drift(-3.6, 65.0, 7.2, 11),
+    drift(3.6, 76.0, -7.2, 11, 0.3),
     wing('R', 83.0, 9),
   ],
 });
@@ -342,13 +347,16 @@ const solarStorm = defineLevel({
   props: [
     ...shaft(10, 104),
     wing('L', 2.6, 10),
-    ...orbiter(0, 14.0, 12),
-    ...orbiter(0, 26.0, 12, 0.5, true),
+    // P-LD-01 retune: the storm's panels ride a 13-second arm, not a 12 —
+    // the panel spends longer inside reach, the wind keeps its voice, and
+    // the route the planner settles on clears inside the worst-case line.
+    ...orbiter(0, 14.0, 13),
+    ...orbiter(0, 26.0, 13, 0.5, true),
     wing('R', 36.0, 10),
-    ...orbiter(0, 48.0, 12, 0.25, true),
-    ...orbiter(0, 60.0, 12, 0.75),
+    ...orbiter(0, 48.0, 13, 0.25, true),
+    ...orbiter(0, 60.0, 13, 0.75),
     wing('L', 70.0, 10),
-    ...orbiter(0, 82.0, 12, 0.1),
+    ...orbiter(0, 82.0, 13, 0.1),
     wing('R', 97.0, 10),
   ],
 });

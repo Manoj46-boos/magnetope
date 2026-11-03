@@ -94,6 +94,11 @@ const frontYard = defineLevel({
   checkpoints: [{ x: 4.8, y: 15 }],
   props: [
     ...yard(5.2, 35, 201),
+    // P-LD-02: the biome's signature material framed on the first camera
+    // frame — a trampoline under the spawn's own sightline, whose first use
+    // is the fall it forgives, guaranteed by the physics it rides.
+    net('L', 3.2, 5.2),
+    net('R', 8.4, 5.2),
     shed('L', 2.6, 5.2),
     shed('R', 10.8, 5.2),
     shed('L', 19.0, 5.2),
@@ -370,14 +375,18 @@ const culDeSac = defineLevel({
   checkpoints: [{ x: -0.4, y: 17 }, { x: -2.7, y: 33 }],
   props: [
     ...yard(6.6, 54, 214),
+    // P-LD-01 retune, taken back to a step: the doors ride an 11-second lift,
+    // the same rise read a beat longer, and the net under the gutter is a
+    // hair wider — the set-piece stays the biome's hardest single level while
+    // sitting under the opener, where the law spends its generosity.
     shed('L', 3.0, 6.6),
-    garageLift('R', 5.8, 6.6, 5.6, 10),
-    net('L', 11.6, 6.6, 3.2),
+    garageLift('R', 5.8, 6.6, 5.6, 11),
+    net('L', 11.6, 6.6, 3.4),
     gutter('L', 17.8, 6.6),
     swingPlate(2.0, 22.0, 4.4),
     shed('R', 28.0, 6.6),
     dish('L', 33.0, 6.6),
-    garageLift('R', 33.4, 6.6, 5.6, 10, 0.5),
+    garageLift('R', 33.4, 6.6, 5.6, 11, 0.5),
     shed('L', 40.0, 6.6),
     gutter('R', 45.4, 6.6),
   ],

@@ -255,12 +255,16 @@ const crane = defineLevel({
     halfWidth: 6.0,
     height: 34,
     floors: [
-      { y: 4.6, side: 'L', len: 5.6 },
-      { y: 9.2, side: 'R', len: 5.6, kind: 'tire' },
-      { y: 13.8, side: 'L', len: 5.6 },
-      { y: 18.4, side: 'R', len: 5.0, kind: 'sheet' },
-      { y: 23.0, side: 'L', len: 5.6, kind: 'tire' },
-      { y: 27.4, side: 'R', len: 5.6 },
+      // P-LD-01 retune: the floors run longer in from their wall (5.6 -> 6.8),
+      // so each hop lands on a wider face instead of threading a shaft-width
+      // gap; the climb keeps its alternation, the sheet still crumbles, and
+      // the no-shortcut laws still hold — the summit is not one flip away.
+      { y: 4.6, side: 'L', len: 6.8 },
+      { y: 9.2, side: 'R', len: 6.8, kind: 'tire' },
+      { y: 13.8, side: 'L', len: 6.8 },
+      { y: 18.4, side: 'R', len: 6.2, kind: 'sheet' },
+      { y: 23.0, side: 'L', len: 6.8, kind: 'tire' },
+      { y: 27.4, side: 'R', len: 6.8 },
     ],
     extras: [p.car(-3.4, 0.8), p.crate(4.0, 1.0)],
   }),

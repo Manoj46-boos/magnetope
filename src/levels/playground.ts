@@ -157,13 +157,15 @@ const seesawRidge = defineLevel({
     ...court(7.5, 62),
     pit('R', 0.6, 7.5),
     bars('L', 2.6, 7.5),
+    // P-LD-01 retune: the ridge's see-saws step 5.8 apart, not 6.8 — every
+    // hop is a shorter arc onto a wider stance, and the ride still tips.
     p.seesaw(1.6, 9.2),
-    p.seesaw(-1.6, 16.0),
-    p.seesaw(1.6, 22.8),
+    p.seesaw(-1.6, 15.0),
+    p.seesaw(1.6, 20.8),
     bars('R', 29.0, 7.5),
-    p.seesaw(-1.6, 35.6),
-    p.seesaw(1.6, 42.4),
-    p.seesaw(-1.6, 49.2),
+    p.seesaw(-1.6, 33.8),
+    p.seesaw(1.6, 39.6),
+    p.seesaw(-1.6, 45.4),
     bars('L', 55.6, 7.5),
   ],
 });
@@ -275,10 +277,13 @@ const twinWheels = defineLevel({
     pit('L', 0.6, 10),
     bars('L', 2.6, 10),
     bars('R', 8.2, 10),
-    ...p.drivenWheel(0, 22, 'low'),
+    // P-LD-01 retune: the wheels carry their spokes 5.4 out, not 4.6 — a
+    // longer spoke is a wider stance to land on, the climb between the bars
+    // stays the same, and the wheel's own spin is untouched.
+    ...p.drivenWheel(0, 22, 'low', 5.4),
     bars('L', 36.0, 10),
     bars('R', 41.6, 10),
-    ...p.drivenWheel(0, 56, 'high'),
+    ...p.drivenWheel(0, 56, 'high', 5.4),
     bars('L', 70.0, 10),
     bars('R', 75.6, 10),
   ],
@@ -296,13 +301,16 @@ const swingRelay = defineLevel({
     ...court(7.5, 76),
     pit('R', 0.6, 7.5),
     bars('L', 2.6, 7.5),
-    ...swing('R', 13.6, 7.5, 2.0, 3.4),
-    ...swing('L', 22.0, 7.5, -2.0, 3.4),
-    ...swing('R', 30.4, 7.5, 2.0, 3.4),
+    // P-LD-01 retune: the relay's seats hang 2.5 under their beams, not 3.4 —
+    // the swing itself keeps its rhythm, the hop to the seat is the shorter
+    // arc the three-attempt law asks a par player to make.
+    ...swing('R', 13.6, 7.5, 2.0),
+    ...swing('L', 22.0, 7.5, -2.0),
+    ...swing('R', 30.4, 7.5, 2.0),
     bars('L', 36.6, 7.5),
-    ...swing('R', 47.6, 7.5, 2.0, 3.4),
-    ...swing('L', 56.0, 7.5, -2.0, 3.4),
-    ...swing('R', 64.4, 7.5, 2.0, 3.4),
+    ...swing('R', 47.6, 7.5, 2.0),
+    ...swing('L', 56.0, 7.5, -2.0),
+    ...swing('R', 64.4, 7.5, 2.0),
     bars('L', 70.0, 7.5),
   ],
 });
@@ -319,16 +327,18 @@ const seesawStairs = defineLevel({
     ...court(8, 70),
     pit('L', 0.6, 8),
     bars('L', 2.6, 8),
+    // P-LD-01 retune: the stairs step 5.8 apart, not 6.8 — the slide reads
+    // the same, the see-saws sit closer under it, and the summit stands.
     p.seesaw(1.6, 9.0),
     slide('L', 14.6, 8),
-    p.seesaw(-1.6, 20.4),
-    p.seesaw(1.6, 26.8),
-    board('R', 32.0, 8),
-    p.seesaw(-1.6, 38.6),
-    slide('R', 44.2, 8),
-    p.seesaw(1.6, 50.0),
-    p.seesaw(-1.6, 56.4),
-    bars('L', 62.6, 8),
+    p.seesaw(-1.6, 19.6),
+    p.seesaw(1.6, 24.6),
+    board('R', 31.4, 8),
+    p.seesaw(-1.6, 36.4),
+    slide('R', 41.4, 8),
+    p.seesaw(1.6, 46.4),
+    p.seesaw(-1.6, 51.4),
+    bars('L', 60.4, 8),
   ],
 });
 
@@ -370,16 +380,20 @@ const slideSpiral = defineLevel({
     ...court(7.5, 68),
     pit('R', 0.6, 7.5),
     bars('L', 2.6, 7.5),
+    // P-LD-01 retune: the spiral's slides and its board step 5.4 apart, not
+    // 5.4-7.4 mixed — one shorter arc a hop, the carousel keeps its spin. The
+    // mid-spiral slide keeps its shipped 44.0: cp1 rides that slope's own
+    // face, and a checkpoint stands on whatever the level has there.
     slide('R', 8.0, 7.5),
     slide('L', 13.4, 7.5),
     slide('R', 18.8, 7.5),
     bars('L', 24.4, 7.5),
     carousel(-1.6, 33.0, 8),
-    slide('R', 38.6, 7.5),
+    slide('R', 37.4, 7.5),
     slide('L', 44.0, 7.5),
-    board('R', 49.8, 7.5),
-    p.seesaw(1.6, 56.0),
-    bars('L', 61.8, 7.5),
+    board('R', 48.2, 7.5),
+    p.seesaw(1.6, 53.6),
+    bars('L', 59.0, 7.5),
   ],
 });
 
@@ -424,14 +438,17 @@ const bigTop = defineLevel({
     bars('L', 2.6, 11),
     slide('R', 8.4, 11),
     bars('L', 14.0, 11),
-    ...wheel(0, 26.0, 4.6, 14),
+    // P-LD-01 retune: the big top's wheel carries its spokes 5.2 out and its
+    // seat hangs 2.6 under the beam — the set-piece keeps its shape, its
+    // stances widen.
+    ...wheel(0, 26.0, 5.2, 14),
     bars('R', 40.0, 11),
-    ...swing('L', 47.0, 11, -2.4, 3.2),
+    ...swing('L', 47.0, 11, -2.4, 2.6),
     p.seesaw(2.4, 53.4),
     carousel(-2.0, 61.0, 8, 0.5, true),
     carousel(2.0, 66.4, 8),
     bars('L', 72.0, 11),
-    ...wheel(0, 84.0, 4.6, 12, 0.25, true),
+    ...wheel(0, 84.0, 5.2, 12, 0.25, true),
     bars('R', 90.4, 11),
   ],
 });
