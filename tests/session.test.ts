@@ -181,9 +181,73 @@ describe('a first session in a real browser', () => {
     // a stored ghost means the run went on record, and the channel says so too
     const ghosts = await page!.evaluate(() => Object.keys((window as unknown as GameWindow).__game.debug.save.data.ghosts));
     expect(measured.some((r) => r.category === 'ghost' && r.action === 'set')).toBe(ghosts.length > 0);
+    // P-AN-02's own four: the practice fall's grade, the visit's orientation,
+    // the on-ramp's assist, and the taken click through the card
+    expect(measured.some((r) => r.category === 'fall' && r.what === 'first' && r.action === 'graded')).toBe(true);
+    expect(measured.some((r) => r.category === 'orientation' && (r.what === 'portrait' || r.what === 'landscape') && r.action === 'session')).toBe(true);
+    expect(measured.some((r) => r.category === 'assist' && r.what === 'scrapyard-00' && /^\d+(\.\d+)?$/.test(r.action))).toBe(true);
+    expect(measured.some((r) => r.category === 'dangle' && r.action === 'taken')).toBe(true);
     // nothing the game said falls outside the published vocabulary (R-AN-01)
-    const vocabulary = ['level', 'retry', 'fall', 'attempt', 'stars', 'time', 'fallcount', 'session', 'ending', 'boot', 'input', 'ghost', 'cosmetic', 'scrap', 'dangle', 'watchdog', 'perf'];
+    const vocabulary = ['level', 'retry', 'fall', 'attempt', 'stars', 'time', 'fallcount', 'session', 'ending', 'boot', 'input', 'ghost', 'cosmetic', 'scrap', 'dangle', 'mercy', 'assist', 'orientation', 'watchdog', 'perf'];
     for (const record of measured) expect(vocabulary, `${record.category}/${record.what} is not in the table`).toContain(record.category);
+    // the channel's own alphabet, as the platform's validator spells it
+    for (const record of measured) expect(`${record.category}/${record.what}/${record.action}`, 'the alphabet allows letters digits _ : . + | and spaces').toMatch(/^[a-zA-Z0-9_:.+|/ -]*$/);
+    // and its two-number budget: at most two runs of digits per record
+    for (const record of measured) expect((record.action.match(/\d+/g) ?? []).length, `${record.category}/${record.what} carries too many numbers`).toBeLessThan(3);
+  });
+
+  runnable('speaks the opening orientation with the boot label, and only a real turn says more (P-AN-02, P-MO-01)', async () => {
+    // The visit opened landscape in this 480x270 context, so the record spoken
+    // with the boot label said so, right behind the boot record itself. No
+    // further record arrives without a real turn of the screen; the flip's own
+    // proof is a device-leg number (P-MO-07), where a real viewport turns.
+    const measured = await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.sdk.measured);
+    const bootAt = measured.findIndex((r) => r.category === 'boot');
+    const orientation = measured.find((r) => r.category === 'orientation');
+    expect(orientation).toBeDefined();
+    expect(measured[bootAt + 1]).toBe(orientation);
+    expect(orientation!.what).toBe('landscape');
+    expect(orientation!.action).toBe('session');
+    expect(measured.filter((r) => r.category === 'orientation').length).toBe(1);
+  });
+
+  runnable('speaks one assist record per on-ramp attempt, on the channel (P-LD-05, P-AN-02)', async () => {
+    // The assist record is the Friday report's own witness to which attempt
+    // played which window. The mercy's arithmetic is held end-to-end by the
+    // mercy suite on the real sim; what only this page can prove is that the
+    // channel carries it. The record rides the queue to the next natural
+    // stop, the way the flush law publishes everything — so the case plays a
+    // real run through to its clear card, whose present-flush is the stop.
+    const count = () => page!.evaluate(() => (window as unknown as GameWindow).__game.debug.sdk.measured.filter((r) => r.category === 'assist' && r.what === 'scrapyard-00').length);
+    const outcome = await play('scrapyard-00');
+    expect(outcome.phase).toBe('cleared');
+    // One record for the attempt just played; earlier visits' records for this
+    // level are whatever they were — the case counts only this one's own.
+    const after = await count();
+    expect(after).toBeGreaterThanOrEqual(1);
+    const record = await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.sdk.measured.filter((r) => r.category === 'assist' && r.what === 'scrapyard-00').at(-1));
+    expect(Number(record!.action)).toBeGreaterThan(0);
+  });
+
+  runnable("counts the dangle's conversion from the card's own clicks (P-AN-02, R-AN-04)", async () => {
+    // The taken record is the player signing the want: the card shows a
+    // dangle, the Next click carries them through, and the channel says so —
+    // the exact pair the Friday report's dangle reader reads. The click's
+    // record rides the queue to the next natural stop, so the case clears
+    // the level the click carried them to; that clear's flush publishes it.
+    await play('scrapyard-01');
+    const card = page!.locator('.clear-card');
+    await card.waitFor({ state: 'visible' });
+    const shown = await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.sdk.measured.filter((r) => r.category === 'dangle').filter((r) => r.action === 'shown').at(-1));
+    expect(shown).toBeDefined();
+    const takenBefore = await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.sdk.measured.filter((r) => r.category === 'dangle' && r.action === 'taken').length);
+    await card.locator('.btn.primary').click();
+    await page!.waitForFunction(() => (window as unknown as GameWindow).__game.debug.phase === 'play');
+    const outcome = await play('scrapyard-02');
+    expect(outcome.phase).toBe('cleared');
+    const taken = await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.sdk.measured.filter((r) => r.category === 'dangle' && r.action === 'taken'));
+    expect(taken.length).toBe(takenBefore + 1);
+    expect(taken.at(-1)!.what).toBe(shown!.what);
   });
 
   runnable('remembers the stars after a reload', async () => {

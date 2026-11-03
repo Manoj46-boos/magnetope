@@ -133,7 +133,7 @@ describe('the economy (R-EC-07)', () => {
 });
 
 describe('the event vocabulary (R-AN-01)', () => {
-  const CATEGORIES = new Set(['level', 'retry', 'fall', 'attempt', 'stars', 'time', 'fallcount', 'session', 'ending', 'boot', 'input', 'ghost', 'cosmetic', 'scrap', 'dangle', 'mercy', 'watchdog', 'perf']);
+  const CATEGORIES = new Set(['level', 'retry', 'fall', 'attempt', 'stars', 'time', 'fallcount', 'session', 'ending', 'boot', 'input', 'ghost', 'cosmetic', 'scrap', 'dangle', 'mercy', 'assist', 'orientation', 'watchdog', 'perf']);
   const sourceFiles = (): string[] => {
     const walk = (dir: string): string[] =>
       readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

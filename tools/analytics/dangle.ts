@@ -4,7 +4,10 @@ import type { TelemetryRecord } from '@/platform/telemetry';
  * The dangle-choice reader (premium PRD R-AN-04): of the looks the clear card
  * named, how many were later taken — in the same visit or a later one. The
  * stream's own order is the only witness; no look is counted converted by an
- * unlock that happened before it was ever dangled.
+ * unlock that happened before it was ever dangled. A taken click through the
+ * card (P-AN-02) is the conversion the player signed themselves; the unlock
+ * stays the fallback witness, so streams recorded before the taken event
+ * existed still read.
  */
 
 export interface DangleRow {
@@ -26,6 +29,10 @@ export function buildDangle(records: readonly TelemetryRecord[]): DangleReport {
   records.forEach((record, at) => {
     if (record.category === 'cosmetic' && record.action === 'unlock') unlockedAfter.set(record.what, [...(unlockedAfter.get(record.what) ?? []), at]);
   });
+  const takenAfter = new Map<string, number[]>();
+  records.forEach((record, at) => {
+    if (record.category === 'dangle' && record.action === 'taken') takenAfter.set(record.what, [...(takenAfter.get(record.what) ?? []), at]);
+  });
 
   const perLook = new Map<string, DangleRow>();
   let shown = 0;
@@ -35,7 +42,7 @@ export function buildDangle(records: readonly TelemetryRecord[]): DangleReport {
     shown++;
     const row = perLook.get(record.what) ?? { id: record.what, shown: 0, converted: 0 };
     row.shown++;
-    if ((unlockedAfter.get(record.what) ?? []).some((unlockAt) => unlockAt > at)) {
+    if ((unlockedAfter.get(record.what) ?? []).some((unlockAt) => unlockAt > at) || (takenAfter.get(record.what) ?? []).some((takenAt) => takenAt > at)) {
       row.converted++;
       converted++;
     }

@@ -143,6 +143,12 @@ export class Game {
   private consecutiveFalls = 0;
   /** P-LD-05: consecutive failed attempts at the current level; the mercy's own streak, spent by startLevel, zeroed by a clear. */
   private mercyStreak = 0;
+  /** P-AN-02: the dangle the open clear card is showing, if any; a click through
+   * the card is the want converting, and the id is the reader's own key. */
+  private dangleShown: string | null = null;
+  /** P-AN-02: the opening orientation has been spoken with the boot label; only
+   * flips of the screen say so after that — one record per turn, never a repeat. */
+  private orientationSpoken = false;
   private clearTimer = -1;
   private lastClear: { summary: RunSummary; levelId: string; scrap: number; doubled: boolean; friend: FriendRun | null; deltaAtFlip: number | null } | null = null;
   private lastFall: FallHighlight | null = null;
@@ -317,6 +323,11 @@ export class Game {
       this.freshBoot ? 'fresh' : 'return',
       `${getLocale()}|${this.touchMode?.touch ? 'touch' : 'desktop'}|${tier}`,
     );
+    // P-AN-02: the visit's opening orientation, spoken with the boot label so
+    // the boot record stays the channel's first; every later turn of the screen
+    // says so from resize(), one record per flip.
+    this.orientationSpoken = true;
+    this.telemetry.record('orientation', this.renderer.cameraRig.portrait ? 'portrait' : 'landscape', 'session');
 
     this.startLevel(resumeLevelId(ALL_LEVELS, this.save.data));
     this.ui.setLoading(1);
@@ -429,6 +440,14 @@ export class Game {
     if (id !== this.currentLevelId) this.mercyStreak = 0;
     const level = withMercy(shipped, this.mercyStreak);
     if (level !== shipped) this.telemetry.record('mercy', id, String(this.mercyStreak));
+    // P-AN-02: mercy telemetry (P-LD-05's review-queue input). One record per
+    // attempt, at the moment the widened level is built: the attempt's own
+    // catch window as a bare number, which is what the Friday report reads to
+    // tell a level being learned from a level fighting the player. No record
+    // off the on-ramp — those attempts play the shipped level, and a number
+    // there would read as mercy the game never spent.
+    const ramp = level.onRamp?.catchWindow;
+    if (ramp !== undefined && ramp > 0) this.telemetry.record('assist', id, String(Math.round(ramp * 100) / 100));
     this.currentLevelId = id;
     const sim = new Simulation(this.rapier, level);
     this.sim = sim;
@@ -688,6 +707,9 @@ export class Game {
     // R-EC-04: the next unlock, rotating; the dangle reader's own numerator (R-AN-04).
     const dangle = nextDangle(this.save.data, this.clock(), this.sessionLog.clearCount);
     if (dangle) this.telemetry.record('dangle', dangle.id, 'shown');
+    // P-AN-02: the shown dangle is the card's own offer; the taken moment is
+    // whichever click carries the player through the card, recorded once.
+    this.dangleShown = dangle?.id ?? null;
     // P-LD-06: no clear card is ever terminal — when the shelf is empty the
     // card dangles the next want anyway: the star gate being climbed, then
     // the ghost still standing. Only the ending's card is allowed to want
@@ -841,6 +863,10 @@ export class Game {
     if (this.phase === 'busy') return;
     const id = this.currentLevelId;
     this.attempts.finish('restart', this.sim?.run.timeMs ?? 0);
+    // P-AN-02: want-conversion per dangle — a click through the open clear card
+    // is the shown want taken, whichever button carried it (R-AN-04's own pair).
+    if (this.dangleShown && this.phase === 'cleared') this.telemetry.record('dangle', this.dangleShown, 'taken');
+    this.dangleShown = null;
     const replay = this.phase === 'cleared';
     if (!replay) this.landscapeHint.failed();
     this.phase = 'busy';
@@ -861,6 +887,10 @@ export class Game {
   private async advance(): Promise<void> {
     const next = nextPlayableId(ALL_LEVELS, this.save.data, this.currentLevelId);
     if (!next || this.phase === 'busy') return;
+    // P-AN-02: the next-level click through the card is the dangle's own
+    // conversion, taken at the moment of the click (R-AN-04's pair to shown).
+    if (this.dangleShown) this.telemetry.record('dangle', this.dangleShown, 'taken');
+    this.dangleShown = null;
     this.phase = 'busy';
     this.ui.hideClear();
     await this.ads.advanceBreak();
@@ -1126,6 +1156,14 @@ export class Game {
     // The player answered the chip by turning the screen: the suggestion
     // retires the moment it is taken (P-MO-06).
     if (wasPortrait !== this.renderer.cameraRig.portrait) this.ui.landscapeChip.hide();
+    // P-AN-02: the portrait doctrine's proof of adoption (P-MO-01) reads which
+    // orientation the visit actually played in. The opening orientation is
+    // spoken once with the boot label — the boot record stays the channel's
+    // first (R-AN-06) — and every real turn of the screen after that says so
+    // here, one record per flip; a resize that changed nothing says nothing.
+    if (this.orientationSpoken && wasPortrait !== this.renderer.cameraRig.portrait) {
+      this.telemetry.record('orientation', this.renderer.cameraRig.portrait ? 'portrait' : 'landscape', 'session');
+    }
   }
 
   // -------------------------------------------------------------------- loop

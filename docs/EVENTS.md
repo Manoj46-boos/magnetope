@@ -13,12 +13,15 @@ Anonymous gameplay telemetry in Poki’s `measure(category, what, action)` shape
 | time | the level id | the bare clear time in seconds | a clear is recorded |
 | fallcount | the level id | the bare number of falls in the attempt | an attempt ends with any |
 | fall | the level id | `h-` whole metres ` g-` grade | the settle after a fall |
+| fall | first | `graded` | the Practice Fall’s descent went on record, once per save (P-FT-07) |
+| orientation | portrait / landscape | `session` | the frame changed shape: once at boot, again on every turn (P-AN-02) |
+| assist | the level id | the attempt’s own catch window | an on-ramp attempt opens, widened or not (P-AN-02) |
 | boot | fresh / return | locale `|` touch or desktop `|` tier | the game becomes playable, before the first level |
 | input | first | the bare seconds from the queue’s start | the visit’s first play input |
 | ghost | the level id | `set` | a run goes on record: under par and a personal best |
 | scrap | earn / spend | the bare amount | a clear pays, an ad doubles it / a purchase spends it |
 | cosmetic | the item id | `unlock` | a look enters the locker: bought, watched for, claimed free or earned |
-| dangle | the item id | `shown` | the clear card names the next unlock |
+| dangle | the item id | `shown` / `taken` | the clear card names the next unlock / a click carries the player through the card (R-AN-04’s own pair, P-AN-02) |
 | mercy | the level id | the streak that earned it | an on-ramp attempt opens widened by adaptive mercy (P-LD-05) |
 | ending | watched / skipped | seconds spent | the film ends or is skipped |
 | watchdog | the tier being left `-` the tier entered | the frame rate the decision fired at | the watchdog steps the quality down (R-PE-08) |
