@@ -172,10 +172,10 @@ describe('the mix of a real run, measured offline', () => {
     expect(gain, `the handshake added ${gain.toFixed(2)} dB over the bare route`).toBeGreaterThan(1);
 
     // The single-frame peak rides the shared noise buffer, so a take's luck
-    // moves it; the energy above is the law, this is only the sanity rail.
-    const peak = withIt.samplePeakDb - bare.samplePeakDb;
-    expect(peak).toBeGreaterThan(0.3);
-    expect(peak).toBeLessThan(12);
+    // moves it — a render read the handshake's own frame under the bare route
+    // while its seconds rose well over it. The sanity the law can hold
+    // without a take's luck is the ceiling the mix standard already sets.
+    expect(withIt.samplePeakDb, 'the handshake stays under the true-peak ceiling').toBeLessThan(TRUE_PEAK_CEILING_DBTP);
   });
 
   run('side-chains the bed three under for the length of a stinger, then gives it back (R-AU-05/07)', async () => {

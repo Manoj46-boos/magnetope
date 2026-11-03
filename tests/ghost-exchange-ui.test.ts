@@ -277,6 +277,7 @@ describe('clear card and pause menu', () => {
     friend: null,
     ghostDelta: null,
     dangle: null,
+    want: { kind: 'star-gate', name: 'Metropolis', toGo: 4 },
   };
   const clearButtons = (): string[] => [...document.querySelectorAll('.clear-card .btn')].map((b) => b.textContent!.trim());
 

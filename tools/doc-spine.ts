@@ -302,6 +302,7 @@ export function renderEvents(): string {
     '| scrap | earn / spend | the bare amount | a clear pays, an ad doubles it / a purchase spends it |',
     '| cosmetic | the item id | `unlock` | a look enters the locker: bought, watched for, claimed free or earned |',
     '| dangle | the item id | `shown` | the clear card names the next unlock |',
+    '| mercy | the level id | the streak that earned it | an on-ramp attempt opens widened by adaptive mercy (P-LD-05) |',
     '| ending | watched / skipped | seconds spent | the film ends or is skipped |',
     '| watchdog | the tier being left `-` the tier entered | the frame rate the decision fired at | the watchdog steps the quality down (R-PE-08) |',
     '| perf | fps | the session' + 's own frame rate | the queue travels at a natural stop (R-PE-11) |',

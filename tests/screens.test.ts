@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { COSMETICS } from '@/config/cosmetics';
-import { buildMap } from '@/game/map-model';
+import { buildMap, nextWant } from '@/game/map-model';
 import { ALL_LEVELS } from '@/levels';
 import { freshSave } from '@/platform/storage';
 import { LockerScreen } from '@/ui/locker-screen';
@@ -196,5 +196,64 @@ describe('ghost hand overlay', () => {
     expect(document.querySelector('.demo.flip')).not.toBeNull();
     overlay.hide();
     expect(overlay.visible).toBe(false);
+  });
+});
+
+describe('the clear card never ends the wanting (P-LD-06)', () => {
+  const saveOf = (stars: Record<string, number>, ghosts: Record<string, string>) => ({ ...freshSave(), stars, ghosts }) as Parameters<typeof buildMap>[1];
+
+  it('dangles the shelf first, the gate when the shelf is empty, the ghost past the last gate', () => {
+    // A mid-campaign save: the shelf has candidates, so the shelf leads.
+    const mid = saveOf({ 'scrapyard-00': 3 }, {});
+    const shelf = nextWant(ALL_LEVELS, mid, { name: 'Rust Prince', scrapToGo: 40 });
+    expect(shelf).toEqual({ kind: 'shelf', name: 'Rust Prince', toGo: 40 });
+
+    // The shelf is empty (everything owned is a save the locker can only build
+    // with every price paid): a gate-save wants the gate.
+    const gate = saveOf({ 'scrapyard-00': 3 }, {});
+    const withStars = { ...gate, stars: { 'scrapyard-00': 1 } } as typeof gate;
+    const wantGate = nextWant(ALL_LEVELS, withStars, null);
+    expect(wantGate?.kind).toBe('star-gate');
+    expect(wantGate?.toGo).toBeGreaterThan(0);
+
+    // Past every gate, a fully-cleared campaign with no ghosts: the card
+    // dangles the ghost chase, the second-session hook the PRD names.
+    const cleared: Record<string, number> = {};
+    for (const level of ALL_LEVELS) cleared[level.id] = 3;
+    const done = saveOf(cleared, {});
+    const wantGhost = nextWant(ALL_LEVELS, done, null);
+    expect(wantGhost?.kind).toBe('ghost-chase');
+
+    // And a save with ghosts everywhere and the shelf empty: the only card
+    // allowed to want nothing is the ending, whose card is the film.
+    const ghosts: Record<string, string> = {};
+    for (const level of ALL_LEVELS) ghosts[level.id] = 'x';
+    const finished = saveOf(cleared, ghosts);
+    expect(nextWant(ALL_LEVELS, finished, null)).toBeNull();
+  });
+
+  it('renders the want line on the card when the shelf has nothing', async () => {
+    const { GameUi } = await import('@/ui/ui');
+    const stage = document.createElement('div');
+    document.body.append(stage);
+    const ui = new GameUi(stage, {} as never);
+    ui.showClear({
+      levelName: 'Crusher Row',
+      stars: 2,
+      newBest: false,
+      timeMs: 38_000,
+      parSeconds: 75,
+      scrap: 30,
+      hasNext: true,
+      canDouble: false,
+      doubled: false,
+      finale: false,
+      friend: null,
+      ghostDelta: null,
+      dangle: null,
+      want: { kind: 'star-gate', name: 'Metropolis', toGo: 4 },
+    });
+    const tag = document.querySelector('.clear-card .dangle-tag');
+    expect(tag?.textContent).toContain('Metropolis');
   });
 });

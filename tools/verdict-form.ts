@@ -77,6 +77,9 @@ export function auditVerdicts(form: string): FormAudit {
     }
     if (!/^(yes|no)$/i.test(row.fair)) problems.push(`${row.levelId}: fair says "${row.fair}" — yes or no`);
     if (!/^[1-5]$/.test(row.fun)) problems.push(`${row.levelId}: fun says "${row.fun}" — 1 to 5`);
+    // P-LD-04's own bar: a dull level is a bug, not a taste — fun under 3 is
+    // an open row whatever its verdict says, and the audit names it.
+    if (/^[1-5]$/.test(row.fun) && Number(row.fun) < 3) problems.push(`${row.levelId}: fun ${row.fun} — a dull level is a bug, not a taste`);
     if (!/^(keep|retune|re-lay)/.test(row.verdict)) problems.push(`${row.levelId}: verdict says "${row.verdict}" — keep, retune or re-lay, then what`);
     filled++;
   }

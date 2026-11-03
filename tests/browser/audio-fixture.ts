@@ -100,6 +100,17 @@ async function render(spec: RenderSpec): Promise<RenderReport> {
 
   let simTicks = 0;
   let ducked = false;
+  // A route scenario is a real playthrough read from its first input to its
+  // summit. The game freezes the world the moment it clears — the card opens,
+  // the sim stops stepping — so once `run.cleared` the render keeps its slice
+  // clock but steps nothing further: an over-the-summit tumble the game never
+  // shows would otherwise spend its fall whistle on the sfx bus and read as
+  // programme the mix never carries. The state lives OUTSIDE the slice loop —
+  // reset per slice it would still buy one tick a slice, and a 30 s render
+  // holds enough slices to walk the whole tumble back in. The tumble scenario
+  // keeps stepping on purpose; its fall is its own law.
+  const freezeAtClear = spec.scenario.kind === 'route';
+  let frozen = false;
   const watched: number[] = [];
   const cues = [...ENDING_CUES];
   for (let k = 0; k < stops.length; k++) {
@@ -109,9 +120,18 @@ async function render(spec: RenderSpec): Promise<RenderReport> {
     // first input lands, once, whatever else the render is doing.
     if (spec.handshakeAt !== undefined && t >= spec.handshakeAt && t < spec.handshakeAt + SLICE_SECONDS) director.firstInputHandshake();
     if (player) {
-      while (simTicks < Math.floor(t * SIM_HZ)) {
-        sim.step(t >= fallAt || player.done ? IDLE_INPUT : player.next());
-        simTicks++;
+      if (frozen) {
+        simTicks = Math.floor(t * SIM_HZ);
+      } else {
+        while (simTicks < Math.floor(t * SIM_HZ)) {
+          sim.step(t >= fallAt || player.done ? IDLE_INPUT : player.next());
+          simTicks++;
+          if (freezeAtClear && sim.run.cleared) {
+            frozen = true;
+            simTicks = Math.floor(t * SIM_HZ);
+            break;
+          }
+        }
       }
     }
     const inAd = spec.adBetween !== undefined && t >= spec.adBetween[0] && t < spec.adBetween[1];
@@ -210,15 +230,30 @@ async function renderWavSpec(spec: RenderSpec): Promise<string> {
   const rendered = ctx.startRendering();
   let simTicks = 0;
   let ducked = false;
+  // Same law as `render`: a route scenario freezes at its summit, so the
+  // listen panel hears the playthrough the game actually shows. The state
+  // lives outside the slice loop, or a 30 s render walks the post-clear
+  // tumble back in one tick a slice.
+  const freezeAtClear = spec.scenario.kind === 'route';
+  let frozen = false;
   const cues = [...ENDING_CUES];
   for (let k = 0; k < stops.length; k++) {
     await stops[k];
     const t = (k + 1) * SLICE_SECONDS;
     if (spec.handshakeAt !== undefined && t >= spec.handshakeAt && t < spec.handshakeAt + SLICE_SECONDS) director.firstInputHandshake();
     if (player) {
-      while (simTicks < Math.floor(t * SIM_HZ)) {
-        sim.step(t >= fallAt || player.done ? IDLE_INPUT : player.next());
-        simTicks++;
+      if (frozen) {
+        simTicks = Math.floor(t * SIM_HZ);
+      } else {
+        while (simTicks < Math.floor(t * SIM_HZ)) {
+          sim.step(t >= fallAt || player.done ? IDLE_INPUT : player.next());
+          simTicks++;
+          if (freezeAtClear && sim.run.cleared) {
+            frozen = true;
+            simTicks = Math.floor(t * SIM_HZ);
+            break;
+          }
+        }
       }
     }
     const inAd = spec.adBetween !== undefined && t >= spec.adBetween[0] && t < spec.adBetween[1];

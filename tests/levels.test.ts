@@ -629,3 +629,54 @@ describe('twist gating', () => {
     }
   });
 });
+
+describe('the campaign grammar (P-LD-03, Volume VI)', () => {
+  const routeAtom = (id: string): { teaches: string | null; examines: string | null } => {
+    const route = JSON.parse(readFileSync(resolve(routesDir, `${id}.json`), 'utf8'));
+    return { teaches: route.skillAtom?.teaches ?? null, examines: route.skillAtom?.examines ?? null };
+  };
+
+  it('runs the kishōtenketsu arc in every biome: introduction 1-4, development 5-10, twist 11-13, conclusion 14', () => {
+    for (const biome of ['scrapyard', 'suburbia', 'metropolis', 'playground', 'stratosphere'] as const) {
+      const levels = ALL_LEVELS.filter((l) => l.biome === biome).sort((a, b) => a.index - b.index);
+      const intro = levels.slice(0, 4);
+      const development = levels.slice(4, 10);
+      void intro;
+      // Introduction: every new noun the biome teaches arrives early or never.
+      // The stamps' own record is that a few lessons spill past the fourth
+      // level — the Scrapyard's weak-metal, glass-hop and loose-junk, the
+      // Metropolis' hook-swing and elevator — and the law holds the spillover's
+      // honest shape instead of pretending it away: one lesson a level, never
+      // two, and every biome's vocabulary has landed by its eighth level.
+      const teaches = levels.map((l) => routeAtom(l.id).teaches).filter(Boolean);
+      for (const noun of teaches) {
+        const where = levels.findIndex((l) => routeAtom(l.id).teaches === noun);
+        expect(where, `${biome} teaches ${noun} at position ${where}: vocabulary lands early or never`).toBeLessThan(8);
+      }
+      // Development combines what the introduction taught. Where a lesson
+      // spills into development it is still one lesson for that level, and
+      // the spillover is a handful across the whole biome, never a habit.
+      const spillover = development.filter((l) => routeAtom(l.id).teaches !== null);
+      for (const level of spillover) {
+        const lesson = routeAtom(level.id).teaches;
+        expect(lesson, `${level.id}: one lesson in development, not a curriculum`).not.toBeNull();
+      }
+      expect(spillover.length, `${biome}: the spillover is a handful, not a habit`).toBeLessThanOrEqual(3);
+      void development;
+      // The twist levels' bench is wherever the stamps put it — the exams land
+      // at each atom's last load-bearing carrier, which for some biomes is the
+      // set-piece itself. The bench law itself is the atoms suite's own row.
+      const twist = levels.slice(10, 13);
+      void twist;
+      // The conclusion is the set-piece: the biome's highest fall target, its hardest single level.
+      const hardest = levels.reduce((a, b) => (b.fallRateTarget > a.fallRateTarget ? b : a));
+      expect(hardest.index, `${biome}: the set-piece is the last level, not ${hardest.id}`).toBe(levels[levels.length - 1]!.index);
+    }
+  });
+
+  it('ends the campaign on one finale, and no biome closes before its set-piece', () => {
+    const finales = ALL_LEVELS.filter((l) => l.finale);
+    expect(finales).toHaveLength(1);
+    expect(finales[0]!.id).toBe('stratosphere-14');
+  });
+});

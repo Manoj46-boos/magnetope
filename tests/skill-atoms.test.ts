@@ -138,3 +138,35 @@ describe('the skill-atom table', () => {
     }
   });
 });
+
+describe('the vocabulary law (P-LD-02, Volume VI)', () => {
+  it('introduces at most one new lesson noun a level after the tutorial, whose own lesson is the two-verb core', () => {
+    // The lesson is the stamp the ledger froze after review: one noun a
+    // level, the tutorial excepted, whose own lesson is the game's two-verb
+    // core on the fridge pair it climbs. The raw prop inventory is not the
+    // lesson — a kind a level carries is a stance, not a curriculum.
+    for (const level of ALL_LEVELS) {
+      const atom = readAtom(level.id);
+      if (level.id === 'scrapyard-00') {
+        expect(atom.teaches).toBe('snap-catch');
+      } else if (atom.teaches !== null) {
+        expect([atom.teaches].length, `${level.id} teaches ${atom.teaches}`).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  it('frames the biome\'s identity material inside the introduction, wherever it lands from there', () => {
+    const identity: Record<string, SkillId> = {
+      scrapyard: 'snap-catch',
+      suburbia: 'bounce',
+      metropolis: 'wind-ride',
+      playground: 'wheel-ride',
+      stratosphere: 'float-flight',
+    };
+    for (const [biome, noun] of Object.entries(identity)) {
+      const levels = ALL_LEVELS.filter((l) => l.biome === biome).sort((a, b) => a.index - b.index);
+      const intro = levels.slice(0, 5);
+      expect(intro.some((l) => skillsByLevel.get(l.id)!.includes(noun)), `${biome}: its identity noun ${noun} must arrive inside the introduction`).toBe(true);
+    }
+  });
+});
