@@ -16,7 +16,7 @@ The clockwork a climb can promise is ordinal, and CI holds it on every level: th
 | scrapyard-03 Long Jump | 60s | 49.5s | 8.6s | — | snap-catch | — | 0.11 · 0.20 · 0.99 · 0.99 | 3 snaps + 4 launches | 10% ▁ | 15/260 |
 | scrapyard-04 Tin Roof | 66s | 15.0s | 15.0s | weak-metal | snap-catch | bounce | 0.06 · 0.28 · 0.58 · 0.98 | 5 snaps + 7 launches | 12% ▂ | 30/260 |
 | scrapyard-05 Glasshouse | 70s | 57.9s | 16.3s | glass-hop | snap-catch | glass-hop | 0.06 · 0.23 · 0.59 · 0.94 | 6 snaps + 8 launches | 13% ▂ | 30/260 |
-| scrapyard-06 Crusher Row | 75s | 57.4s | 12.4s | — | snap-catch | — | 0.03 · 0.11 · 0.58 · 0.90 | 4 snaps + 7 launches | 14% ▂ | 43/260 |
+| scrapyard-06 Crusher Row | 75s | 62.1s | 15.8s | — | snap-catch | — | 0.03 · 0.10 · 0.68 · 0.96 | 6 snaps + 9 launches | 14% ▂ | 45/260 |
 | scrapyard-07 Loose Ends | 62s | 51.2s | 10.1s | loose-junk | snap-catch | — | 0.09 · 0.35 · 0.67 · 0.98 | 3 snaps + 6 launches | 16% ▂ | 38/260 |
 | scrapyard-08 Barrel Run | 60s | 49.5s | 18.5s | — | snap-catch | weak-metal | 0.05 · 0.19 · 0.60 · 0.94 | 6 snaps + 13 launches | 17% ▂ | 37/260 |
 | scrapyard-09 Drawer Tower | 84s | 10.1s | 10.1s | — | snap-catch | — | 0.09 · 0.17 · 0.99 · 0.99 | 5 snaps + 6 launches | 18% ▂ | 43/260 |
@@ -29,7 +29,7 @@ The clockwork a climb can promise is ordinal, and CI holds it on every level: th
 
 | Level | Par | Author | Route | Teach | Drill | Exam | Clockwork | Native | Fall | Props |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| suburbia-01 Front Yard | 60s | 49.5s | 19.5s | — | snap-catch | — | 0.02 · 0.26 · 0.43 · 0.99 | 5 snaps + 10 launches | 18% ▂ | 25/260 |
+| suburbia-01 Front Yard | 60s | 49.5s | 17.1s | — | snap-catch | — | 0.03 · 0.30 · 0.57 · 0.99 | 5 snaps + 9 launches | 18% ▂ | 27/260 |
 | suburbia-02 Bounce Yard | 66s | 54.5s | 14.5s | — | snap-catch | — | 0.07 · 0.12 · 0.78 · 0.98 | 5 snaps + 5 launches | 19% ▂ | 28/260 |
 | suburbia-03 Garage Row | 74s | 25.1s | 25.1s | moving-surface | snap-catch | — | 0.04 · 0.65 · 0.74 · 0.99 | 7 snaps + 9 launches | 21% ▃ | 29/260 |
 | suburbia-04 Swing Set | 80s | 13.6s | 13.6s | hinged-ride | snap-catch | — | 0.07 · 0.39 · 0.49 · 0.75 | 2 snaps + 4 launches | 22% ▃ | 29/260 |
@@ -42,7 +42,7 @@ The clockwork a climb can promise is ordinal, and CI holds it on every level: th
 | suburbia-11 Double Swing | 60s | 13.4s | 13.4s | — | snap-catch | — | 0.01 · 0.58 · 0.66 · 0.99 | 3 snaps + 8 launches | 32% ▄ | 30/260 |
 | suburbia-12 Gutter Chain | 114s | 70.2s | 25.2s | — | snap-catch | — | 0.02 · 0.19 · 0.62 · 0.99 | 8 snaps + 12 launches | 33% ▄ | 33/260 |
 | suburbia-13 Dish Dash | 78s | 64.5s | 17.2s | — | snap-catch | — | 0.03 · 0.27 · 0.75 · 0.99 | 5 snaps + 7 launches | 35% ▄ | 32/260 |
-| suburbia-14 Cul-de-Sac | 114s | 25.5s | 25.5s | — | snap-catch | hinged-ride | 0.04 · 0.33 · 0.62 · 0.90 | 4 snaps + 11 launches | 36% ▄ | 39/260 |
+| suburbia-14 Cul-de-Sac | 114s | 25.5s | 25.3s | — | snap-catch | hinged-ride | 0.04 · 0.36 · 0.66 · 0.96 | 4 snaps + 9 launches | 36% ▄ | 39/260 |
 
 ## Metropolis
 
@@ -69,18 +69,18 @@ The clockwork a climb can promise is ordinal, and CI holds it on every level: th
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | playground-01 Slide Switchback | 72s | 59.6s | 16.0s | slide-ride | snap-catch | — | 0.01 · 0.45 · 0.69 · 0.93 | 3 snaps + 9 launches | 42% ▅ | 17/260 |
 | playground-02 Swing Set Alley | 84s | 30.3s | 30.3s | swing-ride | snap-catch | — | 0.00 · 0.20 · 0.59 · 0.95 | 6 snaps + 12 launches | 43% ▅ | 28/260 |
-| playground-03 See-Saw Ridge | 98s | 19.4s | 19.4s | seesaw-ride | snap-catch | — | 0.01 · 0.02 · 0.65 · 0.73 | 2 snaps + 6 launches | 45% ▅ | 27/260 |
+| playground-03 See-Saw Ridge | 98s | 16.5s | 16.5s | seesaw-ride | snap-catch | — | 0.01 · 0.03 · 0.74 · 0.83 | 2 snaps + 6 launches | 45% ▅ | 27/260 |
 | playground-04 Ferris Wheel | 104s | 27.2s | 27.2s | wheel-ride | snap-catch | — | 0.00 · 0.60 · 0.55 · 1.00 | 7 snaps + 14 launches | 46% ▆ | 30/260 |
 | playground-05 Carousel Climb | 112s | 21.6s | 21.6s | — | snap-catch | — | 0.00 · 0.02 · 0.64 · 0.99 | 7 snaps + 9 launches | 48% ▆ | 28/260 |
 | playground-06 Playground Peak | 112s | 30.0s | 30.0s | — | snap-catch | — | 0.00 · 0.02 · 0.46 · 0.86 | 6 snaps + 9 launches | 49% ▆ | 28/260 |
 | playground-07 Giant's Playground | 130s | 34.7s | 34.7s | — | snap-catch | — | 0.00 · 0.01 · 0.72 · 0.93 | 5 snaps + 13 launches | 50% ▆ | 41/260 |
-| playground-08 Twin Wheels | 150s | 48.7s | 48.7s | — | snap-catch | — | 0.00 · 0.01 · 0.55 · 0.98 | 16 snaps + 25 launches | 52% ▆ | 56/260 |
-| playground-09 Swing Relay | 142s | 31.6s | 31.7s | — | snap-catch | bars-climb | 0.00 · 1.00 · 0.56 · 1.00 | 9 snaps + 12 launches | 53% ▆ | 37/260 |
-| playground-10 See-Saw Stairs | 100s | 28.8s | 28.8s | — | snap-catch | slide-ride | 0.00 · 0.20 · 0.62 · 0.92 | 3 snaps + 12 launches | 54% ▆ | 31/260 |
+| playground-08 Twin Wheels | 150s | 44.5s | 44.5s | — | snap-catch | — | 0.00 · 0.01 · 0.58 · 1.00 | 14 snaps + 22 launches | 52% ▆ | 56/260 |
+| playground-09 Swing Relay | 142s | 28.4s | 28.4s | — | snap-catch | bars-climb | 0.00 · 0.54 · 0.47 · 0.94 | 9 snaps + 13 launches | 53% ▆ | 37/260 |
+| playground-10 See-Saw Stairs | 100s | 26.8s | 26.8s | — | snap-catch | slide-ride | 0.00 · 0.60 · 0.53 · 0.99 | 6 snaps + 13 launches | 54% ▆ | 31/260 |
 | playground-11 Merry-Go-Round | 128s | 21.1s | 21.1s | — | snap-catch | soft-landing | 0.00 · 0.02 · 0.48 · 0.86 | 4 snaps + 11 launches | 56% ▇ | 34/260 |
-| playground-12 Slide Spiral | 132s | 31.4s | 31.4s | — | snap-catch | seesaw-ride | 0.00 · 0.86 · 0.57 · 0.94 | 13 snaps + 13 launches | 57% ▇ | 31/260 |
+| playground-12 Slide Spiral | 132s | 25.7s | 22.8s | — | snap-catch | seesaw-ride | 0.00 · 0.86 · 0.44 · 0.92 | 6 snaps + 9 launches | 57% ▇ | 31/260 |
 | playground-13 Giant's Gym | 148s | 32.9s | 32.9s | — | snap-catch | swing-ride | 0.00 · 0.01 · 0.43 · 0.95 | 6 snaps + 19 launches | 59% ▇ | 46/260 |
-| playground-14 Big Top | 146s | 32.6s | 32.6s | — | snap-catch | wheel-ride | 0.00 · 0.32 · 0.55 · 0.98 | 7 snaps + 16 launches | 60% ▇ | 61/260 |
+| playground-14 Big Top | 146s | 41.3s | 41.3s | — | snap-catch | wheel-ride | 0.00 · 0.26 · 0.48 · 0.97 | 9 snaps + 17 launches | 60% ▇ | 61/260 |
 
 ## Stratosphere
 
@@ -88,14 +88,14 @@ The clockwork a climb can promise is ordinal, and CI holds it on every level: th
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | stratosphere-01 Jet Wreck | 84s | 69.6s | 14.4s | float-flight | snap-catch | — | 0.07 · 0.28 · 0.56 · 0.89 | 4 snaps + 6 launches | 54% ▆ | 18/260 |
 | stratosphere-02 Satellite Garden | 104s | 34.2s | 34.3s | — | snap-catch | — | 0.03 · 0.42 · 0.48 · 0.76 | 4 snaps + 8 launches | 55% ▇ | 34/260 |
-| stratosphere-03 Dish Array | 100s | 21.6s | 21.6s | — | snap-catch | — | 0.04 · 0.55 · 0.47 · 0.83 | 2 snaps + 5 launches | 56% ▇ | 24/260 |
-| stratosphere-04 Debris Field | 116s | 23.2s | 23.2s | — | snap-catch | — | 0.04 · 0.44 · 0.62 · 0.99 | 1 snap + 6 launches | 57% ▇ | 34/260 |
+| stratosphere-03 Dish Array | 100s | 16.2s | 16.2s | — | snap-catch | — | 0.06 · 0.24 · 0.59 · 0.99 | 3 snaps + 4 launches | 56% ▇ | 24/260 |
+| stratosphere-04 Debris Field | 116s | 26.2s | 26.2s | — | snap-catch | — | 0.04 · 1.00 · 0.70 · 1.00 | 1 snap + 5 launches | 57% ▇ | 34/260 |
 | stratosphere-05 Frozen Fuselage | 120s | 24.9s | 24.9s | — | snap-catch | — | 0.04 · 0.35 · 0.46 · 0.88 | 4 snaps + 6 launches | 58% ▇ | 37/260 |
 | stratosphere-06 Orbit Spokes | 134s | 23.5s | 23.5s | — | snap-catch | — | 0.04 · 0.42 · 0.65 · 0.93 | 2 snaps + 7 launches | 59% ▇ | 36/260 |
 | stratosphere-07 Cold Front | 160s | 38.3s | 38.4s | — | snap-catch | — | 0.02 · 0.39 · 0.59 · 0.94 | 5 snaps + 14 launches | 60% ▇ | 41/260 |
 | stratosphere-08 Wreck Alley | 150s | 33.4s | 33.4s | — | snap-catch | — | 0.03 · 0.18 · 0.62 · 0.95 | 6 snaps + 13 launches | 62% ▇ | 38/260 |
 | stratosphere-09 Dish Garden | 122s | 26.9s | 26.9s | — | snap-catch | — | 0.04 · 0.15 · 0.73 · 0.99 | 6 snaps + 10 launches | 63% ▇ | 38/260 |
-| stratosphere-10 Solar Storm | 152s | 33.8s | 33.8s | — | snap-catch | — | 0.03 · 0.25 · 0.62 · 1.00 | 8 snaps + 13 launches | 64% █ | 41/260 |
+| stratosphere-10 Solar Storm | 152s | 29.1s | 29.4s | — | snap-catch | — | 0.03 · 0.29 · 0.52 · 0.76 | 7 snaps + 10 launches | 64% █ | 41/260 |
 | stratosphere-11 Strobe Run | 108s | 23.8s | 23.8s | — | snap-catch | — | 0.02 · 0.31 · 0.47 · 0.89 | 3 snaps + 11 launches | 65% █ | 40/260 |
 | stratosphere-12 Skin Deep | 152s | 33.9s | 33.9s | — | snap-catch | — | 0.03 · 0.18 · 0.48 · 0.95 | 9 snaps + 14 launches | 66% █ | 46/260 |
 | stratosphere-13 Station Spin | 128s | 28.6s | 28.6s | — | snap-catch | satellite-junk | 0.03 · 0.17 · 0.44 · 1.00 | 7 snaps + 10 launches | 67% █ | 43/260 |
