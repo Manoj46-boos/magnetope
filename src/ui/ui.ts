@@ -1,4 +1,5 @@
 import type { InputManager } from '@/input/input';
+import type { BiomeId } from '@/sim/types';
 import { LOCALES, pageLang, t, tf, tn, PSEUDO_ID, type LocaleId, type StringKey } from '@/locale';
 import { DEFAULT_SETTINGS, type Settings } from '@/platform/settings';
 import { formatTime } from '@/game/progress';
@@ -13,9 +14,21 @@ import { EndingScreen } from './ending-screen';
 import { GhostExchangeScreen, type ExchangeHandlers } from './ghost-exchange';
 import { ICONS, MAGNO_SILHOUETTE, STUDIO_MARK } from './icons';
 import { LockerScreen, type LockerHandlers } from './locker-screen';
-import { LOCKUP_IDENT } from './lockup';
+import { LOCKUP, LOCKUP_IDENT } from './lockup';
 import { MapScreen, type MapHandlers } from './map-screen';
 import { ModalHost } from './modal-host';
+import { railGradient } from './rail-palette';
+
+/**
+ * The rail's marker glyph: the lockup's own horseshoe, pole tips and all, drawn
+ * white on the marker's dark chip the way the summit star rides its own — the
+ * climb's altitude carried by the game's signature shape (visual renewal 14.9).
+ */
+const RAIL_MARKER = `<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+  <path d="M14 20 V34 A18 18 0 0 0 50 34 V20" fill="none" stroke="#f7f4ee" stroke-width="9" stroke-linecap="round"/>
+  <rect x="8.5" y="12" width="11" height="11" rx="2.5" fill="${LOCKUP.poleNorth}"/>
+  <rect x="44.5" y="12" width="11" height="11" rx="2.5" fill="${LOCKUP.poleSouth}"/>
+</svg>`;
 
 export interface UiHandlers {
   pause(): void;
@@ -156,7 +169,10 @@ export class GameUi {
     this.ending = new EndingScreen(this.root);
 
     this.hud = this.layer('hud');
-    this.rail = el('div', { class: 'rail' }, `<span class="summit">${ICONS.star}</span><div class="fill"></div><div class="marker"></div>`);
+    // The rail's marker is the game's own signature (visual renewal PRD 14.9): the
+    // horseshoe that rides the climb, the one HUD element allowed the world's full
+    // saturation — a constant, small reminder of what game this is, in every frame.
+    this.rail = el('div', { class: 'rail' }, `<span class="summit">${ICONS.star}</span><div class="fill"></div><span class="marker">${RAIL_MARKER}</span>`);
     this.railFill = this.rail.querySelector('.fill') as HTMLElement;
     this.railMarker = this.rail.querySelector('.marker') as HTMLElement;
     this.timer = el('div', { class: 'timer', 'aria-live': 'off' });
@@ -265,6 +281,18 @@ export class GameUi {
   /** The flip affordance idles at half presence until the first touch, so the first frame still says "press me" (PRD 15.3). */
   setTouchRest(rest: boolean): void {
     this.touch.classList.toggle('rest', rest);
+  }
+
+  /**
+   * Dresses the altitude rail in the biome's own climb (visual renewal PRD 14.9):
+   * a fill from the ground family to the summit sky, so the screen edge carries
+   * the world the whole way up. Called the moment a biome begins, before its
+   * title card fades in.
+   */
+  setRailBiome(biome: BiomeId): void {
+    const { ground, summit } = railGradient(biome);
+    this.railFill.style.background = `linear-gradient(0deg, ${ground}, ${summit})`;
+    this.rail.dataset.biome = biome;
   }
 
   updateHud(state: HudState): void {
@@ -481,7 +509,7 @@ export class GameUi {
     const secondary: HTMLElement[] = [];
     if (data.hasNext) stack.appendChild(this.button('next', 'next', 'btn primary', () => this.handlers.next()));
     else stack.appendChild(this.button('retry', 'restart', 'btn primary', () => this.handlers.retry()));
-    if (data.canDouble) secondary.push(this.button('doubleScrap', 'video', 'btn', () => this.handlers.doubleScrap()));
+    if (data.canDouble) secondary.push(this.button('doubleScrap', 'magnet', 'btn', () => this.handlers.doubleScrap()));
     if (data.hasNext) secondary.push(this.button('retry', 'restart', 'btn', () => this.handlers.retry()));
     if (secondary.length === 2) {
       const row = el('div', { class: 'pair' });
@@ -559,7 +587,7 @@ export class GameUi {
       <div class="actions"></div>`;
     const actions = this.fallCard.querySelector('.actions') as HTMLElement;
     actions.appendChild(this.button('retry', 'restart', 'btn primary', () => this.handlers.retry()));
-    if (data.offerSecondWind) actions.appendChild(this.button('secondWind', 'video', 'btn', () => this.handlers.secondWind()));
+    if (data.offerSecondWind) actions.appendChild(this.button('secondWind', 'magnet', 'btn', () => this.handlers.secondWind()));
     if (data.shareable) {
       const share = el('button', { class: 'icon-btn small', type: 'button', 'data-nav': true, 'data-ui': true, 'aria-label': t('share') }, ICONS.share);
       share.addEventListener('click', () => {

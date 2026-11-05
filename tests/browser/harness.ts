@@ -3,9 +3,13 @@ import { createServer, type ViteDevServer } from 'vite';
 
 const LAUNCH_ARGS = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'];
 
-/** Installed Chrome first, then the bundled Chromium; null when neither can start. */
+/** An explicit executable for machines whose installed Playwright expects a browser build they do not have. */
+const OVERRIDE = process.env.MAGNETOPE_BROWSER_PATH;
+
+/** Installed Chrome first, then the bundled Chromium, then an explicit override; null when none can start. */
 export async function launchBrowser(): Promise<Browser | null> {
-  for (const options of [{ channel: 'chrome' as const }, {}]) {
+  const candidates = OVERRIDE ? [{ executablePath: OVERRIDE }] : [{ channel: 'chrome' as const }, {}];
+  for (const options of candidates) {
     try {
       return await chromium.launch({ headless: true, args: LAUNCH_ARGS, ...options });
     } catch {

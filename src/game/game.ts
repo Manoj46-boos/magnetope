@@ -511,6 +511,10 @@ export class Game {
     const boot = this.lastBiome === null && this.freshBoot;
     const card = biomeAnnouncement(this.lastBiome, biome);
     this.lastBiome = biome;
+    // The rail re-dresses with the biome before the card names it (visual renewal
+    // PRD 14.9): the climb's own palette rides the screen edge from the biome's
+    // first frame, not from the card's fade.
+    this.ui.setRailBiome(biome);
     if (boot) {
       this.ui.banner.showWordmark(t('studioCredit'));
       this.audio.biomeCall();

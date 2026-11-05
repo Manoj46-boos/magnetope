@@ -12,6 +12,10 @@ export const ICONS = {
   soundOff: svg('<path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>'),
   music: svg('<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5" fill="currentColor"/><circle cx="16.5" cy="16" r="2.5" fill="currentColor"/>'),
   video: svg('<rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3" fill="currentColor"/>'),
+  // The rewarded ask wears the game's own signature (visual renewal PRD 14.3): a horseshoe
+  // magnet, not a video camera — the ad is a thing MAGNO would do. Same construction as the
+  // lockup ident (ui/lockup.ts), shrunk to the icon grid.
+  magnet: svg('<path d="M7 5v7a5 5 0 0 0 10 0V5"/><path d="M7 5h3.5M13.5 5H17"/>'),
   assist: svg('<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" stroke-dasharray="2 3.5"/>'),
   motion: svg('<path d="M3 12c3-6 6-6 9 0s6 6 9 0"/>'),
   globe: svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>'),

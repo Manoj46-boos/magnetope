@@ -14,6 +14,8 @@
   --amber: #ffb347;
   --amber-deep: #e8881c;
   --cyan: #5fd4ff;
+  /* The marker glyph's own white — MAGNO's sclera white, one step warmer than ink. */
+  --paper: #f7f4ee;
   --danger: #ff6b5e;
   --radius: 18px;
 
@@ -236,9 +238,12 @@ select:focus-visible {
   left: calc(18px + var(--safe-l));
   top: 22%;
   bottom: 22%;
-  width: 6px;
+  width: 8px;
   border-radius: 99px;
-  background: rgba(255, 255, 255, 0.16);
+  /* The track wears the chip treatment the marker and the summit star ride
+     (R-AC-05): the fill's gradient is measured against this dark backing, so
+     the climb's colours read over any sky a biome can put behind the rail. */
+  background: rgba(13, 17, 25, 0.66);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
   opacity: 0;
   transition: opacity var(--t-medium);
@@ -255,28 +260,40 @@ select:focus-visible {
   bottom: 0;
   height: 0;
   border-radius: inherit;
+  /* The biome's own climb (visual renewal 14.9); the script dresses this per
+     biome, and the cyan pair stands as the dressed-less fallback. */
   background: linear-gradient(0deg, var(--cyan), #c8f1ff);
 }
 
 .rail .marker {
   position: absolute;
   left: 50%;
-  width: 16px;
-  height: 16px;
-  margin: 0 0 -8px -8px;
+  width: 26px;
+  height: 26px;
+  margin: 0 0 -13px -13px;
   border-radius: 50%;
-  background: #fff;
-  border: 3px solid var(--cyan);
-  /* The dark ring under the cyan rim holds the marker's 3:1 against any sky (R-AC-05). */
-  box-shadow: 0 0 0 2px rgba(13, 17, 25, 0.66), 0 0 12px rgba(95, 212, 255, 0.7);
   bottom: 0;
+  /* The horseshoe rides the same dark chip the summit star and the pause button
+     wear, so its glyph and poles clear 3:1 over any sky a biome can put behind
+     the rail (R-AC-05) — the chip, not a cyan rim, is what the contrast hangs on. */
+  background: rgba(13, 17, 25, 0.66);
+  box-shadow: 0 0 0 2px rgba(13, 17, 25, 0.66), 0 0 10px rgba(13, 17, 25, 0.45);
+}
+
+.rail .marker svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 3px;
+  box-sizing: border-box;
 }
 
 .rail .summit {
   position: absolute;
   left: 50%;
-  top: -22px;
-  margin-left: -9px;
+  top: -26px;
+  margin-left: -12px;
   color: var(--amber);
   animation: bob var(--t-loop);
 }
@@ -284,8 +301,8 @@ select:focus-visible {
 /* The star rides a dark chip, the pause button's own treatment, so the amber
    clears 3:1 over the brightest sky a biome can put behind the rail (R-AC-05). */
 .rail .summit svg {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   background: rgba(13, 17, 25, 0.66);
   border-radius: 50%;
   padding: 3px;

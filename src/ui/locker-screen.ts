@@ -193,7 +193,7 @@ export class LockerScreen {
         });
         foot.appendChild(price);
         if (canWatchToUnlock(view.save, item, view.today)) {
-          const watch = el('button', { class: 'icon-btn small', type: 'button', 'data-nav': true, 'data-ui': true, 'aria-label': t('watchToUnlock') }, ICONS.video);
+          const watch = el('button', { class: 'icon-btn small', type: 'button', 'data-nav': true, 'data-ui': true, 'aria-label': t('watchToUnlock') }, ICONS.magnet);
           watch.addEventListener('click', () => {
             this.handlers.tick();
             this.handlers.watch(item.id);

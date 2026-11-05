@@ -51,7 +51,7 @@ describe('contrast floors (R-AC-05)', () => {
     ink: token('ink'),
     inkDim: token('ink-dim'),
     amber: token('amber'),
-    cyan: token('cyan'),
+    paper: token('paper'),
     panel: token('panel'),
     pill: read('style.css').match(/\.timer \{[^}]*background:\s*([^;]+);/s)![1]!.trim(),
     chip: read('style.css').match(/\.rail \.summit svg \{[^}]*background:\s*([^;]+);/s)![1]!.trim(),

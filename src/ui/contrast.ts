@@ -69,7 +69,7 @@ export function auditRows(input: {
   ink: string;
   inkDim: string;
   amber: string;
-  cyan: string;
+  paper: string;
   panel: string;
   pill: string;
   chip: string;
@@ -79,7 +79,7 @@ export function auditRows(input: {
 }): ContrastRow[] {
   const ink = parseColor(input.ink);
   const amber = parseColor(input.amber);
-  const cyan = parseColor(input.cyan);
+  const paper = parseColor(input.paper);
   const rgba = (css: string): [Rgb, number] => {
     const n = css.match(/[\d.]+/g)!.map(Number);
     return [[n[0]!, n[1]!, n[2]!], n[3] ?? 1];
@@ -106,8 +106,8 @@ export function auditRows(input: {
     { label: `the timer's dimmed half over ${worst.biome}`, ratio: contrastRatio(dimOverPill, pillOver), floor: 4.5 },
     { label: `the summit star's amber on its chip over ${worst.biome}`, ratio: contrastRatio(amber, chipOver), floor: 3 },
     { label: `the star's chip against ${worst.biome}`, ratio: contrastRatio(chipOver, band), floor: 3 },
-    { label: `the marker's cyan against its dark ring over ${worst.biome}`, ratio: contrastRatio(cyan, chipOver), floor: 3 },
-    { label: `the marker's ring against ${worst.biome}`, ratio: contrastRatio(chipOver, band), floor: 3 },
+    { label: `the marker's horseshoe on its chip over ${worst.biome}`, ratio: contrastRatio(paper, chipOver), floor: 3 },
+    { label: `the marker's chip against ${worst.biome}`, ratio: contrastRatio(chipOver, band), floor: 3 },
     { label: `the pause icon on its own button over ${worst.biome}`, ratio: contrastRatio(ink, buttonOver), floor: 3 },
   ];
 }
