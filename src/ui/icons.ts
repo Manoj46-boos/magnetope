@@ -36,6 +36,30 @@ export const ICONS = {
   close: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
 } as const;
 
+/**
+ * The head's own crown for a preview (visual renewal PRD 12.8): each summit
+ * head re-draws the horseshoe's crown its own way, in the look's own colours.
+ * The poles below stay the law every casting shares.
+ */
+const headCrown = (look: SkinLook): string => {
+  switch (look.head) {
+    case 'industrial':
+      return `<rect x="39" y="30" width="42" height="9" rx="1" fill="${look.ring}"/><rect x="56" y="21" width="8" height="10" fill="${look.ring}"/>`;
+    case 'vintage':
+      return `<path d="M36 40a24 24 0 0 1 48 0" stroke="${look.ring}" stroke-width="16" fill="none"/><circle cx="60" cy="15" r="5" fill="${look.tip}"/>`;
+    case 'neon':
+      return `<path d="M36 40a24 24 0 0 1 48 0" stroke="${look.tip}" stroke-width="9" fill="none" opacity="0.45"/><path d="M36 40a24 24 0 0 1 48 0" stroke="${look.tip}" stroke-width="4" fill="none"/>`;
+    case 'carnival':
+      return `<path d="M36 40a24 24 0 0 1 48 0" stroke="${look.ring}" stroke-width="13" fill="none"/><circle cx="45" cy="38" r="5.5" fill="${look.tip}"/><circle cx="75" cy="38" r="5.5" fill="${look.tip}"/><path d="M60 24l6 9h-12z" fill="${look.tip}"/>`;
+    case 'aurora':
+      return `<path d="M36 40a24 24 0 0 1 48 0" stroke="${look.ring}" stroke-width="9" fill="none"/><path d="M32 34a28 28 0 0 1 56 -8" stroke="${look.tip}" stroke-width="3" fill="none" opacity="0.75"/>`;
+    case 'trophy':
+      return `<path d="M36 40a24 24 0 0 1 48 0" stroke="${look.tip}" stroke-width="14" fill="none"/><path d="M44 22a16 12 0 0 1 32 2" stroke="${look.ring}" stroke-width="2.5" fill="none"/>`;
+    default:
+      return `<path d="M36 40a24 24 0 0 1 48 0" stroke="${look.ring}" stroke-width="13" fill="none"/>`;
+  }
+};
+
 /** MAGNO in a skin's colours, for the locker grid. Same shapes as the loading mark. */
 export const magnoPreview = (look: SkinLook): string => `<svg class="magno-prev" viewBox="0 0 120 130" aria-hidden="true">
   <g transform="rotate(-10 60 78)">
@@ -44,7 +68,7 @@ export const magnoPreview = (look: SkinLook): string => `<svg class="magno-prev"
     <ellipse cx="60" cy="76" rx="13" ry="12" fill="${look.socket}"/>
     <circle cx="60" cy="76" r="7.5" fill="#f7f4ee"/><circle cx="61.5" cy="76.5" r="3.2" fill="#0c1118"/>
     ${look.accessory === 'sticker' ? `<path d="M40 104l4-7 4 7-7-4.5h8.5z" fill="${look.tip}"/>` : ''}
-    <path d="M36 40a24 24 0 0 1 48 0" stroke="${look.ring}" stroke-width="13" fill="none"/>
+    ${headCrown(look)}
     <rect x="29" y="40" width="14" height="15" fill="${look.ring}"/><rect x="77" y="40" width="14" height="15" fill="${look.ring}"/>
     <rect x="29" y="51" width="14" height="8" fill="${look.tip}"/><rect x="77" y="51" width="14" height="8" fill="${look.tip}"/>
     ${look.accessory === 'antenna' ? `<path d="M60 16V4" stroke="${look.ring}" stroke-width="3"/><circle cx="60" cy="4" r="4.5" fill="${look.tip}"/>` : ''}

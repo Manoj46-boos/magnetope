@@ -142,14 +142,14 @@ describe('the replay decay (R-EC-10)', () => {
 });
 
 describe('the collection sets (R-EC-05)', () => {
-  it('groups every non-default look into exactly one biome set of four to five pieces', () => {
+  it('groups every non-default look into exactly one biome set of four to six pieces', () => {
     const nonDefaults = COSMETICS.filter((c) => c.acquire.how !== 'default');
     const inSets = SETS.flatMap((set) => set.pieces);
     expect(inSets).toHaveLength(nonDefaults.length);
     expect(new Set(inSets.map((c) => c.id)).size).toBe(nonDefaults.length);
     for (const set of SETS) {
       expect(set.pieces.length, `${set.biome} set`).toBeGreaterThanOrEqual(4);
-      expect(set.pieces.length, `${set.biome} set`).toBeLessThanOrEqual(5);
+      expect(set.pieces.length, `${set.biome} set`).toBeLessThanOrEqual(6);
     }
     for (const classic of COSMETICS.filter((c) => c.acquire.how === 'default')) {
       expect(setOf(classic), `${classic.id} is timeless, not part of a set`).toBeNull();

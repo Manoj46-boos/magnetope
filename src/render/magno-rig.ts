@@ -15,7 +15,7 @@ import {
   AdditiveBlending,
   type Object3D,
 } from 'three';
-import type { Accessory, SkinLook } from '@/config/cosmetics';
+import type { Accessory, HeadStyle, SkinLook } from '@/config/cosmetics';
 import { TUNING } from '@/config/tuning';
 import { SecondOrder, SecondOrder2, frequencyForLag, noise1 } from '@/core/dynamics';
 import { angleDelta, clamp, damp, DEG, hypot2, lerp, type Vec2 } from '@/core/mathx';
@@ -28,6 +28,8 @@ export interface RigSkin {
   socket: Color;
   tip: Color;
   accessory?: Accessory;
+  /** The head's own casting; omitted is the classic horseshoe every look keeps by default. */
+  head?: HeadStyle;
 }
 
 /** Cosmetic colours are authored as sRGB hex, so they are converted into the renderer's working space here. */
@@ -37,6 +39,7 @@ export const skinFromLook = (look: SkinLook): RigSkin => ({
   socket: new Color(look.socket),
   tip: new Color(look.tip),
   accessory: look.accessory,
+  head: look.head,
 });
 
 export const CLASSIC_SKIN: RigSkin = {
@@ -247,6 +250,8 @@ export class MagnoRig {
   private readonly glowMaterial: MeshBasicMaterial;
   private readonly coreLight: Mesh;
   private readonly accessories: Record<Accessory, Group>;
+  /** One group per head casting (visual renewal PRD 12.8); exactly one is visible at a time. */
+  private readonly heads: Record<HeadStyle | 'classic', Group>;
   private chargeMeter = true;
 
   private pulse: Pulse | null = null;
@@ -418,26 +423,25 @@ export class MagnoRig {
     // or blue (south) material and a 15° outward flare. The flare is what makes
     // the silhouette read as a magnet rather than a padlock shackle: real
     // horseshoe magnets have flared pole pieces, real padlock shackles do not.
+    // The summit heads (visual renewal PRD 12.8) re-shape the casting itself —
+    // each style a structurally different horseshoe, every one keeping the law
+    // that got it there: flared poles, and the pair that marks them.
     this.headPivot.position.set(0, 0.34, 0);
     this.headPivot.rotation.z = -8 * DEG;
-    const arch = new Mesh(new TorusGeometry(0.15, 0.058, 5, 10, Math.PI), this.ringMaterial);
-    arch.position.y = 0.02;
-    this.headPivot.add(arch);
-    const POLE_FLARE = 18 * DEG;
-    for (const side of [-1, 1] as const) {
-      const leg = new Mesh(new BoxGeometry(0.12, 0.14, 0.12), this.ringMaterial);
-      leg.position.set(side * 0.15, -0.055, 0);
-      this.headPivot.add(leg);
-      const polePivot = new Group();
-      polePivot.position.set(side * 0.15, -0.1, 0);
-      polePivot.rotation.z = side * POLE_FLARE;
-      // Tip and cap are merged into a single tapered box so the pole piece reads
-      // as one solid flared block at distance, without doubling the triangle count.
-      const tip = new Mesh(new BoxGeometry(0.17, 0.13, 0.17), side < 0 ? this.northMaterial : this.southMaterial);
-      tip.position.y = -0.07;
-      polePivot.add(tip);
-      this.headPivot.add(polePivot);
+    this.heads = {
+      classic: this.buildClassicHead(),
+      industrial: this.buildIndustrialHead(),
+      vintage: this.buildVintageHead(),
+      neon: this.buildNeonHead(),
+      carnival: this.buildCarnivalHead(),
+      aurora: this.buildAuroraHead(),
+      trophy: this.buildTrophyHead(),
+    };
+    for (const group of Object.values(this.heads)) {
+      group.visible = false;
+      this.headPivot.add(group);
     }
+    this.heads.classic.visible = true;
     this.inner.add(this.headPivot);
     this.accessories = this.buildAccessories();
     this.applySkin(skin);
@@ -475,6 +479,207 @@ export class MagnoRig {
   }
 
   /** Small clip-on props; none of them changes the silhouette enough to hurt readability. */
+  /** The pole pair every casting shares: two flared tips, north and south, at the horseshoe's mouth. */
+  private buildPolePair(parent: Group, tip: Mesh, flare: number, legX: number, legY: number): void {
+    for (const side of [-1, 1] as const) {
+      const polePivot = new Group();
+      polePivot.position.set(side * legX, legY, 0);
+      polePivot.rotation.z = side * flare;
+      tip.position.y = -0.07;
+      polePivot.add(side < 0 ? this.cloneFor(tip, this.northMaterial) : this.cloneFor(tip, this.southMaterial));
+      parent.add(polePivot);
+    }
+  }
+
+  /** Two poles from one authored tip: the cast is cloned so each pole carries its own material. */
+  private cloneFor(tip: Mesh, material: MeshStandardMaterial): Mesh {
+    return new Mesh(tip.geometry, material);
+  }
+
+  /**
+   * The classic casting: torus arch, square legs, tapered box tips. This is the
+   * head every look wore before the summit heads existed, kept byte for byte.
+   */
+  private buildClassicHead(): Group {
+    const head = new Group();
+    const arch = new Mesh(new TorusGeometry(0.15, 0.058, 5, 10, Math.PI), this.ringMaterial);
+    arch.position.y = 0.02;
+    head.add(arch);
+    for (const side of [-1, 1] as const) {
+      const leg = new Mesh(new BoxGeometry(0.12, 0.14, 0.12), this.ringMaterial);
+      leg.position.set(side * 0.15, -0.055, 0);
+      head.add(leg);
+    }
+    // Tip and cap are merged into a single tapered box so the pole piece reads
+    // as one solid flared block at distance, without doubling the triangle count.
+    const tip = new Mesh(new BoxGeometry(0.17, 0.13, 0.17));
+    this.buildPolePair(head, tip, 18 * DEG, 0.15, -0.1);
+    return head;
+  }
+
+  /**
+   * The Scrapyard's summit casting: sharp-cornered stock, an I-beam shoulder
+   * across the crown, and wide rectangular pole shoes — the magnet as the yard
+   * would fabricate it, off the same shelf as the girders.
+   */
+  private buildIndustrialHead(): Group {
+    const head = new Group();
+    const beam = new Mesh(new BoxGeometry(0.42, 0.09, 0.13), this.ringMaterial);
+    beam.position.y = 0.02;
+    head.add(beam);
+    const crown = new Mesh(new BoxGeometry(0.09, 0.1, 0.1), this.ringMaterial);
+    crown.position.y = 0.11;
+    head.add(crown);
+    for (const side of [-1, 1] as const) {
+      const leg = new Mesh(new BoxGeometry(0.11, 0.16, 0.13), this.ringMaterial);
+      leg.position.set(side * 0.155, -0.06, 0);
+      head.add(leg);
+    }
+    const tip = new Mesh(new BoxGeometry(0.19, 0.12, 0.19));
+    this.buildPolePair(head, tip, 12 * DEG, 0.155, -0.12);
+    return head;
+  }
+
+  /**
+   * Suburbia's summit casting: a fatter torus segment with round tube legs and
+   * ball pole tips — the horseshoe as a mantelpiece heirloom, brass-bright and
+   * friendly where the classic is steel.
+   */
+  private buildVintageHead(): Group {
+    const head = new Group();
+    const arch = new Mesh(new TorusGeometry(0.155, 0.072, 6, 12, Math.PI), this.ringMaterial);
+    arch.position.y = 0.015;
+    head.add(arch);
+    const finial = new Mesh(new SphereGeometry(0.045, 6, 5), this.tipMaterial);
+    finial.position.y = 0.175;
+    head.add(finial);
+    for (const side of [-1, 1] as const) {
+      const leg = new Mesh(new CylinderGeometry(0.058, 0.058, 0.13, 6), this.ringMaterial);
+      leg.position.set(side * 0.155, -0.06, 0);
+      head.add(leg);
+    }
+    const tip = new Mesh(new SphereGeometry(0.085, 6, 5));
+    tip.scale.set(1, 0.8, 1);
+    this.buildPolePair(head, tip, 15 * DEG, 0.155, -0.115);
+    return head;
+  }
+
+  /**
+   * Metropolis' summit casting: the horseshoe bent from one neon tube — a thin
+   * bright core wrapped in a wider translucent sleeve, both poles tipped in
+   * glow. The tube's emissive core is what carries it at night, the sleeve
+   * what softens it by day; the pole tips stay solid, the law surviving the
+   * electricity.
+   */
+  private buildNeonHead(): Group {
+    const head = new Group();
+    // The tube is dressed in the skin's own pole colour: the sleeve shares the
+    // pole material's emissive lift so the night sky carries it, and the core
+    // rides it at full brightness, the one part of the head that never dims.
+    const sleeve = new Mesh(
+      new TorusGeometry(0.15, 0.052, 6, 12, Math.PI),
+      new MeshStandardMaterial({ color: this.tipMaterial.color.clone(), transparent: true, opacity: 0.5, roughness: 0.25, emissive: this.tipMaterial.color.clone(), emissiveIntensity: 0.4 }),
+    );
+    sleeve.position.y = 0.02;
+    head.add(sleeve);
+    const core = new Mesh(
+      new TorusGeometry(0.15, 0.024, 5, 12, Math.PI),
+      new MeshBasicMaterial({ color: this.tipMaterial.color.clone() }),
+    );
+    core.position.y = 0.02;
+    head.add(core);
+    for (const side of [-1, 1] as const) {
+      const leg = new Mesh(new CylinderGeometry(0.05, 0.05, 0.13, 6), this.ringMaterial);
+      leg.position.set(side * 0.155, -0.06, 0);
+      head.add(leg);
+    }
+    const tip = new Mesh(new BoxGeometry(0.16, 0.12, 0.16));
+    this.buildPolePair(head, tip, 15 * DEG, 0.155, -0.11);
+    return head;
+  }
+
+  /**
+   * The Playground's summit casting: the horseshoe as the big top's own —
+   * striped arch shoulders and a ball on each pole, the ball the pole's
+   * dressing, the tip beneath it still the pair.
+   */
+  private buildCarnivalHead(): Group {
+    const head = new Group();
+    const arch = new Mesh(new TorusGeometry(0.15, 0.06, 5, 10, Math.PI), this.ringMaterial);
+    arch.position.y = 0.02;
+    head.add(arch);
+    for (const side of [-1, 1] as const) {
+      const shoulder = new Mesh(new SphereGeometry(0.052, 6, 5), this.tipMaterial);
+      shoulder.position.set(side * 0.15, 0.025, 0);
+      head.add(shoulder);
+      const leg = new Mesh(new BoxGeometry(0.12, 0.14, 0.12), this.ringMaterial);
+      leg.position.set(side * 0.15, -0.055, 0);
+      head.add(leg);
+    }
+    const bigTop = new Mesh(new ConeGeometry(0.07, 0.12, 5), this.tipMaterial);
+    bigTop.position.y = 0.185;
+    head.add(bigTop);
+    const tip = new Mesh(new BoxGeometry(0.17, 0.11, 0.17));
+    this.buildPolePair(head, tip, 18 * DEG, 0.15, -0.1);
+    return head;
+  }
+
+  /**
+   * The Stratosphere's summit casting: the thinnest horseshoe in the locker —
+   * a slim arc riding an aurora ribbon that curves over the crown, the whole
+   * head quieter than the yard's, the way the thin air is quieter than the
+   * ground.
+   */
+  private buildAuroraHead(): Group {
+    const head = new Group();
+    const arch = new Mesh(new TorusGeometry(0.148, 0.04, 5, 12, Math.PI), this.ringMaterial);
+    arch.position.y = 0.02;
+    head.add(arch);
+    const ribbon = new Mesh(
+      new TorusGeometry(0.185, 0.014, 4, 14, Math.PI * 0.85),
+      new MeshBasicMaterial({ color: this.tipMaterial.color.clone(), transparent: true, opacity: 0.75, blending: AdditiveBlending, depthWrite: false, fog: false }),
+    );
+    ribbon.position.y = 0.055;
+    ribbon.rotation.z = Math.PI * 0.075;
+    head.add(ribbon);
+    for (const side of [-1, 1] as const) {
+      const leg = new Mesh(new BoxGeometry(0.09, 0.14, 0.09), this.ringMaterial);
+      leg.position.set(side * 0.148, -0.055, 0);
+      head.add(leg);
+    }
+    const tip = new Mesh(new BoxGeometry(0.14, 0.12, 0.14));
+    this.buildPolePair(head, tip, 15 * DEG, 0.148, -0.1);
+    return head;
+  }
+
+  /**
+   * The campaign's last reward: a solid gold casting of the classic — the same
+   * arch and legs and flared shoes, cast in one warm metal with a laurel
+   *wrapping the crown. The poles keep their red and blue: gold plates the
+   * magnet, it does not replace it.
+   */
+  private buildTrophyHead(): Group {
+    const head = new Group();
+    const arch = new Mesh(new TorusGeometry(0.15, 0.062, 6, 12, Math.PI), this.tipMaterial);
+    arch.position.y = 0.02;
+    head.add(arch);
+    for (const side of [-1, 1] as const) {
+      const leg = new Mesh(new BoxGeometry(0.13, 0.15, 0.13), this.tipMaterial);
+      leg.position.set(side * 0.15, -0.055, 0);
+      head.add(leg);
+    }
+    const laurel = new Mesh(
+      new TorusGeometry(0.09, 0.02, 4, 10, Math.PI * 1.2),
+      this.ringMaterial,
+    );
+    laurel.position.y = 0.1;
+    laurel.rotation.z = -Math.PI * 0.1;
+    head.add(laurel);
+    const tip = new Mesh(new BoxGeometry(0.17, 0.13, 0.17));
+    this.buildPolePair(head, tip, 18 * DEG, 0.15, -0.1);
+    return head;
+  }
+
   private buildAccessories(): Record<Accessory, Group> {
     const antenna = new Group();
     const stalk = new Mesh(new CylinderGeometry(0.011, 0.011, 0.17, 4), this.ringMaterial);
@@ -511,6 +716,8 @@ export class MagnoRig {
     this.tipMaterial.color.copy(skin.tip);
     this.socketMaterial.color.copy(skin.socket);
     for (const [name, group] of Object.entries(this.accessories)) group.visible = name === skin.accessory;
+    const casting = skin.head ?? 'classic';
+    for (const [name, group] of Object.entries(this.heads)) group.visible = name === casting;
   }
 
   /** The charge arcs stay hidden until the player has had a reason to learn them (PRD 12.1). */

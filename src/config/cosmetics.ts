@@ -28,12 +28,23 @@ export type Acquire =
 
 export type Accessory = 'antenna' | 'sticker' | 'flag';
 
+/**
+ * The head's own silhouette (visual renewal PRD 12.8): a skin may re-shape the
+ * horseshoe itself, not just recolour it — a square industrial block, a vintage
+ * torus segment, a neon tube, a carnival ball tip, an aurora ribbon, a solid
+ * gold casting. Every style keeps the law that got it there: the two poles
+ * stay flared and their pair stays the only such pair on screen, so no skin
+ * can make MAGNO read as anything but a magnet.
+ */
+export type HeadStyle = 'industrial' | 'vintage' | 'neon' | 'carnival' | 'aurora' | 'trophy';
+
 export interface SkinLook {
   body: string;
   ring: string;
   socket: string;
   tip: string;
   accessory?: Accessory;
+  head?: HeadStyle;
 }
 
 export interface FieldLook {
@@ -118,6 +129,53 @@ export const COSMETICS: readonly Cosmetic[] = [
   field('field.sparks', 'Spark Plug', reward({ type: 'grade', atLeast: 'S' }), { attract: '#fff06a', attractCore: '#fffbd0', repel: '#ff3cac', repelCore: '#ffd0ec' }),
   field('field.beacon', 'Beacon Gold', reward({ type: 'clears', count: 7 }), { attract: '#ffc94d', attractCore: '#fff1c4', repel: '#6a7bff', repelCore: '#d6dbff' }),
 
+  // The summit heads (visual renewal PRD 12.8): one per biome, unlocked by
+  // clearing that biome's own summit, each a structurally different horseshoe.
+  // The biome's palette dresses the chassis so the reward reads as the place
+  // that gave it, and the poles keep their pair law whatever the casting.
+  skin('skin.industrial', 'Foundrycast', reward({ type: 'level', id: 'scrapyard-13' }), {
+    body: '#6f5b45',
+    ring: '#a89676',
+    socket: '#241a10',
+    tip: '#e07b2a',
+    head: 'industrial',
+  }),
+  skin('skin.vintage', 'Heirloom', reward({ type: 'level', id: 'suburbia-13' }), {
+    body: '#8a5a4e',
+    ring: '#c9a68a',
+    socket: '#2b1512',
+    tip: '#4d7ea8',
+    head: 'vintage',
+  }),
+  skin('skin.neon', 'Neon Sign', reward({ type: 'level', id: 'metropolis-13' }), {
+    body: '#3b3560',
+    ring: '#8f86c9',
+    socket: '#120f24',
+    tip: '#ff2a8d',
+    head: 'neon',
+  }),
+  skin('skin.carnival', 'Big Top', reward({ type: 'level', id: 'playground-13' }), {
+    body: '#b04a5e',
+    ring: '#e8c85a',
+    socket: '#2c0f18',
+    tip: '#7a4ac9',
+    head: 'carnival',
+  }),
+  skin('skin.aurora', 'Aurora Dome', reward({ type: 'level', id: 'stratosphere-14' }), {
+    body: '#3f5f7d',
+    ring: '#9fd8c3',
+    socket: '#0c1a28',
+    tip: '#8affc9',
+    head: 'aurora',
+  }),
+  skin('skin.trophy', 'Grand Champion', reward({ type: 'stars', count: 210 }), {
+    body: '#c9a23f',
+    ring: '#ffe9a8',
+    socket: '#33260a',
+    tip: '#f5f0dc',
+    head: 'trophy',
+  }),
+
   skin('skin.frost', 'Frostbite', seasonal('winter', 300), { body: '#bfe6f7', ring: '#ffffff', socket: '#10222c', tip: '#6ec6ff' }),
   skin('skin.bloom', 'Spring Loaded', seasonal('spring', 300), { body: '#f4a6c8', ring: '#fff0f7', socket: '#2a1220', tip: '#7ad66f' }),
   skin('skin.sunburn', 'Beach Bolt', seasonal('summer', 300), { body: '#ff9f43', ring: '#fff0d8', socket: '#2b1608', tip: '#12b5cb' }),
@@ -135,11 +193,11 @@ export interface CosmeticSet {
 }
 
 const SET_MEMBERS: Readonly<Record<BiomeId, readonly string[]>> = {
-  scrapyard: ['skin.rust', 'skin.teal', 'skin.antenna', 'field.rose', 'field.ember'],
-  suburbia: ['skin.mint', 'skin.cherry', 'skin.flag', 'field.lime', 'skin.sticker'],
-  metropolis: ['skin.cobalt', 'skin.violet', 'skin.midnight', 'skin.chrome', 'field.beacon'],
-  playground: ['skin.sunny', 'skin.gold', 'field.sparks', 'field.ice', 'skin.sunburn'],
-  stratosphere: ['field.aurora', 'skin.frost', 'skin.bloom', 'field.leaf'],
+  scrapyard: ['skin.rust', 'skin.teal', 'skin.antenna', 'field.rose', 'field.ember', 'skin.industrial'],
+  suburbia: ['skin.mint', 'skin.cherry', 'skin.flag', 'field.lime', 'skin.sticker', 'skin.vintage'],
+  metropolis: ['skin.cobalt', 'skin.violet', 'skin.midnight', 'skin.chrome', 'field.beacon', 'skin.neon'],
+  playground: ['skin.sunny', 'skin.gold', 'field.sparks', 'field.ice', 'skin.sunburn', 'skin.carnival'],
+  stratosphere: ['field.aurora', 'skin.frost', 'skin.bloom', 'field.leaf', 'skin.aurora', 'skin.trophy'],
 };
 
 /** The collection sets (R-EC-05): four to five looks a biome calls its own, so the shelf reads as five stories rather than one pile. */

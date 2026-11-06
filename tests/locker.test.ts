@@ -26,10 +26,10 @@ const hue = (hex: string): number => {
 describe('launch catalogue', () => {
   const real = COSMETICS.filter((c) => c.acquire.how !== 'default');
 
-  it('ships 24 cosmetics split 12 Scrap, 8 earned and 4 seasonal', () => {
-    expect(real).toHaveLength(24);
+  it('ships 30 cosmetics split 12 Scrap, 14 earned and 4 seasonal', () => {
+    expect(real).toHaveLength(30);
     expect(real.filter((c) => c.acquire.how === 'scrap')).toHaveLength(12);
-    expect(real.filter((c) => c.acquire.how === 'reward')).toHaveLength(8);
+    expect(real.filter((c) => c.acquire.how === 'reward')).toHaveLength(14);
     expect(real.filter((c) => c.acquire.how === 'seasonal')).toHaveLength(4);
   });
 

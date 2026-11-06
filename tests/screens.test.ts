@@ -144,7 +144,8 @@ describe('locker screen', () => {
   it('shows the classic skin as equipped and every skin on the first tab', () => {
     build();
     expect(card('skin.classic').classList.contains('equipped')).toBe(true);
-    expect(document.querySelectorAll('.card')).toHaveLength(17);
+    // Seventeen looks plus the six summit heads (visual renewal 12.8).
+    expect(document.querySelectorAll('.card')).toHaveLength(23);
   });
 
   it('offers a purchase with a price and a watch-to-unlock alternative', () => {

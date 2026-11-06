@@ -4,5 +4,6 @@ One row per Poki submission, tagged in git the same day it uploads (R-QA-10). Th
 
 | Version | Date | The build |
 | --- | --- | --- |
+| v1.0.0-rc3 | 2026-11-06 | The character's own reward cast: six structurally different horseshoe heads, one earned at each biome's summit and the gold Grand Champion at the full 210 stars, all seven mounted whole on the rig with the pole-pair law held by construction, the locker preview drawing each crown, and the sets grown to hold them (a 30-look catalogue). Session 43 on the record. |
 | v1.0.0-rc2 | 2026-11-05 | The visual renewal's HUD chapter closes: the altitude rail carries each biome's own climb (a derived, contrast-lawful gradient on the chip-backed track) with the lockup's horseshoe as its marker, and every rewarded ask wears the in-house magnet icon. Session 42 on the record; the human legs named in the ledger row. |
 | v1.0.0-rc1 | 2026-10-27 | The release candidate the human legs validate: the full premium build (W1-W16), the funnel ops chapter complete on its machine side (the stuck/drift read, the runbook, the verdict form, the scorecard), the machine evidence standing at 91.5 of the Final Gate's 100 with every pending half-point named and owed. The submission itself waits on SUBMISSION.md section 7's human legs; when they land, tag v1.0.0 and add its row here the same day. |

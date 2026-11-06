@@ -231,7 +231,7 @@ export function renderEconomy(): string {
     '',
     '## The sets',
     '',
-    `Every look belongs to exactly one biome\u2019s set (R-EC-05): five sets, four to five pieces each, and a complete set turns the idle beat into the set\u2019s own flourish while the locker reads the collection set by set.`,
+    `Every look belongs to exactly one biome\u2019s set (R-EC-05): five sets, four to six pieces each — each biome\u2019s own summit head riding with the place that earned it — and a complete set turns the idle beat into the set\u2019s own flourish while the locker reads the collection set by set.`,
     '',
     '| Set | Pieces |',
     '| --- | --- |',

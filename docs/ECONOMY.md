@@ -12,7 +12,7 @@ One currency, one law: Scrap only ever buys cosmetics, so it never gates content
 | Fixed | The replay decay | replays of the same level pay half once three clears of it are already on today’s clock (R-EC-10) |
 | Fixed | Star stamps | three a level, on the clear card, on the score’s own tonic |
 | Variable | Fall grades | the comedy verdict, C to SSS, on the card and in the locker’s requirement paths |
-| Variable | Reward looks | 8 earned by playing: stars, clears, perfects, a level’s first clear, the best fall grade |
+| Variable | Reward looks | 14 earned by playing: stars, clears, perfects, a level’s first clear, the best fall grade |
 | Variable | The dangle | the next unlock on the clear card, nearest first and rotating, always one ordinary session away (R-EC-04) |
 | Variable | The highlight strip | the session’s funniest falls, best first, in memory only |
 | Scheduled | Seasonal slots | 4 looks at their season’s price, in season only |
@@ -24,19 +24,19 @@ One currency, one law: Scrap only ever buys cosmetics, so it never gates content
 | --- | --- | --- |
 | Scrap | 12 | 2900 |
 | Seasonal | 4 | 1150 |
-| Earned | 8 | playing, not Scrap |
+| Earned | 14 | playing, not Scrap |
 
 ## The sets
 
-Every look belongs to exactly one biome’s set (R-EC-05): five sets, four to five pieces each, and a complete set turns the idle beat into the set’s own flourish while the locker reads the collection set by set.
+Every look belongs to exactly one biome’s set (R-EC-05): five sets, four to six pieces each — each biome’s own summit head riding with the place that earned it — and a complete set turns the idle beat into the set’s own flourish while the locker reads the collection set by set.
 
 | Set | Pieces |
 | --- | --- |
-| scrapyard | 5 |
-| suburbia | 5 |
-| metropolis | 5 |
-| playground | 5 |
-| stratosphere | 4 |
+| scrapyard | 6 |
+| suburbia | 6 |
+| metropolis | 6 |
+| playground | 6 |
+| stratosphere | 6 |
 
 ## The progression bot’s verdict
 

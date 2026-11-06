@@ -1389,6 +1389,8 @@ export class Game {
       },
       advance: (seconds: number) => this.tick(seconds),
       startLevel: (id: string) => this.startLevel(id),
+      /** Equips a look through the game's own equip path, for the browser suites (visual renewal 12.8). */
+      equip: (id: string) => this.equipCosmetic(id),
       setUiVisible: (visible: boolean) => this.ui.root.classList.toggle('photo', !visible),
       /** Boots the composition scene for card and ident capture; `null` hands play back. */
       thumbnail: (variant: string | null, ident = false) => {
