@@ -68,6 +68,32 @@ describe('prop art kit', () => {
     }
   });
 
+  it('keeps every level inside the renewal ceilings: 80k triangles, 120 draw calls, 24 unique materials', async () => {
+    // The renewal's budget table (visual renewal PRD 19.4) adds geometry
+    // nothing: the whole level's triangles stay under the shipped 80k line,
+    // and the toon pass batches by material family, so the unique materials a
+    // level may name stay under the raised 24. Draw calls are the parts the
+    // renderer would issue: one per prop per channel that has geometry.
+    for (const level of ALL_LEVELS) {
+      const sim = await createSim(level);
+      let triangles = 0;
+      let drawCalls = 0;
+      const materials = new Set<string>();
+      for (const prop of sim.physics.props) {
+        const parts = buildPropParts(prop, PALETTES[level.biome], level.index * 31 + level.biome.length);
+        triangles += parts.body.triangleCount + parts.glass.triangleCount + parts.rim.triangleCount + parts.glow.triangleCount;
+        for (const channel of [parts.body, parts.glass, parts.rim, parts.glow]) {
+          if (channel.triangleCount > 0) drawCalls += 1;
+        }
+        materials.add(prop.kind.reaction ? `reactive/${prop.kind.reaction.type}` : prop.kind.material);
+      }
+      sim.dispose();
+      expect(triangles, `${level.id} triangles`).toBeLessThanOrEqual(80_000);
+      expect(drawCalls, `${level.id} draw calls`).toBeLessThanOrEqual(120);
+      expect(materials.size, `${level.id} unique materials`).toBeLessThanOrEqual(24);
+    }
+  });
+
   it('lights signs, windows, beacons and strobes on the glow channel and nothing else', async () => {
     const sim = await createSim(makeLevel(DEFAULT_PLACEMENTS));
     const lit = new Set([

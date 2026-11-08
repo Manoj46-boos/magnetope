@@ -39,7 +39,7 @@ export interface DependencyLicense {
 
 /** Licences named by the notice but not installed through npm (the font). */
 export const NON_NPM_LICENSES: readonly { name: string; license: string; file: string }[] = [
-  { name: 'Fredoka', license: 'OFL-1.1', file: 'public/fonts/OFL.txt' },
+  { name: 'Comfortaa', license: 'OFL-1.1', file: 'public/fonts/OFL.txt' },
 ];
 
 const LICENSE_FILES = ['LICENSE', 'LICENSE.md', 'LICENSE.txt', 'LICENCE', 'LICENCE.md', 'COPYING', 'COPYING.txt'];

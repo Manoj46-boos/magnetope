@@ -27,13 +27,13 @@ base64 (see `vite.config.ts`).
 - The package ships its own copy in
   `node_modules/@dimforge/rapier3d-compat/LICENSE`.
 
-## Fredoka
+## Comfortaa
 
-The only font the interface uses, self-hosted as `public/fonts/fredoka-latin.woff2`
-with its licence beside it in `public/fonts/OFL.txt`.
+The only font the interface uses, self-hosted as `public/fonts/comfortaa-latin.woff2`
+(the variable weight subset) with its licence beside it in `public/fonts/OFL.txt`.
 
-- Copyright 2016 The Fredoka Project Authors
-  (https://github.com/hafontia/Fredoka-One)
+- Copyright 2011 The Comfortaa Project Authors
+  (https://github.com/alexeiva/comfortaa)
 - License: SIL Open Font License, Version 1.1 — full text ships with the font
   and at http://scripts.sil.org/OFL
 

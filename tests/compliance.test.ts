@@ -34,7 +34,7 @@ describe('license hygiene (R-CM-02)', () => {
 
   it('names every piece with its license in the repo notice, font included', () => {
     const notice = readFileSync(join(root, 'THIRD_PARTY.md'), 'utf8');
-    for (const piece of ['three.js', 'MIT', 'Rapier', 'Apache License, Version 2.0', 'Fredoka', 'SIL Open Font License']) {
+    for (const piece of ['three.js', 'MIT', 'Rapier', 'Apache License, Version 2.0', 'Comfortaa', 'SIL Open Font License']) {
       expect(notice, `the notice must say "${piece}"`).toContain(piece);
     }
     expect(existsSync(join(root, 'public/fonts/OFL.txt'))).toBe(true);

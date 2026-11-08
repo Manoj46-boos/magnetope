@@ -145,11 +145,11 @@ describe('the production bundle under a strict content security policy', () => {
 
   runnable('serves its own rounded font, so the text looks the same on every device', async () => {
     const loaded = await page!.evaluate(async () => {
-      await document.fonts.load("600 16px Fredoka");
-      return document.fonts.check("600 16px Fredoka");
+      await document.fonts.load("600 16px Comfortaa");
+      return document.fonts.check("600 16px Comfortaa");
     });
     expect(loaded).toBe(true);
-    expect(requests.some((url) => url.endsWith('fredoka-latin.woff2'))).toBe(true);
+    expect(requests.some((url) => url.endsWith('comfortaa-latin.woff2'))).toBe(true);
     expect(requests.filter((url) => !url.startsWith(origin) && !url.startsWith('data:') && !url.startsWith('blob:'))).toEqual([]);
   });
 

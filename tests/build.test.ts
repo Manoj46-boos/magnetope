@@ -1,10 +1,10 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 // @ts-expect-error plain ESM script without type declarations
-import { BUDGET, CLASS_BUDGETS, auditBuild } from '../scripts/check-budget.mjs';
+import { BUDGET, CLASS_BUDGETS, GIF_BUDGET, auditBuild, auditFonts } from '../scripts/check-budget.mjs';
 
 const root = resolve(__dirname, '..');
 let outDir = '';
@@ -82,5 +82,38 @@ describe('production build (Poki QA gates)', () => {
   it('ships no logo outside the loading screen and no outbound anchors', () => {
     const { sizes } = auditBuild(outDir);
     expect(sizes.some((s: { file: string }) => /\.(png|jpe?g|svg|gif)$/.test(s.file))).toBe(false);
+  });
+
+  // The renewal's font law (visual renewal PRD 19.6): every family the shipped
+  // bundle names is the self-hosted Comfortaa subset, and no font loads from
+  // anywhere but the bundle.
+  it('names only the self-hosted Comfortaa face in both builds', () => {
+    for (const dir of [outDir, pokiDir]) {
+      const code = [join(dir, 'index.html')];
+      const { sizes } = auditBuild(dir);
+      for (const entry of sizes) if (entry.file.endsWith('.css') || entry.file.endsWith('.js')) code.push(join(dir, entry.file));
+      expect(auditFonts(dir, code)).toEqual([]);
+      expect(sizes.some((s: { file: string }) => s.file.endsWith('comfortaa-latin.woff2'))).toBe(true);
+    }
+  });
+
+  it('rejects a foreign family or a remote font URL, so the law cannot rot', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'magnetope-fontlaw-'));
+    try {
+      writeFileSync(join(dir, 'bad.css'), "a { font-family: 'Fredoka'; }\nb { font-family: 'Comfortaa'; }");
+      writeFileSync(join(dir, 'remote.css'), "@font-face { font-family: 'Comfortaa'; src: url(https://cdn.example.com/comfortaa.woff2); }");
+      expect(auditFonts(dir, [join(dir, 'bad.css')])).toEqual(['font family "Fredoka" is not the self-hosted face (renewal 19.6)']);
+      expect(auditFonts(dir, [join(dir, 'remote.css')])).toEqual(['remote font reference in remote.css: https://cdn.example.com/comfortaa.woff2']);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // The renewal's GIF law (19.6): the animated card's GIF stays under 1 MB in
+  // the shipped tree — the 6.2 MB card the review found cannot return.
+  it('keeps the animated GIF under its line in the thumbnail tree', () => {
+    const gif = 'thumbnails/animated/thumbnail-animated.gif';
+    const raw = statSync(join(root, gif)).size;
+    expect(raw).toBeLessThanOrEqual(GIF_BUDGET);
   });
 });

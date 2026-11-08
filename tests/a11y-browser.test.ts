@@ -12,7 +12,7 @@ import { isHeadlessAudioNoise, launchBrowser, startServer } from './browser/harn
  * see, Tab that stays inside the modal, text that clears 4.5:1 on its own
  * panel — and the interface scale and the pseudo locale are measured on the
  * sizes people play on, under the fit law's own rules. The font sweep draws
- * every character of every language through the shipped Fredoka file.
+ * every character of every language through the shipped Comfortaa file.
  */
 
 interface GameWindow {
@@ -325,7 +325,7 @@ describe('the DOM a player receives (R-AC-07)', () => {
     const missing = await page!.evaluate(
       (tables) => {
         const problems: string[] = [];
-        const faces = ['400 16px Fredoka', '700 16px Fredoka'];
+        const faces = ['400 16px Comfortaa', '700 16px Comfortaa'];
         for (const [locale, strings] of tables) {
           const chars = [...new Set(Object.values(strings).join(''))].filter((c) => c.trim() !== '');
           for (const ch of chars) {

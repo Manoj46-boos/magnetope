@@ -1,6 +1,6 @@
 """Audits a store thumbnail against the card spec (PRD 17.3, R-TH-01..05/09).
 
-    python tools/check-thumbnail.py thumbnails/static/thumbnail-hero-628.png \
+    python tools/check-thumbnail.py thumbnails/static/thumbnail-hero-628.webp \
         --variant=hero-launch --subject=0.45,0.55,0.43,0.43
     python tools/check-thumbnail.py --report thumbnails
 
@@ -356,7 +356,7 @@ def write_report(root):
     detail = {}
     ok = True
     for variant, base in VARIANT_BASE.items():
-        path = os.path.join(root, "static", f"thumbnail-{base}-628.png")
+        path = os.path.join(root, "static", f"thumbnail-{base}-628.webp")
         if not os.path.exists(path):
             raise SystemExit(f"{path} is missing; run npm run thumbnails first")
         subject = subjects.get(variant)

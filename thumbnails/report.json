@@ -13,7 +13,7 @@
   },
   "audits": {
     "legibility128": true,
-    "contrast": 7.33,
+    "contrast": 7.37,
     "emotion128": true,
     "poles64": true,
     "hueCollision": false,
@@ -23,45 +23,45 @@
   "detail": {
     "panic-launch": {
       "failures": [],
-      "contrast": 7.33,
-      "dimmed": 5.21,
-      "at128": 5.88,
+      "contrast": 7.37,
+      "dimmed": 5.23,
+      "at128": 5.87,
       "emotion": [
-        390,
-        369
+        386,
+        367
       ],
       "poles64": [
-        342,
+        338,
         30
       ],
-      "arcBand": 62451,
-      "arc128": 5952
+      "arcBand": 62904,
+      "arc128": 5971
     },
     "fall-comedy": {
       "failures": [],
-      "contrast": 9.51,
-      "dimmed": 6.23,
-      "at128": 9.43,
+      "contrast": 9.47,
+      "dimmed": 6.2,
+      "at128": 9.41,
       "emotion": [
-        481,
+        479,
         463
       ],
       "poles64": [
-        469,
-        7
+        461,
+        6
       ]
     },
     "tower-scale": {
       "failures": [],
-      "contrast": 5.93,
-      "dimmed": 4.02,
+      "contrast": 5.9,
+      "dimmed": 4.0,
       "at128": 5.24,
       "poles64": [
-        308,
+        304,
         655
       ],
-      "arcBand": 95299,
-      "arc128": 11384
+      "arcBand": 94879,
+      "arc128": 11370
     },
     "animated": {
       "failures": [],

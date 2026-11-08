@@ -547,7 +547,10 @@
      covering the climb it names. */
   top: 18%;
   left: 0;
-  width: min(66%, 34rem);
+  /* Comfortaa runs wider than the face the card was sized for (renewal 19.1):
+     the box takes the full width while the type keeps its own thirds line —
+     left-aligned at the padding, never past the frame. */
+  width: min(100%, 34rem);
   display: grid;
   justify-items: start;
   gap: 0.35rem;
@@ -575,6 +578,7 @@
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 /* The boot card's wordmark (P-FT-02): the brand lockup at the title's own scale. */
@@ -831,6 +835,9 @@
 
 .exchange-head h2 {
   margin: 0;
+  /* Comfortaa runs wider than the face this heading was sized for (renewal
+     19.1): a long single word may break rather than push its panel wide. */
+  overflow-wrap: anywhere;
 }
 
 .exchange-block {
@@ -991,6 +998,20 @@
   gap: 5px;
 }
 
+/* Comfortaa runs wider than the face these labels were sized for (renewal
+   19.1), and the pseudo locale stretches them 1.4x beyond that: the row's
+   children may shrink below their intrinsic width and the label's value may
+   hand itself to the next line rather than spill the row. */
+.control-row > * {
+  min-width: 0;
+}
+
+.control-label {
+  min-width: 0;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+
 /* The accessibility group's name: a quiet divider, so the accommodations read as one deliberate suite. */
 .control-group {
   grid-column: 1 / -1;
@@ -999,6 +1020,7 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
   color: var(--ink-dim);
 }
 
@@ -1043,13 +1065,14 @@
 
 .segment {
   min-height: 36px;
-  padding: 0 10px;
+  padding: 2px 10px;
   border-radius: 10px;
   font-weight: 700;
   font-size: 0.92rem;
   color: var(--ink-dim);
   transition: background var(--t-micro), color var(--t-micro);
 }
+
 
 .segment:hover {
   color: var(--ink);
@@ -1080,6 +1103,10 @@
 .panel.keys {
   width: min(94%, 520px);
   display: grid;
+  /* Comfortaa runs wider than the face these rows were sized for (renewal
+     19.1): the panel's column may not grow past its own content box, so a
+     wide row wraps inside its width instead of pushing the panel sideways. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
 }
 
@@ -1126,7 +1153,12 @@
   color: var(--ink);
   font-weight: 800;
   font-size: 0.9rem;
-  white-space: nowrap;
+  /* Comfortaa is wider than the face these caps were sized for (renewal
+     19.1), and the pseudo locale stretches labels 1.4x on top: the cap may
+     hand its label to a second line rather than spill the key-list's grid
+     track — the cap keeps its shape, the law keeps its floor. */
+  white-space: normal;
+  overflow-wrap: anywhere;
   transition: transform var(--t-micro), background var(--t-micro);
 }
 
@@ -1213,6 +1245,10 @@
   .panel h2 {
     margin-bottom: 8px;
     font-size: 1.15rem;
+    /* Comfortaa runs wider than the face these headings were sized for
+       (renewal 19.1): a long single word may break rather than push its
+       panel past the screen. */
+    overflow-wrap: anywhere;
   }
 
   .panel .btn {
@@ -1238,30 +1274,69 @@
   }
 
   .panel.controls {
-    gap: 6px;
-    padding-block: 10px;
+    gap: 3px;
+    padding-block: 4px;
   }
 
   /* The settings list rides two columns: the label sits beside its control,
      the pairs dissolve into the grid, and the group's name flows inline so
      no row is wasted (R-AC-10 kept inside the landscape fit law). */
+  /* Comfortaa runs wider than the face this landscape layout was sized for
+     (renewal 19.1): both tracks share by fraction so the label wraps inside
+     its own box (overflow-wrap lives on .control-label) and the control
+     beside it keeps its track. */
   .panel.controls .control-row {
-    grid-template-columns: minmax(88px, auto) 1fr;
+    grid-template-columns: minmax(80px, 5fr) minmax(96px, 4fr);
     align-items: center;
     column-gap: 12px;
   }
 
+  /* The group keeps its one-row rhythm while every button clears the touch
+     floor (renewal 19.1: Comfortaa's wider letters meet this landscape's
+     narrow columns): buttons never shrink under 32 px, and a group that
+     cannot fit its row hands the rest to a second row instead of pushing
+     past its track. */
+  .panel.controls .segmented {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fit, minmax(33px, max-content));
+    grid-auto-columns: unset;
+    gap: 2px;
+  }
+
+  .panel.controls .segment {
+    min-width: 33px;
+  }
+
   .panel.controls .control-label {
     font-size: 0.72rem;
+    /* The longest locales wrap to a second line on this face (renewal
+       19.1): the pair rides its own height instead of forcing the row's. */
+    line-height: 1.05;
   }
 
   .panel.controls .toggle {
     min-height: 40px;
   }
 
+  /* Comfortaa runs wider than the face this layout was sized for (renewal
+     19.1): the segments read one line at a size that fits the column, and a
+     label that still cannot fit (the pseudo locale's 1.4x stretch) hands
+     itself to a second line inside its own cell — the touch floor holds
+     either way. */
+  .panel.controls .segment {
+    min-height: 34px;
+    padding: 2px 6px;
+    font-size: 0.72rem;
+    overflow-wrap: anywhere;
+  }
+
   /* The slider keeps a hittable width beside its label; a 27px slider is no target. */
   .panel.controls input[type='range'] {
     min-width: 96px;
+    /* The native thumb paints 2px past the track's box on this face, which
+       the fit law's scrollWidth reads as a spill: hold the input just inside
+       its track so the row measures true. */
+    width: calc(100% - 2px);
   }
 
   .panel.controls .pair {
@@ -1301,12 +1376,30 @@
 
   /* The assist row's state names itself on one line in the pause panel, the way
      every other toggle reads; the stacked two-line layout belongs to the wider
-     controls panel where the row has the room. */
+     controls panel where the row has the room. Comfortaa runs wider than the
+     face this line was sized for (renewal 19.1), so under a zoomed layout the
+     state stacks under its label — the pair stays readable and the label keeps
+     its width — while plain landscape keeps the one-line read. */
   .panel.pause .toggle .value {
     flex-basis: auto;
     margin-top: 0;
     padding-left: 0;
     align-self: center;
+    font-size: 0.7rem;
+  }
+
+  @media (max-height: 340px) {
+    .panel.pause .toggle .value {
+      flex-basis: 100%;
+      margin-top: 1px;
+    }
+
+    /* The zoomed shell lays the pause menu out in a third less width, and
+       Comfortaa is wider than the face these rows were sized for (renewal
+       19.1): the toggles read one column so every label keeps its line. */
+    .panel.pause .toggles {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 
   .panel.controls,
@@ -1413,6 +1506,15 @@
   .key-cap {
     min-width: 52px;
     padding: 0 8px;
+  }
+
+  /* Comfortaa runs wider than the face this list was sized for (renewal
+     19.1): two columns no longer fit their rows' own minimum, so the list
+     reads one column on the narrowest phones — every row keeps its full
+     width instead of the grid overflowing its panel. */
+  .key-list {
+    grid-template-columns: 1fr;
+    column-gap: 0;
   }
 }
 

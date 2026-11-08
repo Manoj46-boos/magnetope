@@ -77,6 +77,34 @@ export function auditPalette(rootDir) {
   return problems;
 }
 
+/**
+ * The font law (visual renewal PRD 19.6): every font the shipped bundle may
+ * load is the self-hosted Comfortaa subset or the bespoke wordmark SVG. Any
+ * other family named in the code, or any font URL off-origin, fails the gate.
+ */
+export function auditFonts(dist, codeFiles) {
+  const problems = [];
+  const families = new Set();
+  const family = /font-family:\s*['"]([A-Za-z ]+)['"]/g;
+  for (const file of codeFiles) {
+    const text = readFileSync(file, 'utf8');
+    for (const match of text.matchAll(family)) families.add(match[1]);
+  }
+  for (const name of families) {
+    if (name !== 'Comfortaa') problems.push(`font family "${name}" is not the self-hosted face (renewal 19.6)`);
+  }
+  for (const file of codeFiles) {
+    const text = readFileSync(file, 'utf8');
+    for (const match of text.matchAll(/url\((['"]?)(https?:[^)'"]+\.woff2?|\.ttf)\1\)/g)) {
+      problems.push(`remote font reference in ${relative(dist, file)}: ${match[2]}`);
+    }
+  }
+  return problems;
+}
+
+/** The GIF law (visual renewal PRD 19.1/19.6): the animated card's GIF stays under 1 MB. */
+export const GIF_BUDGET = 1.0 * MB;
+
 export function auditBuild(dist, { allowPokiSdk = false } = {}) {
   if (!existsSync(dist)) throw new Error(`Build output not found at ${dist}`);
   const files = walk(dist);
@@ -130,6 +158,12 @@ export function auditBuild(dist, { allowPokiSdk = false } = {}) {
     problems.push('WebAssembly no longer streams: instantiateStreaming is missing from the bundle');
   }
   if (/__game\b/.test(joined)) problems.push('development hook (__game) leaked into the production bundle');
+  problems.push(...auditFonts(dist, code));
+  for (const entry of sizes) {
+    if (entry.file.endsWith('.gif') && entry.raw > GIF_BUDGET) {
+      problems.push(`animated GIF ${entry.file} is ${(entry.raw / MB).toFixed(2)} MB, over the 1.00 MB line (renewal 19.6)`);
+    }
+  }
   if (/googleapis|gstatic|google-analytics|googletagmanager/i.test(joined)) problems.push('Google service reference found; Poki rejects them');
   if (/https?:\/\/(?!game-cdn\.poki\.com|www\.w3\.org|github\.com\/dimforge|threejs\.org|rapier\.rs|developers\.poki\.com|reactjs\.org|mths\.be|docs\.|www\.khronos\.org|registry\.khronos\.org|en\.wikipedia\.org|webglreport|get\.webgl\.org|bugzilla|crbug|bugs\.|issues\.|developer\.mozilla\.org|stackoverflow|gist\.github|raw\.githubusercontent|rollupjs|vite)[^\s"'`)]{4,}\/\S*\.(js|png|jpg|woff2?|json|mp3|ogg|wasm)\b/i.test(joined)) {
     problems.push('runtime reference to a remote asset found');
