@@ -581,9 +581,8 @@ export class GameUi {
   // ---------------------------------------------------------------- fall card
 
   showFall(data: FallCardData): void {
-    const hi = ['S', 'SS', 'SSS'].includes(data.grade);
     this.fallCard.innerHTML = `
-      <div class="grade ${hi ? 'hi' : ''}">${data.grade}</div>
+      <div class="grade g-${data.grade.toLowerCase()}">${data.grade}</div>
       <div class="stats">
         <div>${data.heightMeters.toFixed(1)}<span>${t('meters')}</span></div>
         <div>${data.bounces}<span>${t('bounces')}</span></div>

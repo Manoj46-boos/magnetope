@@ -91,45 +91,22 @@ export const STATE = {
   swatchFriend: '#e0a3ff',
 } as const;
 
-/** The custom property each UI token owns, so the sync audit can hold stylesheet and module together. */
-export const UI_VARS = {
-  '--ink': UI.ink,
-  '--ink-dim': UI.inkDim,
-  '--panel': UI.panel,
-  '--panel-edge': UI.panelEdge,
-  '--amber': UI.amber,
-  '--amber-deep': UI.amberDeep,
-  '--cyan': UI.cyan,
-  '--danger': UI.danger,
-  '--paper': BRAND.paper,
-  '--ui-bg': UI.bg,
-  '--btn-top': BUTTON.top,
-  '--btn-ink': BUTTON.ink,
-  '--btn-rim-60': 'rgba(255, 226, 170, 0.6)',
-  '--success': STATE.success,
-  '--cyan-pale': STATE.cyanPale,
-  '--ink-on-light': STATE.inkOnLight,
-  '--night-hi': STATE.nightHi,
-  '--night-lo': STATE.nightLo,
-  '--panel-deep': STATE.panelDeep,
-  '--panel-dusk': STATE.panelDusk,
-  '--cyan-ink': STATE.cyanInk,
-  '--gold-ink': STATE.goldInk,
-  '--night-radial-hi': STATE.nightRadialHi,
-  '--night-radial-lo': STATE.nightRadialLo,
-  '--night-deep': STATE.nightDeep,
-  '--swatch-mine': STATE.swatchMine,
-  '--swatch-friend': STATE.swatchFriend,
-  '--white-ink': UI.white,
-  '--black-mask': UI.black,
-} as const;
-
 /** The share card's rank medals, one hue per tier. */
 export const RANKS = {
   sss: '#ff8a5c',
   s: '#ffd96b',
   a: '#9fe7ff',
   b: '#c9f2d4',
+} as const;
+
+/** The fall card's grade ladder (renewal 17.8): the dim ink C climbs the golds to the pole red SSS. */
+export const GRADE_LADDER = {
+  c: 'rgba(244, 239, 229, 0.66)',
+  b: '#ffe082',
+  a: '#ffca28',
+  s: '#ffab00',
+  ss: '#ff6f00',
+  sss: '#e53935',
 } as const;
 
 /** An effect colour in its authoring space: three's HSL, as the family was tuned. */
@@ -160,4 +137,42 @@ export const TOON = {
   lit: 1.0,
   edgeFloor: 0.85,
   edgeCeil: 1.0,
+} as const;
+
+/** The custom property each UI token owns, so the sync audit can hold stylesheet and module together. */
+export const UI_VARS = {
+  '--ink': UI.ink,
+  '--ink-dim': UI.inkDim,
+  '--panel': UI.panel,
+  '--panel-edge': UI.panelEdge,
+  '--amber': UI.amber,
+  '--amber-deep': UI.amberDeep,
+  '--cyan': UI.cyan,
+  '--danger': UI.danger,
+  '--paper': BRAND.paper,
+  '--ui-bg': UI.bg,
+  '--btn-top': BUTTON.top,
+  '--btn-ink': BUTTON.ink,
+  '--btn-rim-60': 'rgba(255, 226, 170, 0.6)',
+  '--success': STATE.success,
+  '--cyan-pale': STATE.cyanPale,
+  '--ink-on-light': STATE.inkOnLight,
+  '--night-hi': STATE.nightHi,
+  '--night-lo': STATE.nightLo,
+  '--panel-deep': STATE.panelDeep,
+  '--panel-dusk': STATE.panelDusk,
+  '--cyan-ink': STATE.cyanInk,
+  '--gold-ink': STATE.goldInk,
+  '--night-radial-hi': STATE.nightRadialHi,
+  '--night-radial-lo': STATE.nightRadialLo,
+  '--night-deep': STATE.nightDeep,
+  '--swatch-mine': STATE.swatchMine,
+  '--swatch-friend': STATE.swatchFriend,
+  '--grade-b': GRADE_LADDER.b,
+  '--grade-a': GRADE_LADDER.a,
+  '--grade-s': GRADE_LADDER.s,
+  '--grade-ss': GRADE_LADDER.ss,
+  '--grade-sss': GRADE_LADDER.sss,
+  '--white-ink': UI.white,
+  '--black-mask': UI.black,
 } as const;

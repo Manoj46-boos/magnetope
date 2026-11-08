@@ -6,16 +6,23 @@ import { cameraDistance, type StageLayout } from './stage';
 export const CAMERA_FOV = 24;
 const DEFAULT_FAR = 600;
 
-/** Shake grammar from PRD 8.4: amplitude as a share of visible height, plus duration. */
+/**
+ * Shake grammar (renewal 17.5 over PRD 8.4): amplitude as a share of visible
+ * height, duration, the trigger's own frequency, and the decay curve it asks
+ * for — linear for the snappy kinds, exponential for the long falls. The
+ * amplitude pairs hold the shipped 8.4 law (micro/small/big) inside the new
+ * five-kind vocabulary, so a retune of one trigger never moves its neighbours.
+ */
 export const SHAKE = {
-  micro: { amplitude: 0.003, duration: 0.08 },
-  small: { amplitude: 0.0066, duration: 0.12 },
-  big: { amplitude: 0.0114, duration: 0.18 },
+  lightSnap: { amplitude: 0.003, duration: 0.08, hz: 25, curve: 'linear' },
+  heavySnap: { amplitude: 0.0066, duration: 0.12, hz: 20, curve: 'linear' },
+  lightImpact: { amplitude: 0.0084, duration: 0.2, hz: 15, curve: 'linear' },
+  heavyImpact: { amplitude: 0.0114, duration: 0.4, hz: 10, curve: 'exponential' },
+  polarityFlip: { amplitude: 0.0016, duration: 0.06, hz: 40, curve: 'linear' },
 } as const;
 
 export type ShakeKind = keyof typeof SHAKE;
 
-const SHAKE_HZ = 10;
 const MAX_ROLL = 1.2 * DEG;
 
 /**
@@ -38,10 +45,15 @@ const SETTLE_DOLLY = 0.03;
 const SETTLE_TAU = 0.09;
 /** Charge dolly (R-GF-05): the lens closes by at most 4% while the player holds a charge. */
 const CHARGE_DOLLY = 0.04;
+/** Punch-in (renewal 17.4): the airborne phase after a full release closes the lens 5%, over the rig's 200 ms transition. */
+const PUNCH_DOLLY = 0.05;
+const PUNCH_TAU = 0.073;
 
 interface ActiveShake {
   amplitude: number;
   duration: number;
+  hz: number;
+  exponential: boolean;
   age: number;
   seed: number;
 }
@@ -59,6 +71,7 @@ export class CameraRig {
   private lookAhead: Vec2 = { x: 0, y: 0 };
   private shakes: ActiveShake[] = [];
   private shakeSeed = 0;
+  private punchTarget = 0;
   private ready = false;
   private time = 0;
   /** Smoothed pull back for the cinematic fall framing. */
@@ -71,6 +84,7 @@ export class CameraRig {
   private fovPop = 0;
   private settlePulse = 0;
   private chargeDolly = 0;
+  private punch = 0;
   reducedMotion = false;
 
   /** Height of the view at the standard follow distance, in metres. */
@@ -160,12 +174,24 @@ export class CameraRig {
     this.settlePulse = 1;
   }
 
+  /** The airborne punch-in (renewal 17.4): 5% closer for the flight after a full release. */
+  punchIn(): void {
+    this.punchTarget = 1;
+  }
+
+  /** The flight is over: the punch-in eases back out over its 200 ms. */
+  punchOut(): void {
+    this.punchTarget = 0;
+  }
+
   private clearBeats(): void {
     this.kickX = 0;
     this.kickY = 0;
     this.fovPop = 0;
     this.settlePulse = 0;
     this.chargeDolly = 0;
+    this.punch = 0;
+    this.punchTarget = 0;
     if (this.camera.fov !== CAMERA_FOV) {
       this.camera.fov = CAMERA_FOV;
       this.camera.updateProjectionMatrix();
@@ -177,7 +203,14 @@ export class CameraRig {
     if (inputCritical) return;
     const def = SHAKE[kind];
     const scale = this.reducedMotion ? REDUCED_AMPLITUDE : 1;
-    this.shakes.push({ amplitude: def.amplitude * scale, duration: def.duration, age: 0, seed: ++this.shakeSeed * 13.37 });
+    this.shakes.push({
+      amplitude: def.amplitude * scale,
+      duration: def.duration,
+      hz: def.hz,
+      exponential: def.curve === 'exponential',
+      age: 0,
+      seed: ++this.shakeSeed * 13.37,
+    });
     if (this.shakes.length > 6) this.shakes.shift();
   }
 
@@ -197,6 +230,9 @@ export class CameraRig {
     this.kickY *= Math.exp(-dt / KICK_TAU);
     this.fovPop *= Math.exp(-dt / POP_TAU);
     this.settlePulse *= Math.exp(-dt / SETTLE_TAU);
+    // The punch-in eases on its own clock (17.4's 200 ms), not the exponential
+    // tail the one-frame beats spend, so the state change reads as a move.
+    this.punch = damp(this.punch, this.punchTarget, 1 / PUNCH_TAU, dt);
     if (this.fovPop < 0.003) this.fovPop = 0;
     if (this.settlePulse < 0.003) this.settlePulse = 0;
     const settleScale = this.reducedMotion ? REDUCED_AMPLITUDE : 1;
@@ -205,6 +241,7 @@ export class CameraRig {
       this.widen +
       (this.reducedMotion ? 0 : this.dolly * 0.22) -
       CHARGE_DOLLY * this.chargeDolly -
+      PUNCH_DOLLY * this.punch -
       SETTLE_DOLLY * this.settlePulse * settleScale;
     this.zoom.update(zoomTarget, dt);
 
@@ -233,13 +270,15 @@ export class CameraRig {
     const alive: ActiveShake[] = [];
     for (const s of this.shakes) {
       s.age += dt;
-      if (s.age >= s.duration * 3) continue;
+      if (s.age >= s.duration * (s.exponential ? 3 : 1)) continue;
       alive.push(s);
-      const decay = Math.exp((-s.age / s.duration) * 2.2);
+      const u = s.age / s.duration;
+      const decay = s.exponential ? Math.exp(-u * 2.2) : 1 - u;
       const amp = s.amplitude * this.visibleHeight * decay;
-      sx += noise1(this.time * SHAKE_HZ, s.seed) * amp;
-      sy += noise1(this.time * SHAKE_HZ, s.seed + 5) * amp;
-      roll += this.reducedMotion ? 0 : noise1(this.time * SHAKE_HZ, s.seed + 9) * MAX_ROLL * decay;
+      const wobble = s.hz;
+      sx += noise1(this.time * wobble, s.seed) * amp;
+      sy += noise1(this.time * wobble, s.seed + 5) * amp;
+      roll += this.reducedMotion ? 0 : noise1(this.time * wobble, s.seed + 9) * MAX_ROLL * decay;
     }
     this.shakes = alive;
 

@@ -542,20 +542,27 @@
 
 .biome-banner {
   position: absolute;
-  inset: 16% 0 auto;
+  /* The rule-of-thirds intersection (renewal 17.7): the card sits in the upper
+     left third, left-aligned to the third's own line, naming the shift without
+     covering the climb it names. */
+  top: 18%;
+  left: 0;
+  width: min(66%, 34rem);
   display: grid;
-  justify-items: center;
+  justify-items: start;
   gap: 0.35rem;
   padding: 0 1.5rem;
-  text-align: center;
+  text-align: left;
   color: var(--white-ink);
   text-shadow: 0 2px 14px rgb(0 0 0 / 0.45);
   pointer-events: none;
   opacity: 0;
-  transform: translateY(-14px);
+  transform: translateY(14px);
+  /* 200 ms in, 200 ms out (17.7): the motion tokens' micro beat, so the card's
+     arrival and departure both read as one clock tick. */
   transition:
-    opacity var(--t-medium),
-    transform var(--t-medium);
+    opacity var(--t-micro),
+    transform var(--t-micro);
 }
 
 .biome-banner.show {

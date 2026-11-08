@@ -146,7 +146,7 @@ async function render(spec: RenderSpec): Promise<RenderReport> {
       voice.fired = true;
       speak(voice.name, director, engine);
     }
-    director.update({ running: true, timeScale: 1, dt: SLICE_SECONDS, slowMo: false });
+    director.update({ running: true, timeScale: 1, dt: SLICE_SECONDS, slowMo: false, slowMoStrength: 0 });
     if (spec.watch) {
       const gain = engine.bus(spec.watch)?.gain.value ?? 0;
       watched.push(gain > 0 ? 20 * Math.log10(gain) : -120);
@@ -268,7 +268,7 @@ async function renderWavSpec(spec: RenderSpec): Promise<string> {
       voice.fired = true;
       speak(voice.name, director, engine);
     }
-    director.update({ running: true, timeScale: 1, dt: SLICE_SECONDS, slowMo: false });
+    director.update({ running: true, timeScale: 1, dt: SLICE_SECONDS, slowMo: false, slowMoStrength: 0 });
     ctx.resume();
   }
   const buffer = await rendered;

@@ -348,6 +348,9 @@ export class SceneRenderer {
       this.rig.onAttach(e.normal);
       // The catch settle (R-GF-04) rides the snap: the click eases the lens in and back out.
       if (e.viaSnap) this.cameraRig.settle();
+      // The flight the punch-in framed ends at the catch (17.4): the lens hands
+      // back its 5% on the same ease it took it with.
+      this.cameraRig.punchOut();
     });
     sim.events.on('repel', (e) => {
       this.rig.onRepel(e.direction, e.power);
@@ -355,6 +358,9 @@ export class SceneRenderer {
       if (e.power >= 1) {
         this.cameraRig.kick(e.direction);
         this.cameraRig.pop();
+        // The airborne punch-in (17.4): the release frame is where the camera
+        // moves 5% closer for the flight.
+        this.cameraRig.punchIn();
       }
     });
     sim.events.on('impact', (e) => this.rig.onImpact(e.normal, e.speed));
@@ -675,7 +681,7 @@ export class SceneRenderer {
     this.vfx.rings.spawn(chest.x, chest.y, 0.3, 14, 1.9, [0.7, 0.96, 1], 0, 1);
     this.vfx.rings.spawn(chest.x, chest.y, 0.2, 7, 1.2, [1, 0.97, 0.85], 0, 1);
     this.triggerFlash(1);
-    this.onShake('big');
+    this.onShake('heavyImpact');
   }
 
   /** Enters the store-card composition scene (PRD 17.3): staged sky, card LUT, staged pose. */
@@ -902,7 +908,7 @@ export class SceneRenderer {
       this.reachHands(sim, view);
       this.rig.update(view, pos, ctx.dt, ctx.reducedMotion);
       this.idlePerformance(sim, view);
-      this.vfx.update(ctx.dt, view, this.rig.headWorld(this.headScratch), view.visualAngle);
+      this.vfx.update(ctx.dt, view, this.rig.headWorld(this.headScratch), view.visualAngle, ctx.slowMo);
       if (ending) this.poseEnding(ending, sim);
       // The gameplay flash ident rides the bloom: a halo with the catch burst,
       // spent in a fraction of a second and never enough to wash the frame.

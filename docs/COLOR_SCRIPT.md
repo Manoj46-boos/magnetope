@@ -60,4 +60,4 @@ The cross-cutting palette (visual renewal 15): every colour the chrome, the bran
 | fx | attract | #a5ecfd (HSL 0.54 0.95 0.68) |
 | fx | repel | #ffcd6f (HSL 0.09 1 0.58) |
 
-The chrome’s custom properties (the `:root` block) and the module hold 29 tokens in step, compared by the palette suite. The toon band shades every surface at 0.35–1 with its edge at 0.85–1, read at patch time from the same source.
+The chrome’s custom properties (the `:root` block) and the module hold 34 tokens in step, compared by the palette suite. The toon band shades every surface at 0.35–1 with its edge at 0.85–1, read at patch time from the same source.

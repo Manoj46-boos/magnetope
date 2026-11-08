@@ -309,7 +309,7 @@ describe('AudioDirector on a real run', () => {
     let frames = 0;
     while (!player.done && !sim.run.cleared) {
       sim.step(player.next());
-      if (++frames % 4 === 0) director.update({ running: true, timeScale: 1, dt: 1 / 15, slowMo: false });
+      if (++frames % 4 === 0) director.update({ running: true, timeScale: 1, dt: 1 / 15, slowMo: false, slowMoStrength: 0 });
     }
     expect(sim.run.cleared).toBe(true);
     expect(count(fake.nodes, 'oscillator')).toBeGreaterThan(40);
@@ -337,7 +337,7 @@ describe('AudioDirector on a real run', () => {
     director.bind(sim);
     const quiet = count(fake.nodes, 'oscillator');
     fake.raw.currentTime = 1;
-    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false, slowMoStrength: 0 });
     expect(count(fake.nodes, 'oscillator')).toBeGreaterThan(quiet);
   });
 });
@@ -399,7 +399,7 @@ describe('the score follows the level event sequence (R-LD-08)', () => {
     const samples: number[] = [];
     while (!player.done && !sim.run.cleared) {
       sim.step(player.next());
-      director.update({ running: true, timeScale: 1, dt: 1 / 60, slowMo: false });
+      director.update({ running: true, timeScale: 1, dt: 1 / 60, slowMo: false, slowMoStrength: 0 });
       samples.push(director.intensity);
     }
     sim.dispose();
@@ -416,9 +416,9 @@ describe('biome ambience', () => {
     const director = new AudioDirector(engine);
     director.bind(new Simulation(await loadRapier(), levelById(levelId)));
     fake.raw.currentTime = 1;
-    director.update({ running, timeScale: 1, dt: 0.016, slowMo: false });
+    director.update({ running, timeScale: 1, dt: 0.016, slowMo: false, slowMoStrength: 0 });
     const first = count(fake.nodes, 'oscillator');
-    for (let t = 0; t < seconds; t += 0.25) director.update({ running, timeScale: 1, dt: 0.25, slowMo: false });
+    for (let t = 0; t < seconds; t += 0.25) director.update({ running, timeScale: 1, dt: 0.25, slowMo: false, slowMoStrength: 0 });
     return { first, last: count(fake.nodes, 'oscillator') };
   }
 
@@ -501,7 +501,7 @@ describe('biome ambience', () => {
     expect(gustForecast(level, sim.hazardClockMs)).toBeGreaterThan(0.05);
 
     fake.raw.currentTime = 1;
-    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false, slowMoStrength: 0 });
     const altitude = sim.magno.view.position.y / level.summit.y;
     const expected = windVoice('metropolis', altitude, gustForecast(level, sim.hazardClockMs, sim.magno.view.position.y)).gain;
     const calm = windVoice('metropolis', altitude, 0).gain;
@@ -618,13 +618,13 @@ describe('wheel axle groan', () => {
     const { sim, director, fake, targets } = await wheelLevel({ x: 4.6, y: 8.5 });
     const driver = new Driver(sim);
     fake.raw.currentTime = 1;
-    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false, slowMoStrength: 0 });
     expect(sim.physics.axleSpeed()).toBeLessThan(1e-3);
 
     driver.ms(2500);
     expect(sim.physics.axleSpeed()).toBeGreaterThan(0.3);
     fake.raw.currentTime = 2;
-    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false, slowMoStrength: 0 });
     const expected = axleGroan(sim.physics.axleSpeed()).gain;
     expect(expected).toBeGreaterThan(0.01);
     expect(targets().some((v) => Math.abs(v - expected) < 1e-9)).toBe(true);
@@ -637,7 +637,7 @@ describe('wheel axle groan', () => {
     const director = new AudioDirector(engine);
     director.bind(sim);
     fake.raw.currentTime = 1;
-    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false, slowMoStrength: 0 });
     expect(sim.physics.axleSpeed()).toBe(0);
   });
 });
@@ -664,7 +664,7 @@ describe('the motif presence map (R-AU-01)', () => {
     const seen: number[] = [];
     for (let t = 1; t <= 4; t += 0.05) {
       fake.raw.currentTime = t;
-      director.update({ running: true, timeScale: 1, dt: 0.05, slowMo: false });
+      director.update({ running: true, timeScale: 1, dt: 0.05, slowMo: false, slowMoStrength: 0 });
       seen.push(...freqsOf(fake.nodes));
     }
     const motif = motifOf('scrapyard-00');
@@ -752,7 +752,7 @@ describe('the stinger grammar (R-AU-05)', () => {
     expect(fake.nodes.length, 'a second word was spoken over the first').toBe(spoken);
     // The stage clears and the bed comes back up (R-AU-05/07).
     fake.raw.currentTime = 2.75;
-    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false, slowMoStrength: 0 });
     expect(music.lastTarget!).toBeCloseTo(fromDb(BUS_DB.music), 5);
     director.biomeCall();
     expect(fake.nodes.length).toBeGreaterThan(spoken);
@@ -767,7 +767,7 @@ describe('the stinger grammar (R-AU-05)', () => {
     sim.events.emit('summit', { clearTimeMs: 8000, falls: 0, noFall: false, underPar: true, stars: 2 });
     director.ghostToast();
     fake.raw.currentTime = 2.75;
-    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false, slowMoStrength: 0 });
     const afterUpdate = fake.nodes.length;
     director.starStamp(0, 2);
     expect(sings(freqsOf(fake.nodes.slice(afterUpdate)), par), 'the par coda spoke a stamp early').toBe(false);
@@ -775,10 +775,10 @@ describe('the stinger grammar (R-AU-05)', () => {
     expect(sings(freqsOf(fake.nodes.slice(afterUpdate)), par), 'the par coda never spoke').toBe(true);
     // And without a par or a ghost on record, the last stamp is only a stamp.
     fake.raw.currentTime = 4.6;
-    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false, slowMoStrength: 0 });
     sim.events.emit('summit', { clearTimeMs: 9000, falls: 0, noFall: true, underPar: false, stars: 2 });
     fake.raw.currentTime = 6.3;
-    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false, slowMoStrength: 0 });
     const beforeLast = fake.nodes.length;
     director.starStamp(0, 2);
     director.starStamp(1, 2);
@@ -826,17 +826,17 @@ describe('the score keeps its own clock (R-AU-02)', () => {
         .filter((n) => n.kind === 'gain')
         .map((n) => (n.gain as unknown as ParamStub).lastTarget)
         .filter((v): v is number => v !== null);
-    for (let t = 0; t < 2; t += 0.1) director.update({ running: true, timeScale: 1, dt: 0.1, slowMo: false });
+    for (let t = 0; t < 2; t += 0.1) director.update({ running: true, timeScale: 1, dt: 0.1, slowMo: false, slowMoStrength: 0 });
     const rest = targets();
     expect(rest).toContain(0.35);
     expect(rest).toContain(0.45);
     expect(rest).not.toContain(0.85);
     for (let i = 0; i < 3; i++) sim.events.emit('attach', { material: 'steel', point: { x: 0, y: 1 }, normal: { x: 0, y: 1 }, speed: 8, weak: false, viaSnap: true });
-    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false });
+    director.update({ running: true, timeScale: 1, dt: 0.016, slowMo: false, slowMoStrength: 0 });
     const flight = targets();
     expect(flight).toContain(1);
     expect(flight).toContain(0.8);
-    for (let t = 0; t < 14; t += 0.1) director.update({ running: true, timeScale: 1, dt: 0.1, slowMo: false });
+    for (let t = 0; t < 14; t += 0.1) director.update({ running: true, timeScale: 1, dt: 0.1, slowMo: false, slowMoStrength: 0 });
     const settled = targets();
     expect(settled).toContain(0.35);
     expect(settled).not.toContain(0.85);
@@ -848,7 +848,7 @@ describe('the score keeps its own clock (R-AU-02)', () => {
     const { fake, director, sim } = await boot();
     for (let t = 1; t <= 41; t += 0.05) {
       fake.raw.currentTime = t;
-      director.update({ running: true, timeScale: 1, dt: 0.05, slowMo: false });
+      director.update({ running: true, timeScale: 1, dt: 0.05, slowMo: false, slowMoStrength: 0 });
     }
     const played = director.music.cellsPlayed;
     expect(played.mel).toBeGreaterThanOrEqual(6);

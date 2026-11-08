@@ -1292,6 +1292,7 @@ export class Game {
       timeScale: this.slowMo.scale,
       dt: realDt,
       slowMo: this.slowMo.active,
+      slowMoStrength: this.slowMo.strength,
     });
 
     this.ui.setSlowMo(this.slowMo.strength, this.settings.reducedMotion);

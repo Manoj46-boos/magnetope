@@ -9,6 +9,8 @@ export class HumVoice {
   private gRepel: GainNode | null = null;
   private filter: BiquadFilterNode | null = null;
   private tremolo: GainNode | null = null;
+  private readonly attractOscs: OscillatorNode[] = [];
+  private readonly repelOscs: OscillatorNode[] = [];
   private built = false;
 
   constructor(private readonly engine: AudioEngine) {}
@@ -30,6 +32,7 @@ export class HumVoice {
       o.connect(g);
       g.connect(this.gAttract);
       o.start();
+      this.attractOscs.push(o);
     }
     this.gAttract.connect(bus);
 
@@ -48,6 +51,7 @@ export class HumVoice {
       o.detune.value = detune;
       o.connect(this.filter);
       o.start();
+      this.repelOscs.push(o);
     }
     const lfo = ctx.createOscillator();
     lfo.frequency.value = 16;
@@ -74,10 +78,16 @@ export class HumVoice {
     this.gRepel.gain.setTargetAtTime(params.repelGain, t, SMOOTH);
     this.filter.frequency.setTargetAtTime(params.repelCutoffHz, t, SMOOTH);
     this.lfoDepth.gain.setTargetAtTime(params.tremoloDepth, t, 0.08);
+    // The slow-motion octave (renewal 17.3): the hum's partials all detune by
+    // the same interval so their ratios hold, and the beat the director
+    // stretches is the beat the magnet itself sounds.
+    const drop = params.detuneOctaves * 1200;
+    for (const o of this.attractOscs) o.detune.setTargetAtTime(drop, t, 0.12);
+    for (const o of this.repelOscs) o.detune.setTargetAtTime(drop, t, 0.12);
   }
 
   silence(): void {
-    this.update({ attractGain: 0, repelGain: 0, repelCutoffHz: 400, tremoloDepth: 0 });
+    this.update({ attractGain: 0, repelGain: 0, repelCutoffHz: 400, tremoloDepth: 0, detuneOctaves: 0 });
   }
 }
 

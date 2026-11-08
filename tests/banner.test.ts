@@ -22,22 +22,24 @@ describe('biome title card', () => {
     expect(banner.visible).toBe(true);
     expect(banner.element.textContent).toContain('Suburbia');
     expect(banner.element.textContent).toContain('Bouncy lawns');
-    vi.advanceTimersByTime(2500);
+    // 1.8 s of screen time (renewal 17.7): still up inside the 1.4 s hold,
+    // gone once the 200 ms exit has played.
+    vi.advanceTimersByTime(1600);
     expect(banner.visible).toBe(true);
-    vi.advanceTimersByTime(200);
+    vi.advanceTimersByTime(300);
     expect(banner.visible).toBe(false);
   });
 
   it('restarts its timer when a second card replaces the first', () => {
     const banner = make();
     banner.show('Suburbia', 'one');
-    vi.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(1700);
     banner.show('Metropolis', 'two');
-    vi.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(1500);
     expect(banner.visible).toBe(true);
     expect(banner.element.textContent).toContain('Metropolis');
     expect(banner.element.textContent).not.toContain('Suburbia');
-    vi.advanceTimersByTime(700);
+    vi.advanceTimersByTime(400);
     expect(banner.visible).toBe(false);
   });
 

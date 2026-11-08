@@ -597,7 +597,7 @@ describe('camera shake grammar', () => {
   const step = (rig: CameraRig) => rig.update({ x: 0, y: 5 }, { x: 0, y: 0 }, 1 / 60, opts);
 
   /** Peak distance between a shaken camera and an identical camera that never shook. */
-  const deviation = (kind: 'micro' | 'small' | 'big', critical = false, reduced = false) => {
+  const deviation = (kind: 'lightSnap' | 'heavySnap' | 'heavyImpact', critical = false, reduced = false) => {
     const shaken = makeRig();
     const control = makeRig();
     shaken.reducedMotion = reduced;
@@ -613,23 +613,23 @@ describe('camera shake grammar', () => {
     return { max, roll };
   };
 
-  it('orders amplitudes micro < small < big', () => {
-    const micro = deviation('micro').max;
-    const small = deviation('small').max;
-    const big = deviation('big').max;
-    expect(micro).toBeGreaterThan(0);
-    expect(small).toBeGreaterThan(micro);
-    expect(big).toBeGreaterThan(small);
+  it('orders amplitudes light snap < heavy snap < heavy impact', () => {
+    const light = deviation('lightSnap').max;
+    const heavy = deviation('heavySnap').max;
+    const impact = deviation('heavyImpact').max;
+    expect(light).toBeGreaterThan(0);
+    expect(heavy).toBeGreaterThan(light);
+    expect(impact).toBeGreaterThan(heavy);
   });
 
   it('never shakes during an input-critical window such as a snap in progress', () => {
-    expect(deviation('big', true).max).toBe(0);
+    expect(deviation('heavyImpact', true).max).toBe(0);
   });
 
   it('settles back once the shake has played out', () => {
     const shaken = makeRig();
     const control = makeRig();
-    shaken.shake('big', false);
+    shaken.shake('heavyImpact', false);
     for (let i = 0; i < 240; i++) {
       step(shaken);
       step(control);
@@ -638,19 +638,19 @@ describe('camera shake grammar', () => {
   });
 
   it('cuts shake by 70% for reduced motion', () => {
-    const normal = deviation('big').max;
-    const reduced = deviation('big', false, true).max;
+    const normal = deviation('heavyImpact').max;
+    const reduced = deviation('heavyImpact', false, true).max;
     expect(reduced).toBeLessThan(normal * 0.4);
     expect(reduced).toBeGreaterThan(0);
   });
 
   it('removes rotational shake entirely for reduced motion', () => {
-    expect(deviation('big', false, true).roll).toBeLessThan(1e-6);
-    expect(deviation('big').roll).toBeGreaterThan(0);
+    expect(deviation('heavyImpact', false, true).roll).toBeLessThan(1e-6);
+    expect(deviation('heavyImpact').roll).toBeGreaterThan(0);
   });
 
   it('keeps rotation under 1.2 degrees', () => {
-    expect(deviation('big').roll).toBeLessThanOrEqual((1.2 * Math.PI) / 180 + 1e-6);
+    expect(deviation('heavyImpact').roll).toBeLessThanOrEqual((1.2 * Math.PI) / 180 + 1e-6);
   });
 
   it('pulls back during a long fall so the landing zone can be read', () => {

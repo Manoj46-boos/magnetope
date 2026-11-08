@@ -107,27 +107,33 @@ export class Vfx {
     this.unsubscribe.push(
       on('attach', (e) => {
         this.attachBurst(e.point, e.normal, MATERIALS[e.material].voice, e.speed, e.weak, e.viaSnap);
-        this.hooks.shake(e.weak ? 'micro' : e.viaSnap ? (e.speed > 9 ? 'big' : 'small') : e.speed > 11 ? 'big' : 'micro');
+        this.hooks.shake(e.weak ? 'lightSnap' : e.viaSnap ? (e.speed > 9 ? 'heavySnap' : 'lightSnap') : e.speed > 11 ? 'heavySnap' : 'lightSnap');
       }),
       on('repel', (e) => {
         this.repelBurst(e.point, e.normal, e.direction, e.power);
         this.fieldLines.flipPulse();
-        if (e.power > 0.6) this.hooks.shake('small');
+        // The polarity flip's own tick (17.5): the fastest, shallowest shake in
+        // the grammar, so the flip reads as a switch thrown, not a jolt.
+        this.hooks.shake('polarityFlip');
+        if (e.power > 0.6) this.hooks.shake('heavySnap');
       }),
       on('impact', (e) => {
         this.impactDust(e.point, e.normal, e.speed, MATERIALS[e.material].id);
-        if (e.speed > 11) this.hooks.shake('big');
-        else if (e.speed > 6) this.hooks.shake('micro');
+        // Falls split by weight (17.5): the short fall's linear 15 Hz against
+        // the long fall's exponential 10 Hz, so the decay curve itself tells
+        // the player how far they came down.
+        if (e.speed > 11) this.hooks.shake('heavyImpact');
+        else if (e.speed > 6) this.hooks.shake('lightImpact');
       }),
       on('weakCrumble', (e) => this.crumble(e.point)),
       on('glassBreak', (e) => this.shards(e.point)),
       on('boing', (e) => {
         this.boingBurst(e.point, e.normal, e.outSpeed);
-        this.hooks.shake(e.outSpeed > 12 ? 'small' : 'micro');
+        this.hooks.shake(e.outSpeed > 12 ? 'heavySnap' : 'lightSnap');
       }),
       on('crumble', (e) => {
         this.crumbleSurface(e.propIndex);
-        this.hooks.shake('micro');
+        this.hooks.shake('lightSnap');
       }),
       on('summit', () => this.hooks.flash(0.0)),
     );
@@ -144,8 +150,8 @@ export class Vfx {
     this.rings.clear();
   }
 
-  update(dt: number, view: MagnoView, head: Vec2, axisAngle: number): void {
-    this.fieldLines.update(view, head, axisAngle, dt);
+  update(dt: number, view: MagnoView, head: Vec2, axisAngle: number, slowMo = 0): void {
+    this.fieldLines.update(view, head, axisAngle, dt, slowMo);
     if (view.snapEngaged) this.snapTrail(view);
     this.shedGrit(dt);
     this.shedAmbient(head, dt);

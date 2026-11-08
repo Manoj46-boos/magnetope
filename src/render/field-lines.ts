@@ -128,6 +128,13 @@ function writePoint(r: Ribbon, curve: number, seg: number, x: number, y: number,
 }
 
 /**
+ * The wobble gain the slow-motion beat lends the field lines (renewal 17.3): the
+ * director's stretched frame carries three times the ripple amplitude, so the
+ * moment reads as the field's own, not the clock's.
+ */
+const SLOWMO_RIPPLE_GAIN = 2;
+
+/**
  * Magnetism made visible: dipole loops around MAGNO's head plus a pull beam
  * toward the snap target. Colour, flow direction and loop shape all change with
  * polarity, so the state reads without relying on hue alone.
@@ -156,7 +163,7 @@ export class FieldLines {
     this.pulse = 0.12;
   }
 
-  update(view: MagnoView, head: Vec2, axisAngle: number, dt: number): void {
+  update(view: MagnoView, head: Vec2, axisAngle: number, dt: number, slowMo = 0): void {
     this.time += dt;
     this.pulse = Math.max(0, this.pulse - dt);
     const repel = view.polarity === 'repel';
@@ -167,7 +174,7 @@ export class FieldLines {
     const intensity = clamp(base + charge * 0.5 + (this.pulse > 0 ? 0.5 : 0) + (view.snapEngaged ? 0.25 : 0), 0, 1.1);
     const expand = 1 + charge * 0.7 + (this.pulse > 0 ? (0.12 - this.pulse) * 5 : 0);
 
-    this.writeLoops(head, axisAngle, expand);
+    this.writeLoops(head, axisAngle, expand, slowMo);
     const m = this.loops.material.uniforms;
     (m.uTime as { value: number }).value = this.time;
     (m.uFlow as { value: number }).value = repel ? -1 : 1;
@@ -182,7 +189,7 @@ export class FieldLines {
     this.assistTelegraph(view);
   }
 
-  private writeLoops(head: Vec2, axis: number, expand: number): void {
+  private writeLoops(head: Vec2, axis: number, expand: number, slowMo: number): void {
     const { segments } = this;
     const cos = Math.cos(axis);
     const sin = Math.sin(axis);
@@ -190,8 +197,11 @@ export class FieldLines {
     // Charge-driven ripple: amplitude grows with the magnet's charge level, so the
     // field lines visibly compress and breathe while the player holds the flip button.
     // This is the motion signature of the renewal — magnetism made visible in motion.
+    // Under the slow-motion director the ripple carries three times its amplitude
+    // (renewal 17.3): the stretched beat is the magnetism itself stretched, so the
+    // player reads the moment as the field's, not the clock's.
     const charge = this.shape > 0.5 ? 0 : (this.time * 4 + 1);
-    const rippleAmp = 0.05 + 0.12 * Math.max(0, Math.sin(charge * 1.5));
+    const rippleAmp = (0.05 + 0.12 * Math.max(0, Math.sin(charge * 1.5))) * (1 + SLOWMO_RIPPLE_GAIN * slowMo);
     for (let c = 0; c < 4; c++) {
       const upper = c < 2;
       const level = (c % 2) + 1;

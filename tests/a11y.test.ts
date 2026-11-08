@@ -286,7 +286,7 @@ describe('the reduced-motion profile calms the presentation, never the game (R-A
       for (let i = 0; i < 240; i++) rig.update({ x: 0, y: 5 }, { x: 0, y: 0 }, 1 / 60, opts);
       const rest = rig.camera.position.clone();
       rig.kick({ x: 1, y: 0 });
-      rig.shake('small', false);
+      rig.shake('heavySnap', false);
       let peak = 0;
       for (let i = 0; i < 6; i++) {
         rig.update({ x: 0, y: 5 }, { x: 0, y: 0 }, 1 / 60, opts);

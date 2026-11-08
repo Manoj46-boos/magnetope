@@ -37,6 +37,11 @@
   --night-deep: #05070b;
   --swatch-mine: #ffc16b;
   --swatch-friend: #e0a3ff;
+  --grade-b: #ffe082;
+  --grade-a: #ffca28;
+  --grade-s: #ffab00;
+  --grade-ss: #ff6f00;
+  --grade-sss: #e53935;
   --white-ink: #ffffff;
   --black-mask: #000000;
   --radius: 18px;
@@ -870,9 +875,35 @@ select:focus-visible {
   text-shadow: 0 3px 22px rgba(255, 179, 71, 0.45);
 }
 
-.fall-card .grade.hi {
-  color: var(--cyan);
-  text-shadow: 0 3px 22px rgba(95, 212, 255, 0.5);
+/* The grade ladder (renewal 17.8): one colour per rung, the dim ink C through
+   the golds to the pole red SSS — the best fall wears the magnet's own red. */
+.fall-card .grade.g-c {
+  color: var(--ink-dim);
+}
+
+.fall-card .grade.g-b {
+  color: var(--grade-b);
+  text-shadow: 0 3px 22px rgba(255, 224, 130, 0.4);
+}
+
+.fall-card .grade.g-a {
+  color: var(--grade-a);
+  text-shadow: 0 3px 22px rgba(255, 202, 40, 0.42);
+}
+
+.fall-card .grade.g-s {
+  color: var(--grade-s);
+  text-shadow: 0 3px 22px rgba(255, 171, 0, 0.45);
+}
+
+.fall-card .grade.g-ss {
+  color: var(--grade-ss);
+  text-shadow: 0 3px 22px rgba(255, 111, 0, 0.48);
+}
+
+.fall-card .grade.g-sss {
+  color: var(--grade-sss);
+  text-shadow: 0 3px 22px rgba(229, 57, 53, 0.5);
 }
 
 .fall-card .stats {

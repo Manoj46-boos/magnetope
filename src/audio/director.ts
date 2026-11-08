@@ -57,6 +57,8 @@ export interface AudioFrame {
   timeScale: number;
   dt: number;
   slowMo: boolean;
+  /** The slow-motion beat's ramp, 0 to 1, so the hum's octave glides with it (renewal 17.3). */
+  slowMoStrength: number;
 }
 
 /** The staged beats the store frame and the opener speak (P-GF-06, 3.4): the ident's Cooper timeline, plus the idle ladder's hop. */
@@ -366,6 +368,7 @@ export class AudioDirector {
         charge01: view.charge01,
         proximity: this.proximity,
         attached: view.state === 'attached' || view.state === 'charging',
+        slowMo: frame.slowMoStrength,
       }),
     );
 

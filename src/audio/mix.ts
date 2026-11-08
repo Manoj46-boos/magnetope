@@ -82,6 +82,8 @@ export interface HumInput {
   /** Closeness of ferromagnetic mass, 0 far to 1 touching. */
   proximity: number;
   attached: boolean;
+  /** The slow-motion director's strength, 0 to 1 (renewal 17.3). */
+  slowMo?: number;
 }
 
 export interface HumParams {
@@ -89,6 +91,8 @@ export interface HumParams {
   repelGain: number;
   repelCutoffHz: number;
   tremoloDepth: number;
+  /** Octaves to drop the hum's tuned partials by, 0 in normal play. */
+  detuneOctaves: number;
 }
 
 const HUM_LEVEL = 0.05;
@@ -102,6 +106,7 @@ export function humParams(input: HumInput): HumParams {
     repelGain: repel ? HUM_LEVEL * (0.6 + 0.9 * input.charge01) : 0,
     repelCutoffHz: 380 + 3400 * input.charge01 ** 1.4,
     tremoloDepth: repel && input.charge01 >= 0.995 ? 0.35 : 0,
+    detuneOctaves: input.slowMo ? -input.slowMo : 0,
   };
 }
 

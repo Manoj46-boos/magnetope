@@ -1,13 +1,15 @@
 import { el, esc } from './dom';
 import { LOCKUP_WORDMARK } from './lockup';
 
-const VISIBLE_MS = 2600;
+const VISIBLE_MS = 1800;
 
 /**
- * Title card shown as a new biome begins (PRD 12). It never takes input, and the
- * stylesheet fades it in place rather than sliding it when motion is reduced.
- * On a fresh save's first boot the card is the wordmark itself (P-FT-02): the
- * game's name over the live first level, the world already moving behind it.
+ * Title card shown as a new biome begins (PRD 12, renewal 17.7). It never takes
+ * input, and it holds the screen for 1.8 seconds — 200 ms in, 1.4 s hold,
+ * 200 ms out — from the upper-left rule-of-thirds intersection, so the biome
+ * shift is named without covering the climb it names. On a fresh save's first
+ * boot the card is the wordmark itself (P-FT-02): the game's name over the live
+ * first level, the world already moving behind it.
  */
 export class BiomeBanner {
   readonly element: HTMLElement;
