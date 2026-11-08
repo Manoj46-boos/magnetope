@@ -30,16 +30,32 @@ function capture(args: string[]): void {
 }
 
 function ffmpegPath(): string {
-  const roots = [join(homedir(), 'AppData', 'Local', 'ms-playwright'), join(homedir(), '.cache', 'ms-playwright')];
-  for (const root of roots) {
-    if (!existsSync(root)) continue;
-    const folders = readdirSync(root).filter((name) => name.startsWith('ffmpeg-')).sort();
-    for (const folder of folders.reverse()) {
-      for (const exe of ['ffmpeg-win64.exe', 'ffmpeg-linux', 'ffmpeg-mac']) {
-        const path = join(root, folder, exe);
-        if (existsSync(path)) return path;
+  // The WebM leg needs VP9; the Playwright build ships only its VP8 sibling,
+  // so a candidate is only accepted once its own encoder list names the codec.
+  const canEncodeVp9 = (path: string): boolean => {
+    try {
+      const encoders = execFileSync(path, ['-hide_banner', '-encoders'], { encoding: 'utf8' }).toString();
+      return /libvpx-vp9/.test(encoders);
+    } catch {
+      return false;
+    }
+  };
+  for (const path of ['ffmpeg', ...(() => {
+    const found: string[] = [];
+    const roots = [join(homedir(), 'AppData', 'Local', 'ms-playwright'), join(homedir(), '.cache', 'ms-playwright')];
+    for (const root of roots) {
+      if (!existsSync(root)) continue;
+      const folders = readdirSync(root).filter((name) => name.startsWith('ffmpeg-')).sort();
+      for (const folder of folders.reverse()) {
+        for (const exe of ['ffmpeg-win64.exe', 'ffmpeg-linux', 'ffmpeg-mac']) {
+          const p = join(root, folder, exe);
+          if (existsSync(p)) found.push(p);
+        }
       }
     }
+    return found;
+  })()]) {
+    if (canEncodeVp9(path)) return path;
   }
   return '';
 }

@@ -80,7 +80,7 @@ describe('the thumbnail pre-flight leg (R-TH-09)', () => {
 
   it('names every point a broken report breaks', () => {
     const broken: ThumbnailReport = {
-      audits: { legibility128: false, ocrEmpty: false, hueCollision: true, contrast: 2.4 },
+      audits: { legibility128: false, ocrEmpty: false, hueCollision: true, contrast: 2.4, poles64: false },
       detail: { 'hero-launch': { failures: ['the eye is under 12% of the frame'] } },
     };
     const leg = thumbnailPreflight(broken);
@@ -89,6 +89,7 @@ describe('the thumbnail pre-flight leg (R-TH-09)', () => {
     expect(leg.problems.some((p) => p.includes('128 px'))).toBe(true);
     expect(leg.problems.some((p) => p.includes('3:1'))).toBe(true);
     expect(leg.problems.some((p) => p.includes('playground background'))).toBe(true);
+    expect(leg.problems.some((p) => p.includes('64 px'))).toBe(true);
     expect(leg.problems.some((p) => p.includes('hero-launch: the eye is under 12% of the frame'))).toBe(true);
   });
 

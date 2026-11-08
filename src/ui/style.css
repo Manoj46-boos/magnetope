@@ -180,30 +180,25 @@ select:focus-visible {
   text-align: center;
 }
 
+/* The loading screen's only animation is the magnetism signature (visual
+   renewal PRD 16.7): MAGNO stands still while the cyan field-line arc fills
+   pole to pole with the load's own progress. The path's authored length is
+   ~70.5 units; the dashoffset walks from that to 0 as --load climbs 0 to 1. */
 .magno-flip {
-  animation: flip-bob var(--t-loop);
+  --arc: 71;
   filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.4));
 }
 
-.magno-flip .spark {
-  animation: spark-blink 0.7s steps(2) infinite;
+.magno-flip .field-arc {
+  stroke-dasharray: var(--arc);
+  stroke-dashoffset: calc(var(--arc) * (1 - var(--load, 0)));
+  filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.55));
 }
 
-@keyframes flip-bob {
-  0%,
-  100% {
-    transform: translateY(0) rotate(-6deg);
-  }
-  50% {
-    transform: translateY(-9px) rotate(8deg);
-  }
+.loading.done .magno-flip .field-arc {
+  stroke-dashoffset: 0;
 }
 
-@keyframes spark-blink {
-  50% {
-    opacity: 0.25;
-  }
-}
 
 .bar {
   width: min(280px, 56%);
@@ -923,7 +918,6 @@ select:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .magno-flip,
   .rail .summit {
     animation: none;
   }

@@ -100,9 +100,10 @@ async function trace(page: Page, ticks: number): Promise<TracePoint[]> {
 
 let browser: import('playwright').Browser | null = null;
 const launchArgs = { headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] };
-for (const channel of ['chrome' as const, undefined]) {
+const override = process.env.MAGNETOPE_BROWSER_PATH;
+for (const channel of [undefined, 'chrome' as const]) {
   try {
-    browser = await chromium.launch(channel ? { channel, ...launchArgs } : launchArgs);
+    browser = await chromium.launch(override ? { executablePath: override, ...launchArgs } : channel ? { channel, ...launchArgs } : launchArgs);
     break;
   } catch {
     /* a machine without that distribution falls through to the bundled one */

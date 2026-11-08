@@ -13,8 +13,9 @@
   },
   "audits": {
     "legibility128": true,
-    "contrast": 7.85,
+    "contrast": 7.33,
     "emotion128": true,
+    "poles64": true,
     "hueCollision": false,
     "ocrEmpty": true
   },
@@ -22,38 +23,50 @@
   "detail": {
     "panic-launch": {
       "failures": [],
-      "contrast": 7.85,
-      "dimmed": 5.58,
-      "at128": 7.33,
+      "contrast": 7.33,
+      "dimmed": 5.21,
+      "at128": 5.88,
       "emotion": [
-        372,
-        410
+        390,
+        369
       ],
-      "arcBand": 56104,
-      "arc128": 6322
+      "poles64": [
+        342,
+        30
+      ],
+      "arcBand": 62451,
+      "arc128": 5952
     },
     "fall-comedy": {
       "failures": [],
-      "contrast": 9.55,
-      "dimmed": 6.22,
-      "at128": 9.42,
+      "contrast": 9.51,
+      "dimmed": 6.23,
+      "at128": 9.43,
       "emotion": [
-        441,
-        477
+        481,
+        463
+      ],
+      "poles64": [
+        469,
+        7
       ]
     },
     "tower-scale": {
       "failures": [],
-      "contrast": 5.9,
-      "dimmed": 3.97,
-      "at128": 5.38,
-      "arcBand": 95311,
-      "arc128": 11570
+      "contrast": 5.93,
+      "dimmed": 4.02,
+      "at128": 5.24,
+      "poles64": [
+        308,
+        655
+      ],
+      "arcBand": 95299,
+      "arc128": 11384
     },
     "animated": {
       "failures": [],
-      "frames": 168,
-      "durationMs": 2800
+      "frames": 84,
+      "durationMs": 2772
     }
   }
 }

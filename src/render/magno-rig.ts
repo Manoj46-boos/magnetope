@@ -88,6 +88,8 @@ const PANIC_DROP_M = 7;
 const CARD_EYE_SCALE = 2.3;
 /** The card's pupil share: small on the wide white — the concept card's own law, a pupil half the eye reads as a camera lens, a quarter reads as panic. */
 const CARD_PUPIL_SCALE = 0.5;
+/** The card's pole grade (visual renewal PRD 16.5): the 200 ms test's own failure mode is the pole pair not reading at 64 px, and its prescribed fix is the pair grown for the thumbnail only — the same card-only law the eye already carries, never in gameplay. */
+const CARD_POLE_SCALE = 1.7;
 /** The card's gaze rides further than gameplay dares, so the look toward the destination survives the downscale. */
 const CARD_GAZE = 0.065;
 /** The card's windmill frozen mid-cycle, so a still reads as motion. */
@@ -246,12 +248,16 @@ export class MagnoRig {
   private readonly tipMaterial: MeshStandardMaterial;
   private readonly northMaterial: MeshStandardMaterial;
   private readonly southMaterial: MeshStandardMaterial;
+  /** The gameplay pole colours the card grade restores when the face lifts (visual renewal 16.5). */
+  private readonly poleBase = new Map<MeshStandardMaterial, Color>();
   private readonly socketMaterial: MeshStandardMaterial;
   private readonly glowMaterial: MeshBasicMaterial;
   private readonly coreLight: Mesh;
   private readonly accessories: Record<Accessory, Group>;
   /** One group per head casting (visual renewal PRD 12.8); exactly one is visible at a time. */
   private readonly heads: Record<HeadStyle | 'classic', Group>;
+  /** Every casting's pole pivots, flat: the card grade scales them wherever they are mounted. */
+  private readonly polePivots: Group[] = [];
   private chargeMeter = true;
 
   private pulse: Pulse | null = null;
@@ -488,6 +494,7 @@ export class MagnoRig {
       tip.position.y = -0.07;
       polePivot.add(side < 0 ? this.cloneFor(tip, this.northMaterial) : this.cloneFor(tip, this.southMaterial));
       parent.add(polePivot);
+      this.polePivots.push(polePivot);
     }
   }
 
@@ -795,6 +802,28 @@ export class MagnoRig {
   /** The staged card's face override (rebuild PRD 1.7): the card-grade panic — the oversized eye, the agape mouth, the frozen windmill. Gameplay never sets it. */
   setCardFace(face: 'panic' | null): void {
     this.cardFace = face;
+    // The card's pole grade (visual renewal PRD 16.5): the card's hot key light
+    // washes the pair in opposite directions — red climbs toward white-pink,
+    // blue toward pale sky — so each pole rides the same gate with its own pin.
+    // Red keeps its hue with a deeper diffuse and a strong emissive; blue keeps
+    // its depth with the diffuse held back under the emissive it already owns.
+    // Gameplay keeps the game's own pole materials untouched.
+    const grade = face !== null;
+    if (this.poleBase.size === 0) {
+      this.poleBase.set(this.northMaterial, this.northMaterial.color.clone());
+      this.poleBase.set(this.southMaterial, this.southMaterial.color.clone());
+    }
+    const pin = (material: MeshStandardMaterial, base: Color, diffuse: number, emissive: number): void => {
+      material.color.copy(base).multiplyScalar(diffuse);
+      material.emissive.copy(base);
+      material.emissiveIntensity = emissive;
+    };
+    if (grade) {
+      pin(this.northMaterial, this.poleBase.get(this.northMaterial)!, 1.1, 0.85);
+      pin(this.southMaterial, this.poleBase.get(this.southMaterial)!, 0.85, 0.7);
+    } else {
+      for (const [material, base] of this.poleBase) pin(material, base, 1, 0.55);
+    }
   }
 
   onImpact(normal: Vec2, speed: number): void {
@@ -1093,6 +1122,12 @@ export class MagnoRig {
     this.spark.visible = card;
     const socketScale = card ? CARD_EYE_SCALE * 0.72 : 1;
     this.socketMesh.scale.set(socketScale, socketScale, 0.55);
+    // The card's pole grade rides it too: the pair grown so the 200 ms test's
+    // own failure mode — red and blue not reading at 64 px — cannot happen on
+    // a card that wears the face (visual renewal PRD 16.5). Gameplay never
+    // sees this scale; only the card face sets it.
+    const poleScale = card ? CARD_POLE_SCALE : 1;
+    for (const pivot of this.polePivots) pivot.scale.setScalar(poleScale);
 
     let towardX = view.velocity.x;
     let towardY = view.velocity.y;

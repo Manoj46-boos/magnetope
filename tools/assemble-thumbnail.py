@@ -14,6 +14,17 @@ from PIL import Image
 
 FRAME_MS = 1000 / 60
 WEBM_BUDGET = 300 * 1024
+# The platform's animated deliverables (visual renewal PRD 16.2): WebP and GIF
+# both live under 1 MB. The card's saturated sky and additive field lines carry
+# far more entropy than a dusk grade, so each encoder climbs its own quality
+# ladder until its budget holds — and a card that outgrows the ceiling fails
+# the audit loudly instead of shipping over weight.
+WEBP_BUDGET = 1024 * 1024
+WEBP_QUALITY_LADDER = (72, 64, 56, 48)
+WEBP_SIZES = (628, 504, 405)
+GIF_BUDGET = 1024 * 1024
+GIF_SIZES = (420, 340, 280)
+GIF_COLORS = (96, 80, 64)
 CRF_FLOOR = 42
 CRF_CEILING = 48
 
@@ -43,26 +54,44 @@ def main():
     frames = [Image.open(p).convert("RGB") for p in paths]
     loop = looped(frames, fade)
 
-    loop[0].save(
-        os.path.join(out, "thumbnail-animated.webp"),
-        save_all=True,
-        append_images=loop[1:],
-        duration=round(FRAME_MS),
-        loop=0,
-        quality=82,
-        method=4,
-    )
+    # WebP's ladder walks quality first, then frame stride and size: 60 fps is
+    # the platform's ceiling, not a floor — a 30 fps loop of the same 3 s reads
+    # identically on a portal grid, where the GIF already runs at 20 fps — and
+    # the last rung drops to the GIF's own working size before it ever ships
+    # over weight.
+    webp_path = os.path.join(out, "thumbnail-animated.webp")
+    for stride, size in ((1, 628), (2, 628), (2, 504), (2, 405)):
+        sequence = [f if size == 628 else f.resize((size, size), Image.LANCZOS) for f in loop[::stride]]
+        duration = round(FRAME_MS * stride)
+        for quality in WEBP_QUALITY_LADDER:
+            sequence[0].save(
+                webp_path,
+                save_all=True,
+                append_images=sequence[1:],
+                duration=duration,
+                loop=0,
+                quality=quality,
+                method=4,
+            )
+            if os.path.getsize(webp_path) <= WEBP_BUDGET:
+                break
+        if os.path.getsize(webp_path) <= WEBP_BUDGET:
+            break
 
-    small = [f.resize((420, 420), Image.LANCZOS).quantize(colors=96, dither=Image.Dither.NONE) for f in loop[::3]]
-    small[0].save(
-        os.path.join(out, "thumbnail-animated.gif"),
-        save_all=True,
-        append_images=small[1:],
-        duration=round(FRAME_MS * 3),
-        loop=0,
-        optimize=True,
-        disposal=1,
-    )
+    gif_path = os.path.join(out, "thumbnail-animated.gif")
+    for size, colors in zip(GIF_SIZES, GIF_COLORS):
+        small = [f.resize((size, size), Image.LANCZOS).quantize(colors=colors, dither=Image.Dither.NONE) for f in loop[::3]]
+        small[0].save(
+            gif_path,
+            save_all=True,
+            append_images=small[1:],
+            duration=round(FRAME_MS * 3),
+            loop=0,
+            optimize=True,
+            disposal=1,
+        )
+        if os.path.getsize(gif_path) <= GIF_BUDGET:
+            break
 
     if ffmpeg:
         # The three-second loop must live under the 300 KB budget whatever the

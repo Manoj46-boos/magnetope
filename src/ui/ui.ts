@@ -247,6 +247,10 @@ export class GameUi {
 
   setLoading(progress: number): void {
     (this.loadingBar.firstElementChild as HTMLElement).style.width = `${Math.round(progress * 100)}%`;
+    // The field-line arc's reach is the progress itself (visual renewal PRD 16.7):
+    // one variable the style's dashoffset reads, so the load's first impression
+    // is the magnetism signature, filling pole to pole.
+    this.loading.style.setProperty('--load', progress.toFixed(4));
   }
 
   /** Replaces whatever is on screen with a way out: a short message and one button that reloads the page. */

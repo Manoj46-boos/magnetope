@@ -35,7 +35,17 @@ ARC_128_MIN = 40
 OCR_MIN_CONFIDENCE = 65
 OCR_MIN_LENGTH = 3
 WEBM_BUDGET = 300 * 1024
+WEBP_BUDGET = 1024 * 1024
+GIF_BUDGET = 1024 * 1024
 IDENT_MAX_MS = 3000
+# The 200 ms test's own failure mode, as a machine can hold it (visual renewal
+# PRD 16.5): at 64 px the pole pair must still read as two visibly different
+# saturated colours — red-dominant pixels beside blue-dominant pixels inside the
+# subject, each past its own chroma bar. The human forced-choice panel stays the
+# verdict; this gate catches the rework loop's most common miss before it reaches
+# the panel.
+POLE_MIN_64 = 3
+POLE_CHROMA = 30
 DIM = 0.7
 VARIANT_BASE = {"panic-launch": "panic", "fall-comedy": "fall", "tower-scale": "tower"}
 ARC_VARIANTS = ("panic-launch", "tower-scale")
@@ -249,6 +259,23 @@ def audit_image(path, variant, subject):
             bright, dark = pair
             if bright < EMOTION_MIN_BRIGHT or dark < EMOTION_MIN_DARK:
                 failures.append(f"no two-shape face in the subject at 128 px: {bright} bright px, {dark} dark beside them (need {EMOTION_MIN_BRIGHT}/{EMOTION_MIN_DARK})")
+
+    # The pole pair at the 200 ms test's own size: red-dominant and blue-dominant
+    # pixels must both survive at 64 px, measured over the subject's whole box —
+    # the poles are the head's tips, the box's own edges, so the inner-60% core
+    # the emotion gate reads would cut them off (visual renewal 16.5).
+    tiny = np.asarray(rgb_image.resize((64, 64), Image.BILINEAR), dtype=np.float64) / 255
+    bx, by, bw, bh = subject
+    box = np.zeros((64, 64), dtype=bool)
+    box[max(0, int(by * 64)) : min(64, int((by + bh) * 64)), max(0, int(bx * 64)) : min(64, int((bx + bw) * 64))] = True
+    if box.any():
+        reds = tiny[..., 0] - np.maximum(tiny[..., 1], tiny[..., 2])
+        blues = tiny[..., 2] - np.maximum(tiny[..., 0], tiny[..., 1])
+        red_px = int((box & (reds >= POLE_CHROMA / 255)).sum())
+        blue_px = int((box & (blues >= POLE_CHROMA / 255)).sum())
+        stats["poles64"] = [red_px, blue_px]
+        if min(red_px, blue_px) < POLE_MIN_64:
+            failures.append(f"pole pair does not read at 64 px: {red_px} red px, {blue_px} blue px in the subject (need {POLE_MIN_64} each)")
     if variant in ARC_VARIANTS:
         full_min, small_min = ARC_MIN_BY_VARIANT.get(variant, (ARC_FULL_MIN, ARC_128_MIN))
         top = float(np.percentile(luma, 75))
@@ -265,6 +292,26 @@ def audit_image(path, variant, subject):
     return failures, stats
 
 
+def webp_frame_durations(path):
+    """The per-frame delays the browser will actually obey, parsed from the ANMF
+    chunks themselves: Pillow's build does not read animated WebP durations back,
+    so the fallback would guess 60 fps and report a loop that does not exist."""
+    data = open(path, "rb").read()
+    if data[:4] != b"RIFF" or data[8:12] != b"WEBP":
+        return None
+    def u24(buf, off):
+        return buf[off] | (buf[off + 1] << 8) | (buf[off + 2] << 16)
+    durations = []
+    pos = 12
+    while pos + 8 <= len(data):
+        fourcc = data[pos : pos + 4]
+        size = int.from_bytes(data[pos + 4 : pos + 8], "little")
+        if fourcc == b"ANMF":
+            durations.append(u24(data, pos + 8 + 12))
+        pos += 8 + size + (size & 1)
+    return durations or None
+
+
 def audit_animated(folder):
     """R-TH-10 budgets: three formats, WebM size, and a duration that keeps the loop under 3 s."""
     failures = []
@@ -273,18 +320,25 @@ def audit_animated(folder):
         failures.append("thumbnail-animated.webm is missing")
     elif os.path.getsize(webm) > WEBM_BUDGET:
         failures.append(f"WebM is {os.path.getsize(webm) / 1024:.0f} KB over the {WEBM_BUDGET // 1024} KB budget")
-    for name in ("thumbnail-animated.webp", "thumbnail-animated.gif"):
-        if not os.path.exists(os.path.join(folder, name)):
+    for name, budget in (("thumbnail-animated.webp", WEBP_BUDGET), ("thumbnail-animated.gif", GIF_BUDGET)):
+        path = os.path.join(folder, name)
+        if not os.path.exists(path):
             failures.append(f"{name} is missing")
+        elif os.path.getsize(path) > budget:
+            failures.append(f"{name.split('.')[-1].upper()} is {os.path.getsize(path) / 1024:.0f} KB over the {budget // 1024} KB budget")
+    durations = None
     try:
-        with Image.open(os.path.join(folder, "thumbnail-animated.webp")) as webp:
-            frames = getattr(webp, "n_frames", 1)
-            duration = frames * webp.info.get("duration", 1000 / 60)
-        if duration > IDENT_MAX_MS:
-            failures.append(f"animated ident runs {duration:.0f} ms (limit {IDENT_MAX_MS} ms)")
-        return failures, {"frames": frames, "durationMs": round(duration)}
-    except (OSError, AttributeError):
+        durations = webp_frame_durations(os.path.join(folder, "thumbnail-animated.webp"))
+    except OSError:
+        pass
+    if not durations:
+        failures.append("animated WebP carries no readable frames")
         return failures, {}
+    frames = len(durations)
+    duration = sum(durations)
+    if duration > IDENT_MAX_MS:
+        failures.append(f"animated ident runs {duration:.0f} ms (limit {IDENT_MAX_MS} ms)")
+    return failures, {"frames": frames, "durationMs": round(duration)}
 
 
 def write_report(root):
@@ -331,6 +385,7 @@ def write_report(root):
             "legibility128": not hero["failures"] and hero.get("at128", 0) >= LEGIBILITY_128,
             "contrast": hero.get("contrast", 0),
             "emotion128": not any("two-shape" in f for f in hero["failures"]),
+            "poles64": not any("pole pair" in f for f in hero["failures"]),
             "hueCollision": any("ΔE" in f for f in hero["failures"]),
             "ocrEmpty": not any("OCR" in f for f in hero["failures"]),
         },

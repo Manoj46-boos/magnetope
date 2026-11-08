@@ -88,7 +88,14 @@ export const HAND = `<svg class="hand-glyph" viewBox="0 0 64 80" aria-hidden="tr
   <path d="M26 6c0-3.3 2.7-6 6-6s6 2.7 6 6v28l4-1.2c3.3-1 6.6 1 7.4 4.3l1.8 8.6c1.4 6.8-.4 13.7-4.9 18.9L44 76H22l-8.5-14.4c-1.4-2.4-1.1-5.3.7-7.4 2-2.3 5.3-2.7 7.7-1L26 55.4z" fill="#fff" stroke="rgba(10,14,22,.45)" stroke-width="2.4" stroke-linejoin="round"/>
 </svg>`;
 
-/** MAGNO mid-flip, used by the loading screen: horseshoe head, body, one eye. */
+/**
+ * MAGNO on the loading screen (visual renewal PRD 16.7): the horseshoe head
+ * with its pole pair, standing still — the cyan field-line arc from pole to
+ * pole is the only animation while the game loads, its reach driven by the
+ * loading progress through a CSS custom property. The path is authored once
+ * here with its full length declared alongside, so the style's dashoffset
+ * math can never drift from the geometry it measures.
+ */
 export const MAGNO_SILHOUETTE = `<svg class="magno-flip" viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
   <g transform="rotate(-14 60 70)">
     <ellipse cx="60" cy="78" rx="22" ry="28" fill="#cfd6df"/>
@@ -97,10 +104,9 @@ export const MAGNO_SILHOUETTE = `<svg class="magno-flip" viewBox="0 0 120 120" w
     <circle cx="61.5" cy="72.5" r="2.6" fill="#0c1118"/>
     <path d="M38 38a22 22 0 0 1 44 0" stroke="#e9edf2" stroke-width="12" fill="none" stroke-linecap="butt"/>
     <rect x="32" y="38" width="12" height="14" fill="#e9edf2"/><rect x="76" y="38" width="12" height="14" fill="#e9edf2"/>
-    <rect x="32" y="48" width="12" height="7" fill="#e5484d"/><rect x="76" y="48" width="12" height="7" fill="#e5484d"/>
-    <path d="M26 86c-8 6-11 14-8 20M94 86c8 6 11 14 8 20" stroke="#cfd6df" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <rect x="32" y="48" width="12" height="7" fill="#e53935"/><rect x="76" y="48" width="12" height="7" fill="#1e88e5"/>
+    <path class="field-arc" d="M38 45 Q 60 -6 82 45" stroke="#00e5ff" stroke-width="4" fill="none" stroke-linecap="round"/>
   </g>
-  <path class="spark" d="M12 30l10 4M108 24l-10 6M100 100l10 6" stroke="#5fd4ff" stroke-width="3" stroke-linecap="round"/>
 </svg>`;
 
 export const STUDIO_MARK = `<svg viewBox="0 0 48 48" width="34" height="34" aria-hidden="true"><path d="M10 8v16a14 14 0 0 0 28 0V8" stroke="#ffb347" stroke-width="7" fill="none"/><rect x="6.5" y="6" width="7" height="9" fill="#e5484d"/><rect x="34.5" y="6" width="7" height="9" fill="#e5484d"/></svg>`;

@@ -62,7 +62,7 @@ export function signatureState(text: string): 'pending' | 'signed' {
 
 /** The thumbnail audit report `tools/check-thumbnail.py` writes, the shape this leg reads. */
 export interface ThumbnailReport {
-  audits?: { legibility128?: boolean; ocrEmpty?: boolean; hueCollision?: boolean; contrast?: number };
+  audits?: { legibility128?: boolean; ocrEmpty?: boolean; hueCollision?: boolean; contrast?: number; poles64?: boolean };
   panel?: { score?: number | null };
   detail?: Record<string, { failures?: string[] }>;
 }
@@ -75,6 +75,7 @@ export function thumbnailPreflight(report: ThumbnailReport): { ok: boolean; prob
   if (audits.legibility128 !== true) problems.push('a card fails legibility at 128 px (R-TH-01)');
   if (typeof audits.contrast !== 'number' || audits.contrast < 3) problems.push('subject contrast sits under 3:1 (R-TH-05)');
   if (audits.hueCollision !== false) problems.push('a card collides with the playground background hue (R-TH-05)');
+  if (audits.poles64 !== true) problems.push('the pole pair does not read at 64 px (visual renewal 16.5)');
   for (const [name, detail] of Object.entries(report.detail ?? {})) {
     if ((detail.failures ?? []).length > 0) problems.push(`${name}: ${detail.failures!.join(', ')}`);
   }
