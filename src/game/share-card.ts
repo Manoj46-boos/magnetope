@@ -1,5 +1,6 @@
 import { Rng } from '@/core/rng';
 import { PALETTES, type Hsl } from '@/render/palette';
+import { BRAND, CHARACTER, RANKS, STUDIO, UI } from '@/config/palette';
 import type { BiomeId } from '@/sim/types';
 
 export const SHARE_WIDTH = 1080;
@@ -29,12 +30,12 @@ const css = (c: Hsl, lShift = 0, alpha = 1): string =>
   `hsl(${Math.round(c.h)} ${Math.round(c.s)}% ${Math.max(0, Math.min(100, Math.round(c.l + lShift)))}% / ${alpha})`;
 
 const GRADE_COLOR: Record<string, string> = {
-  C: '#f4efe5',
-  B: '#c9f2d4',
-  A: '#9fe7ff',
-  S: '#ffd96b',
-  SS: '#ffb347',
-  SSS: '#ff8a5c',
+  C: UI.ink,
+  B: RANKS.b,
+  A: RANKS.a,
+  S: RANKS.s,
+  SS: UI.amber,
+  SSS: RANKS.sss,
 };
 
 /** A ridge line across the card: jagged peaks that fall away to the edges. */
@@ -93,13 +94,13 @@ function backdrop(biome: BiomeId, seed: number): DrawOp[] {
 
   const at = { x: 250, y: 1640, rotate: -0.42, scale: 1.7 };
   ops.push(
-    { op: 'path', d: MAGNO_BODY, ...at, fill: '#cfd6df' },
-    { op: 'path', d: MAGNO_EYE, ...at, fill: '#10161f' },
-    { op: 'path', d: MAGNO_EYE_WHITE, ...at, fill: '#f7f4ee' },
-    { op: 'path', d: MAGNO_PUPIL, ...at, fill: '#0c1118' },
-    { op: 'path', d: MAGNO_HEAD, ...at, stroke: '#e9edf2', width: 20 },
-    { op: 'path', d: MAGNO_TIP_LEFT, ...at, stroke: '#e5484d', width: 20 },
-    { op: 'path', d: MAGNO_TIP_RIGHT, ...at, stroke: '#e5484d', width: 20 },
+    { op: 'path', d: MAGNO_BODY, ...at, fill: CHARACTER.bodyGrey },
+    { op: 'path', d: MAGNO_EYE, ...at, fill: CHARACTER.socket },
+    { op: 'path', d: MAGNO_EYE_WHITE, ...at, fill: BRAND.paper },
+    { op: 'path', d: MAGNO_PUPIL, ...at, fill: CHARACTER.pupil },
+    { op: 'path', d: MAGNO_HEAD, ...at, stroke: CHARACTER.headSteel, width: 20 },
+    { op: 'path', d: MAGNO_TIP_LEFT, ...at, stroke: STUDIO.markRed, width: 20 },
+    { op: 'path', d: MAGNO_TIP_RIGHT, ...at, stroke: STUDIO.markRed, width: 20 },
   );
   return ops;
 }
@@ -107,7 +108,7 @@ function backdrop(biome: BiomeId, seed: number): DrawOp[] {
 const CONTENT_WIDTH = SHARE_WIDTH - MARGIN * 2;
 
 const masthead = (levelName: string): DrawOp[] => [
-  { op: 'text', text: 'MAGNETOPE', x: SHARE_WIDTH / 2, y: 190, size: 96, weight: 900, color: '#ffffff', align: 'center', maxWidth: CONTENT_WIDTH, shadow: true },
+  { op: 'text', text: 'MAGNETOPE', x: SHARE_WIDTH / 2, y: 190, size: 96, weight: 900, color: UI.white, align: 'center', maxWidth: CONTENT_WIDTH, shadow: true },
   { op: 'text', text: levelName, x: SHARE_WIDTH / 2, y: 262, size: 46, weight: 600, color: 'rgba(255,255,255,0.85)', align: 'center', maxWidth: CONTENT_WIDTH },
 ];
 
@@ -120,7 +121,7 @@ function chipRow(chips: ReadonlyArray<readonly [string, string]>): DrawOp[] {
     const x = right - chipW * (chips.length - i) - 28 * (chips.length - 1 - i);
     ops.push(
       { op: 'roundRect', x, y: 1250, w: chipW, h: 150, r: 34, fill: 'rgba(10,14,22,0.55)' },
-      { op: 'text', text: value, x: x + chipW / 2, y: 1334, size: 76, weight: 900, color: '#ffffff', align: 'center', maxWidth: chipW - 40 },
+      { op: 'text', text: value, x: x + chipW / 2, y: 1334, size: 76, weight: 900, color: UI.white, align: 'center', maxWidth: chipW - 40 },
       { op: 'text', text: label.toUpperCase(), x: x + chipW / 2, y: 1378, size: 28, weight: 700, color: 'rgba(255,255,255,0.7)', align: 'center', maxWidth: chipW - 40 },
     );
   });
@@ -146,7 +147,7 @@ export function buildShareCard(spec: ShareCardSpec): DrawOp[] {
       y: 1130,
       size: 150,
       weight: 900,
-      color: '#ffffff',
+      color: UI.white,
       align: 'center',
       maxWidth: CONTENT_WIDTH,
       shadow: true,
@@ -177,8 +178,8 @@ export function buildDuelCard(spec: DuelCardSpec): DrawOp[] {
   return [
     ...backdrop(spec.biome, spec.biome.length * 977 + Math.round(spec.timeMs / 10)),
     ...masthead(spec.levelName),
-    { op: 'text', text: spec.labels.title, x: SHARE_WIDTH / 2, y: 640, size: 150, weight: 900, color: '#ffd96b', align: 'center', maxWidth: CONTENT_WIDTH, shadow: true },
-    { op: 'text', text: `${seconds(margin)}s`, x: SHARE_WIDTH / 2, y: 1000, size: 330, weight: 900, color: '#ffffff', align: 'center', maxWidth: CONTENT_WIDTH - 60, shadow: true },
+    { op: 'text', text: spec.labels.title, x: SHARE_WIDTH / 2, y: 640, size: 150, weight: 900, color: RANKS.s, align: 'center', maxWidth: CONTENT_WIDTH, shadow: true },
+    { op: 'text', text: `${seconds(margin)}s`, x: SHARE_WIDTH / 2, y: 1000, size: 330, weight: 900, color: UI.white, align: 'center', maxWidth: CONTENT_WIDTH - 60, shadow: true },
     { op: 'text', text: spec.labels.ahead.toUpperCase(), x: SHARE_WIDTH / 2, y: 1096, size: 44, weight: 700, color: 'rgba(255,255,255,0.8)', align: 'center', maxWidth: CONTENT_WIDTH },
     ...chipRow([
       [spec.labels.you, `${seconds(spec.timeMs)}s`],

@@ -124,7 +124,7 @@
   touch-action: pan-y;
   scroll-behavior: smooth;
   padding: 14px 10px 24px;
-  background: linear-gradient(180deg, #0c1018, #141a24);
+  background: linear-gradient(180deg, var(--panel-deep), var(--panel-dusk));
 }
 
 .mountain {
@@ -154,7 +154,7 @@
   font-size: 0.95rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--white-ink);
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
@@ -175,7 +175,7 @@
 }
 
 .biome.sealed {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--sky-a) 55%, #0c1018), color-mix(in srgb, var(--sky-b) 45%, #0c1018));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sky-a) 55%, var(--panel-deep)), color-mix(in srgb, var(--sky-b) 45%, var(--panel-deep)));
 }
 
 .biome.sealed .nodes,
@@ -199,7 +199,7 @@
   border-radius: 50%;
   background: rgba(13, 17, 25, 0.78);
   border: 3px solid rgba(255, 255, 255, 0.5);
-  color: #fff;
+  color: var(--white-ink);
   font-weight: 900;
   font-size: calc(1.15rem * var(--zoom));
   transition: transform var(--t-micro), background var(--t-micro);
@@ -276,7 +276,7 @@
   padding: 1px 6px;
   border-radius: 99px;
   background: var(--cyan);
-  color: #04202b;
+  color: var(--cyan-ink);
   font-size: calc(0.66rem * var(--zoom));
   font-weight: 900;
 }
@@ -458,7 +458,7 @@
   padding: 1px 8px;
   border-radius: 99px;
   background: var(--amber);
-  color: #241503;
+  color: var(--gold-ink);
   font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -481,7 +481,7 @@
   place-items: center;
   height: 104px;
   border-radius: 10px;
-  background: radial-gradient(circle at 50% 40%, #2b3547, #151b26);
+  background: radial-gradient(circle at 50% 40%, var(--night-radial-hi), var(--night-radial-lo));
 }
 
 .card .preview svg {
@@ -548,7 +548,7 @@
   gap: 0.35rem;
   padding: 0 1.5rem;
   text-align: center;
-  color: #fff;
+  color: var(--white-ink);
   text-shadow: 0 2px 14px rgb(0 0 0 / 0.45);
   pointer-events: none;
   opacity: 0;
@@ -713,7 +713,7 @@
   left: 0;
   right: 0;
   height: 9%;
-  background: #05070b;
+  background: var(--night-deep);
   transform: scaleY(var(--bars));
 }
 
@@ -748,7 +748,7 @@
   gap: 1.1rem;
   padding: 0 1.5rem;
   text-align: center;
-  color: #fff;
+  color: var(--white-ink);
   text-shadow: 0 2px 18px rgb(0 0 0 / 0.55);
   opacity: var(--credits);
   background: radial-gradient(ellipse at center, rgb(5 7 11 / calc(0.5 * var(--credits))) 0%, transparent 72%);
@@ -867,11 +867,11 @@
 }
 
 .swatch.mine {
-  background: #ffc16b;
+  background: var(--swatch-mine);
 }
 
 .swatch.friend {
-  background: #e0a3ff;
+  background: var(--swatch-friend);
 }
 
 .exchange .hint {
@@ -945,7 +945,7 @@
 }
 
 .duel-tag.won {
-  color: #e0a3ff;
+  color: var(--swatch-friend);
 }
 
 /* R-RT-07: the player's own ghost, at the flip. */
@@ -1146,9 +1146,9 @@
 }
 
 .key-cap.listening {
-  border-color: rgba(255, 226, 170, 0.6);
-  background: linear-gradient(180deg, #ffc96b, var(--amber-deep));
-  color: #2a1700;
+  border-color: var(--btn-rim-60);
+  background: linear-gradient(180deg, var(--btn-top), var(--amber-deep));
+  color: var(--btn-ink);
   animation: key-pulse var(--t-loop);
 }
 
@@ -1290,6 +1290,16 @@
   .panel.pause .toggle,
   .panel.pause .lang select {
     min-height: 42px;
+  }
+
+  /* The assist row's state names itself on one line in the pause panel, the way
+     every other toggle reads; the stacked two-line layout belongs to the wider
+     controls panel where the row has the room. */
+  .panel.pause .toggle .value {
+    flex-basis: auto;
+    margin-top: 0;
+    padding-left: 0;
+    align-self: center;
   }
 
   .panel.controls,

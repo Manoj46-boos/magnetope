@@ -17,6 +17,28 @@
   /* The marker glyph's own white — MAGNO's sclera white, one step warmer than ink. */
   --paper: #f7f4ee;
   --danger: #ff6b5e;
+  /* The master palette's remaining chrome tokens (visual renewal 15), held in
+     step with src/config/palette.ts by the sync suite. */
+  --ui-bg: #151a22;
+  --btn-top: #ffc96b;
+  --btn-ink: #2a1700;
+  --btn-rim-60: rgba(255, 226, 170, 0.6);
+  --success: #a8f5b6;
+  --cyan-pale: #c8f1ff;
+  --ink-on-light: #111111;
+  --night-hi: #2a3342;
+  --night-lo: #12161e;
+  --panel-deep: #0c1018;
+  --panel-dusk: #141a24;
+  --cyan-ink: #04202b;
+  --gold-ink: #241503;
+  --night-radial-hi: #2b3547;
+  --night-radial-lo: #151b26;
+  --night-deep: #05070b;
+  --swatch-mine: #ffc16b;
+  --swatch-friend: #e0a3ff;
+  --white-ink: #ffffff;
+  --black-mask: #000000;
   --radius: 18px;
 
   /* Motion tokens (PRD 7.5). Nothing in the UI is hand-timed outside these. */
@@ -46,7 +68,7 @@ body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: #151a22;
+  background: var(--ui-bg);
   color: var(--ink);
   font-family: var(--font);
   overscroll-behavior: none;
@@ -125,13 +147,13 @@ select:focus-visible {
 .speed-lines {
   opacity: 0;
   background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 255, 255, 0.55) 0deg 0.6deg, transparent 0.6deg 7deg);
-  -webkit-mask-image: radial-gradient(ellipse at center, transparent 34%, #000 88%);
-  mask-image: radial-gradient(ellipse at center, transparent 34%, #000 88%);
+  -webkit-mask-image: radial-gradient(ellipse at center, transparent 34%, var(--black-mask) 88%);
+  mask-image: radial-gradient(ellipse at center, transparent 34%, var(--black-mask) 88%);
   transition: opacity var(--d-slowmo) linear;
 }
 
 .flash {
-  background: #fff;
+  background: var(--white-ink);
   opacity: 0;
 }
 
@@ -142,7 +164,7 @@ select:focus-visible {
   place-items: center;
   align-content: center;
   gap: 22px;
-  background: radial-gradient(ellipse at 50% 40%, #2a3342 0%, #12161e 70%);
+  background: radial-gradient(ellipse at 50% 40%, var(--night-hi) 0%, var(--night-lo) 70%);
   pointer-events: auto;
   transition: opacity var(--t-medium), visibility 0s linear var(--d-medium);
 }
@@ -167,7 +189,7 @@ select:focus-visible {
   place-items: center;
   align-content: center;
   gap: 22px;
-  background: radial-gradient(ellipse at 50% 40%, #2a3342 0%, #12161e 70%);
+  background: radial-gradient(ellipse at 50% 40%, var(--night-hi) 0%, var(--night-lo) 70%);
   pointer-events: auto;
   z-index: 50;
 }
@@ -257,7 +279,7 @@ select:focus-visible {
   border-radius: inherit;
   /* The biome's own climb (visual renewal 14.9); the script dresses this per
      biome, and the cyan pair stands as the dressed-less fallback. */
-  background: linear-gradient(0deg, var(--cyan), #c8f1ff);
+  background: linear-gradient(0deg, var(--cyan), var(--cyan-pale));
 }
 
 .rail .marker {
@@ -339,7 +361,7 @@ select:focus-visible {
 }
 
 .timer.ahead {
-  color: #a8f5b6;
+  color: var(--success);
 }
 
 .stars-track {
@@ -539,9 +561,9 @@ select:focus-visible {
 }
 
 .btn.primary {
-  color: #2a1700;
-  background: linear-gradient(180deg, #ffc96b, var(--amber-deep));
-  border-color: rgba(255, 226, 170, 0.6);
+  color: var(--btn-ink);
+  background: linear-gradient(180deg, var(--btn-top), var(--amber-deep));
+  border-color: var(--btn-rim-60);
   box-shadow: 0 8px 22px rgba(232, 136, 28, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
@@ -617,7 +639,7 @@ select:focus-visible {
 }
 
 .lang select option {
-  color: #111;
+  color: var(--ink-on-light);
 }
 
 .lang svg {
@@ -770,7 +792,7 @@ select:focus-visible {
 }
 
 .fact.good b {
-  color: #a8f5b6;
+  color: var(--success);
 }
 
 .fact .scrap-icon {

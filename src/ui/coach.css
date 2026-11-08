@@ -260,7 +260,7 @@
   font: inherit;
   font-weight: 900;
   font-size: 1.15rem;
-  color: #fff;
+  color: var(--white-ink);
 }
 
 .key.up {
@@ -330,7 +330,7 @@
   12%,
   38% {
     background: var(--cyan);
-    color: #04202b;
+    color: var(--cyan-ink);
     transform: translateY(3px);
   }
   46%,
@@ -349,7 +349,7 @@
   56%,
   64% {
     background: var(--amber);
-    color: #2a1700;
+    color: var(--gold-ink);
     transform: translateY(3px);
   }
   72%,
@@ -368,7 +368,7 @@
   24%,
   62% {
     background: var(--amber);
-    color: #2a1700;
+    color: var(--gold-ink);
     transform: translateY(3px);
   }
   72%,

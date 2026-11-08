@@ -1,16 +1,20 @@
+import { BRAND } from '@/config/palette';
+
 /**
  * The MAGNETOPE lockup (PRD 17.3, R-TH-08): wordmark, ident and palette as one
  * token set, reused verbatim on the ending title card, the clear-card corner
  * stamp and the store page (src/ui/wordmark.svg renders from the same values),
  * so every surface speaks the same brand. The store card itself stays
- * text-free (R-TH-02); the lockup lives on the surfaces around it.
+ * text-free (R-TH-02); the lockup lives on the surfaces around it. The colours
+ * are the master palette's own (visual renewal 15), read here so the lockup
+ * and every other brand surface hold one source.
  */
 
 export const LOCKUP = {
-  ink: '#0a0a0a',
-  poleNorth: '#e53935',
-  poleSouth: '#1e88e5',
-  arc: '#00e5ff',
+  ink: BRAND.ink,
+  poleNorth: BRAND.poleNorth,
+  poleSouth: BRAND.poleSouth,
+  arc: BRAND.fieldLine,
 } as const;
 
 /** The ident: the horseshoe magnet under its field-line arc, the game's signature as one glyph. */

@@ -364,7 +364,10 @@ describe('a first session in a real browser', () => {
     await page!.waitForFunction(() => document.querySelector('.locker-frame') !== null);
     const sets = await page!.locator('.set-chip').allInnerTexts();
     expect(sets.length).toBe(5);
-    expect(sets.some((text) => /[1-9]\/[45]/.test(text)), 'a half-filled set is the return hook that pulls').toBe(true);
+    // The hook is any partially-filled set, read off the chips themselves so the
+    // law keeps holding as the shelf's sets grow (session 43 added their sixth piece).
+    const filled = sets.map((text) => text.match(/(\d+)\/(\d+)$/)).filter((m): m is RegExpMatchArray => m !== null);
+    expect(filled.some((m) => Number(m[1]) > 0 && Number(m[1]) < Number(m[2])), 'a half-filled set is the return hook that pulls').toBe(true);
 
     const scrapBefore = await page!.evaluate(() => (window as unknown as GameWindow).__game.debug.save.data.scrap);
     let spotlight = page!.locator('.card.spotlight');

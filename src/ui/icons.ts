@@ -1,4 +1,5 @@
 import type { FieldLook, SkinLook } from '@/config/cosmetics';
+import { BRAND, CHARACTER, STUDIO, UI } from '@/config/palette';
 
 const svg = (body: string, size = 24, viewBox = '0 0 24 24'): string =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="${viewBox}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
@@ -66,7 +67,7 @@ export const magnoPreview = (look: SkinLook): string => `<svg class="magno-prev"
     ${look.accessory === 'flag' ? `<path d="M96 70V28" stroke="${look.ring}" stroke-width="3"/><path d="M96 28l16 7-16 7z" fill="${look.tip}"/>` : ''}
     <ellipse cx="60" cy="82" rx="26" ry="33" fill="${look.body}"/>
     <ellipse cx="60" cy="76" rx="13" ry="12" fill="${look.socket}"/>
-    <circle cx="60" cy="76" r="7.5" fill="#f7f4ee"/><circle cx="61.5" cy="76.5" r="3.2" fill="#0c1118"/>
+    <circle cx="60" cy="76" r="7.5" fill="${BRAND.paper}"/><circle cx="61.5" cy="76.5" r="3.2" fill="${CHARACTER.pupil}"/>
     ${look.accessory === 'sticker' ? `<path d="M40 104l4-7 4 7-7-4.5h8.5z" fill="${look.tip}"/>` : ''}
     ${headCrown(look)}
     <rect x="29" y="40" width="14" height="15" fill="${look.ring}"/><rect x="77" y="40" width="14" height="15" fill="${look.ring}"/>
@@ -80,12 +81,12 @@ export const magnoPreview = (look: SkinLook): string => `<svg class="magno-prev"
 export const fieldPreview = (look: FieldLook): string => `<svg class="field-prev" viewBox="0 0 160 100" aria-hidden="true" fill="none" stroke-linecap="round">
   <g stroke="${look.attract}" stroke-width="4"><path d="M10 50c14-34 46-34 56 0"/><path d="M10 50c14 34 46 34 56 0"/><path d="M22 50c8-16 28-16 34 0" stroke="${look.attractCore}" stroke-width="3"/></g>
   <g stroke="${look.repel}" stroke-width="4"><path d="M94 50c10-40 52-40 62-8"/><path d="M94 50c10 40 52 40 62 8"/><path d="M104 50c6-18 30-20 40-6" stroke="${look.repelCore}" stroke-width="3"/></g>
-  <circle cx="80" cy="50" r="5" fill="#fff" stroke="none" opacity=".9"/>
+  <circle cx="80" cy="50" r="5" fill="${UI.white}" stroke="none" opacity=".9"/>
 </svg>`;
 
 /** Ghost hand for the gestural tutorial: a pointing finger, drawn once and animated with CSS. */
 export const HAND = `<svg class="hand-glyph" viewBox="0 0 64 80" aria-hidden="true">
-  <path d="M26 6c0-3.3 2.7-6 6-6s6 2.7 6 6v28l4-1.2c3.3-1 6.6 1 7.4 4.3l1.8 8.6c1.4 6.8-.4 13.7-4.9 18.9L44 76H22l-8.5-14.4c-1.4-2.4-1.1-5.3.7-7.4 2-2.3 5.3-2.7 7.7-1L26 55.4z" fill="#fff" stroke="rgba(10,14,22,.45)" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M26 6c0-3.3 2.7-6 6-6s6 2.7 6 6v28l4-1.2c3.3-1 6.6 1 7.4 4.3l1.8 8.6c1.4 6.8-.4 13.7-4.9 18.9L44 76H22l-8.5-14.4c-1.4-2.4-1.1-5.3.7-7.4 2-2.3 5.3-2.7 7.7-1L26 55.4z" fill="${UI.white}" stroke="rgba(10,14,22,.45)" stroke-width="2.4" stroke-linejoin="round"/>
 </svg>`;
 
 /**
@@ -98,15 +99,15 @@ export const HAND = `<svg class="hand-glyph" viewBox="0 0 64 80" aria-hidden="tr
  */
 export const MAGNO_SILHOUETTE = `<svg class="magno-flip" viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
   <g transform="rotate(-14 60 70)">
-    <ellipse cx="60" cy="78" rx="22" ry="28" fill="#cfd6df"/>
-    <ellipse cx="60" cy="72" rx="11" ry="10" fill="#10161f"/>
-    <circle cx="60" cy="72" r="6" fill="#f7f4ee"/>
-    <circle cx="61.5" cy="72.5" r="2.6" fill="#0c1118"/>
-    <path d="M38 38a22 22 0 0 1 44 0" stroke="#e9edf2" stroke-width="12" fill="none" stroke-linecap="butt"/>
-    <rect x="32" y="38" width="12" height="14" fill="#e9edf2"/><rect x="76" y="38" width="12" height="14" fill="#e9edf2"/>
-    <rect x="32" y="48" width="12" height="7" fill="#e53935"/><rect x="76" y="48" width="12" height="7" fill="#1e88e5"/>
-    <path class="field-arc" d="M38 45 Q 60 -6 82 45" stroke="#00e5ff" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="60" cy="78" rx="22" ry="28" fill="${CHARACTER.bodyGrey}"/>
+    <ellipse cx="60" cy="72" rx="11" ry="10" fill="${CHARACTER.socket}"/>
+    <circle cx="60" cy="72" r="6" fill="${BRAND.paper}"/>
+    <circle cx="61.5" cy="72.5" r="2.6" fill="${CHARACTER.pupil}"/>
+    <path d="M38 38a22 22 0 0 1 44 0" stroke="${CHARACTER.headSteel}" stroke-width="12" fill="none" stroke-linecap="butt"/>
+    <rect x="32" y="38" width="12" height="14" fill="${CHARACTER.headSteel}"/><rect x="76" y="38" width="12" height="14" fill="${CHARACTER.headSteel}"/>
+    <rect x="32" y="48" width="12" height="7" fill="${BRAND.poleNorth}"/><rect x="76" y="48" width="12" height="7" fill="${BRAND.poleSouth}"/>
+    <path class="field-arc" d="M38 45 Q 60 -6 82 45" stroke="${BRAND.fieldLine}" stroke-width="4" fill="none" stroke-linecap="round"/>
   </g>
 </svg>`;
 
-export const STUDIO_MARK = `<svg viewBox="0 0 48 48" width="34" height="34" aria-hidden="true"><path d="M10 8v16a14 14 0 0 0 28 0V8" stroke="#ffb347" stroke-width="7" fill="none"/><rect x="6.5" y="6" width="7" height="9" fill="#e5484d"/><rect x="34.5" y="6" width="7" height="9" fill="#e5484d"/></svg>`;
+export const STUDIO_MARK = `<svg viewBox="0 0 48 48" width="34" height="34" aria-hidden="true"><path d="M10 8v16a14 14 0 0 0 28 0V8" stroke="${STUDIO.markAmber}" stroke-width="7" fill="none"/><rect x="6.5" y="6" width="7" height="9" fill="${STUDIO.markRed}"/><rect x="34.5" y="6" width="7" height="9" fill="${STUDIO.markRed}"/></svg>`;

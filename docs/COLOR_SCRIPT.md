@@ -30,3 +30,34 @@ How each biome dresses the climb’s clockwork — establish, twist, escalate, r
 - **The effect palette** — attract reads cyan, repel amber; bright skies take deeper colours with normal blending so the lines never wash out.
 - **The store card’s own grade** — contrast 1.32, saturation 1.5, bloom 0.52: stronger than any biome because the tile is shrunk to a phone row.
 - **Contrast between biomes is total** — the Scrapyard’s burnt orange against Suburbia’s lawn green is a biome shift the player feels in their bones; within a biome the gamut is narrow on purpose.
+
+## The locked tokens
+
+The cross-cutting palette (visual renewal 15): every colour the chrome, the brand and the effect family may show, one source at `src/config/palette.ts`. The build audit fails on any colour authored outside it; the palette suite holds the stylesheet’s `:root` copy in step and computes the contrast table on the backing the chrome really paints.
+
+| Group | Token | Value |
+| --- | --- | --- |
+| brand | poleNorth | #e53935 |
+| brand | poleSouth | #1e88e5 |
+| brand | fieldLine | #00e5ff |
+| brand | ink | #0a0a0a |
+| brand | paper | #f7f4ee |
+| ui | bg | #151a22 |
+| ui | ink | #f4efe5 |
+| ui | amber | #ffb347 |
+| ui | amberDeep | #e8881c |
+| ui | cyan | #5fd4ff |
+| ui | danger | #ff6b5e |
+| button | top | #ffc96b |
+| button | ink | #2a1700 |
+| state | success | #a8f5b6 |
+| state | swatchMine | #ffc16b |
+| state | swatchFriend | #e0a3ff |
+| ranks | sss | #ff8a5c |
+| ranks | s | #ffd96b |
+| ranks | a | #9fe7ff |
+| ranks | b | #c9f2d4 |
+| fx | attract | #a5ecfd (HSL 0.54 0.95 0.68) |
+| fx | repel | #ffcd6f (HSL 0.09 1 0.58) |
+
+The chrome’s custom properties (the `:root` block) and the module hold 29 tokens in step, compared by the palette suite. The toon band shades every surface at 0.35–1 with its edge at 0.85–1, read at patch time from the same source.

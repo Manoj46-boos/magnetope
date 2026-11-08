@@ -1,4 +1,5 @@
 import { AdditiveBlending, Color, LinearSRGBColorSpace, NormalBlending } from 'three';
+import { BRAND, FX } from '@/config/palette';
 import type { FieldLook } from '@/config/cosmetics';
 import type { BiomeId } from '@/sim/types';
 
@@ -128,11 +129,11 @@ export const PALETTES: Readonly<Record<BiomeId, BiomePalette>> = {
 
 /** The two-note effect palette: cyan family for attract, amber family for repel. */
 export const POLARITY = {
-  attract: new Color().setHSL(0.54, 0.95, 0.68),
-  attractCore: new Color().setHSL(0.52, 0.9, 0.92),
-  repel: new Color().setHSL(0.09, 1, 0.58),
-  repelCore: new Color().setHSL(0.12, 0.95, 0.85),
-  rim: new Color().setHSL(0.52, 0.8, 0.55),
+  attract: new Color().setHSL(FX.attract.h, FX.attract.s, FX.attract.l),
+  attractCore: new Color().setHSL(FX.attractCore.h, FX.attractCore.s, FX.attractCore.l),
+  repel: new Color().setHSL(FX.repel.h, FX.repel.s, FX.repel.l),
+  repelCore: new Color().setHSL(FX.repelCore.h, FX.repelCore.s, FX.repelCore.l),
+  rim: new Color().setHSL(FX.rim.h, FX.rim.s, FX.rim.l),
 } as const;
 
 /**
@@ -141,8 +142,8 @@ export const POLARITY = {
  * north, blue for south. They are the only colours that may appear on every
  * screen regardless of biome, because magnetism is the game's identity.
  */
-export const POLE_NORTH = new Color().setStyle('#e53935');
-export const POLE_SOUTH = new Color().setStyle('#1e88e5');
+export const POLE_NORTH = new Color().setStyle(BRAND.poleNorth);
+export const POLE_SOUTH = new Color().setStyle(BRAND.poleSouth);
 
 /** Deeper, more saturated variants so effects stay legible against bright biomes. */
 const POLARITY_BRIGHT = {

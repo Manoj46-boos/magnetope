@@ -15,6 +15,7 @@ import { GhostExchangeScreen, type ExchangeHandlers } from './ghost-exchange';
 import { ICONS, MAGNO_SILHOUETTE, STUDIO_MARK } from './icons';
 import { LockerScreen, type LockerHandlers } from './locker-screen';
 import { LOCKUP, LOCKUP_IDENT } from './lockup';
+import { BRAND } from '@/config/palette';
 import { MapScreen, type MapHandlers } from './map-screen';
 import { ModalHost } from './modal-host';
 import { railGradient } from './rail-palette';
@@ -25,7 +26,7 @@ import { railGradient } from './rail-palette';
  * climb's altitude carried by the game's signature shape (visual renewal 14.9).
  */
 const RAIL_MARKER = `<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-  <path d="M14 20 V34 A18 18 0 0 0 50 34 V20" fill="none" stroke="#f7f4ee" stroke-width="9" stroke-linecap="round"/>
+  <path d="M14 20 V34 A18 18 0 0 0 50 34 V20" fill="none" stroke="${BRAND.paper}" stroke-width="9" stroke-linecap="round"/>
   <rect x="8.5" y="12" width="11" height="11" rx="2.5" fill="${LOCKUP.poleNorth}"/>
   <rect x="44.5" y="12" width="11" height="11" rx="2.5" fill="${LOCKUP.poleSouth}"/>
 </svg>`;

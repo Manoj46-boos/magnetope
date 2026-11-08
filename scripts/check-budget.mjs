@@ -42,6 +42,41 @@ function classify(file) {
   return 'ui';
 }
 
+/**
+ * The palette compliance law (visual renewal PRD 15.5): no colour may be
+ * authored outside the master palette. The audit walks the source tree and
+ * fails on any colour literal it finds, with the exemptions the law names:
+ * `src/config/palette.ts` (the palette itself), `src/config/cosmetics.ts`
+ * (the locker's own inventory — content the player unlocks, not chrome), the
+ * `:root` custom-property block in `src/ui/style.css` (the palette's one CSS
+ * copy, held in step with the module by the palette suite), the biome sky
+ * system and the thumbnail studio in `src/render/palette.ts` /
+ * `src/render/thumbnail-scene.ts` (authored per biome in HSL, doc-generated as
+ * the colour script), and the tests that hold the law.
+ */
+export function auditPalette(rootDir) {
+  const exempt = /(?:^|\/)(?:config\/palette|config\/cosmetics|render\/palette|render\/thumbnail-scene|ui\/wordmark)\.ts$|^tests\/|^tools\/|^scripts\/|^thumbnails\/|^docs\/|^download\/|^upload\//;
+  const skipDirs = /(?:^|\/)(?:node_modules|dist|\.git|thumbnails)(?:$|\/)/;
+  const files = walk(rootDir).filter((f) => /\.(?:ts|css|tsx)$/.test(f) && !skipDirs.test(f));
+  const problems = [];
+  const colour = /#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b/g;
+  for (const file of files) {
+    const rel = relative(rootDir, file).replaceAll('\\', '/');
+    if (exempt.test(rel)) continue;
+    const text = readFileSync(file, 'utf8');
+    const lines = text.split('\n');
+    lines.forEach((line, i) => {
+      // The :root custom-property block is the palette's own CSS copy; every
+      // literal inside it is a token definition, held by the sync suite.
+      if (/--(?:[a-z-]+):\s*#/.test(line) && rel === 'src/ui/style.css') return;
+      for (const match of line.matchAll(colour)) {
+        problems.push(`${rel}:${i + 1} colours outside the master palette: ${match[0]}`);
+      }
+    });
+  }
+  return problems;
+}
+
 export function auditBuild(dist, { allowPokiSdk = false } = {}) {
   if (!existsSync(dist)) throw new Error(`Build output not found at ${dist}`);
   const files = walk(dist);
@@ -109,6 +144,7 @@ const invoked = process.argv[1] && resolve(process.argv[1]) === resolve(new URL(
 if (invoked) {
   const dist = resolve(process.argv.slice(2).find((arg) => !arg.startsWith('--')) ?? 'dist');
   const { sizes, total, classes, problems } = auditBuild(dist, { allowPokiSdk: process.argv.includes('--poki') });
+  problems.push(...auditPalette(resolve(fileURLToPath(new URL('..', import.meta.url)))));
   for (const f of sizes.sort((a, b) => b.gzip - a.gzip)) console.log(`${String(f.gzip).padStart(9)} B gzip  ${f.file}`);
   console.log('\nper-class payload, gzipped:');
   for (const [name, bytes] of Object.entries(classes).sort((a, b) => b[1] - a[1])) {

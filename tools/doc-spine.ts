@@ -1,4 +1,6 @@
 import { resolve } from 'node:path';
+import { Color } from 'three';
+import { BRAND, BUTTON, FX, RANKS, STATE, TOON, UI, UI_VARS } from '@/config/palette';
 import { writeFileSync } from 'node:fs';
 import { BIOME_ORDER, BIOME_STAR_GATES, scrapForClear } from '@/game/progress';
 import { FEEL_GAME_BEATS, FEEL_ROWS } from '@/game/feel-table';
@@ -184,6 +186,42 @@ export function renderColorScript(): string {
     `- **The effect palette** — attract reads cyan, repel amber; bright skies take deeper colours with normal blending so the lines never wash out.`,
     `- **The store card\u2019s own grade** — contrast ${CARD_GRADE.contrast}, saturation ${CARD_GRADE.saturation}, bloom ${CARD_GRADE.bloom}: stronger than any biome because the tile is shrunk to a phone row.`,
     `- **Contrast between biomes is total** — the Scrapyard\u2019s burnt orange against Suburbia\u2019s lawn green is a biome shift the player feels in their bones; within a biome the gamut is narrow on purpose.`,
+    '',
+    '## The locked tokens',
+    '',
+    'The cross-cutting palette (visual renewal 15): every colour the chrome, the brand and the effect family may show, one source at `src/config/palette.ts`. The build audit fails on any colour authored outside it; the palette suite holds the stylesheet\u2019s `:root` copy in step and computes the contrast table on the backing the chrome really paints.',
+    '',
+    '| Group | Token | Value |',
+    '| --- | --- | --- |',
+  );
+  const tokenRows: Array<[string, string, string]> = [
+    ['brand', 'poleNorth', BRAND.poleNorth],
+    ['brand', 'poleSouth', BRAND.poleSouth],
+    ['brand', 'fieldLine', BRAND.fieldLine],
+    ['brand', 'ink', BRAND.ink],
+    ['brand', 'paper', BRAND.paper],
+    ['ui', 'bg', UI.bg],
+    ['ui', 'ink', UI.ink],
+    ['ui', 'amber', UI.amber],
+    ['ui', 'amberDeep', UI.amberDeep],
+    ['ui', 'cyan', UI.cyan],
+    ['ui', 'danger', UI.danger],
+    ['button', 'top', BUTTON.top],
+    ['button', 'ink', BUTTON.ink],
+    ['state', 'success', STATE.success],
+    ['state', 'swatchMine', STATE.swatchMine],
+    ['state', 'swatchFriend', STATE.swatchFriend],
+    ['ranks', 'sss', RANKS.sss],
+    ['ranks', 's', RANKS.s],
+    ['ranks', 'a', RANKS.a],
+    ['ranks', 'b', RANKS.b],
+    ['fx', 'attract', `#${new Color().setHSL(FX.attract.h, FX.attract.s, FX.attract.l).getHexString()} (HSL ${FX.attract.h} ${FX.attract.s} ${FX.attract.l})`],
+    ['fx', 'repel', `#${new Color().setHSL(FX.repel.h, FX.repel.s, FX.repel.l).getHexString()} (HSL ${FX.repel.h} ${FX.repel.s} ${FX.repel.l})`],
+  ];
+  for (const [group, name, value] of tokenRows) out.push(`| ${group} | ${name} | ${value} |`);
+  out.push(
+    '',
+    `The chrome\u2019s custom properties (the \`:root\` block) and the module hold ${Object.keys(UI_VARS).length} tokens in step, compared by the palette suite. The toon band shades every surface at ${TOON.shadow}\u2013${TOON.lit} with its edge at ${TOON.edgeFloor}\u2013${TOON.edgeCeil}, read at patch time from the same source.`,
     '',
   );
   return out.join('\n');

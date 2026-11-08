@@ -25,6 +25,7 @@ import {
   type Material,
 } from 'three';
 import type { FieldLook } from '@/config/cosmetics';
+import { TOON } from '@/config/palette';
 import { TUNING } from '@/config/tuning';
 import { clamp, DEG, hypot2, lerp, type Vec2 } from '@/core/mathx';
 import type { MagnoView } from '@/sim/magno';
@@ -1201,6 +1202,9 @@ export class SceneRenderer {
  * hostile driver never breaks the whole frame: the prop simply renders as it
  * did before the patch.
  */
+/** A palette factor as a GLSL float literal: `1` is not a float where one is asked. */
+const glsl = (v: number): string => (Number.isInteger(v) ? `${v}.0` : `${v}`);
+
 function applyToonShading(material: MeshStandardMaterial): void {
   material.onBeforeCompile = (shader) => {
     shader.fragmentShader = shader.fragmentShader
@@ -1212,9 +1216,13 @@ function applyToonShading(material: MeshStandardMaterial): void {
              float toonNdotL = clamp(dot(normal, toonLightDir), 0.0, 1.0);
              float toonBand = step(0.5, toonNdotL);
              float toonEdge = smoothstep(0.45, 0.52, toonNdotL);
-             // Shadow band pushed to 0.35 (was 0.5) for graphic punch: the
+             // Shadow band pushed below the half-line for graphic punch: the
              // shadow side reads as a committed dark, not as a softened tint.
-             float toonFactor = mix(0.35, 1.0, toonBand) * mix(0.85, 1.0, toonEdge);
+             // The band's own numbers live in the master palette (visual
+             // renewal 15), read at patch time so the look and the lock hold
+             // one source — as GLSL float literals, because the language
+             // takes no ints where a float is asked.
+             float toonFactor = mix(${glsl(TOON.shadow)}, ${glsl(TOON.lit)}, toonBand) * mix(${glsl(TOON.edgeFloor)}, ${glsl(TOON.edgeCeil)}, toonEdge);
              diffuseColor.rgb *= toonFactor;
            }
          #endif
